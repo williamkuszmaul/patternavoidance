@@ -18,15 +18,6 @@ default: test
 test:  fastavoidance.cpp hashdb.cpp test.cpp
 	$(CXX) $(CXXFLAGS) -o test $^
 
-#fastavoidance.o:  fastavoidance.cpp fastavoidance.h hashdb.o
-#	$(CC) $(CFLAGS) -o fastavoidance.cpp
-
-#hashdb.o:  hashdb.cpp hashdb.h 
-#	$(CC) $(CFLAGS) -o hashdb.cpp
-#
-#hashdb.o:  test.cpp
-#	$(CC) $(CFLAGS) -o test.cpp
-
 # To start over from scratch, type 'make clean'.  This
 # removes the executable file, as well as old .o object
 # files and *~ backup files:
