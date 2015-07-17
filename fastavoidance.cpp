@@ -1,18 +1,18 @@
 // simplest make is g++ -O2 -std=c++11  fastavoidance.cpp  -g -o fastavoidance
-#include <assert.h>
-#include <string.h>
-#include <iostream>
-#include <math.h>
-#include <stdio.h>      /* printf, scanf, puts, NULL */
-#include <time.h> 
-#include <stdlib.h>
 #include <bitset>
-#include <vector>
-#include <stdint.h>
-// #include <unordered_set>
+#include <cassert>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>      /* printf, scanf, puts, NULL */
+#include <cstdlib>
+#include <cstring>
+#include <ctime> 
+#include <iostream>
 #include <queue>
-#include "hashdb.h"
 #include <sys/time.h>
+#include <vector>
+
+#include "hashdb.h"
 #include "fastavoidance.h"
 using namespace std;
 

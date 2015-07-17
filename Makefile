@@ -5,8 +5,8 @@
 #  -Wall turns on most, but not all, compiler warnings
 #
 # for C++ define  CC = g++
-CC = g++
-CFLAGS  = -O2 -std=c++11 -g
+CXX = g++
+CXXFLAGS  = -O2 -std=c++11 -g
 
 # typing 'make' will invoke the first target entry in the file 
 # (in this case the default target entry)	
@@ -15,17 +15,17 @@ CFLAGS  = -O2 -std=c++11 -g
 #
 default: test
 
-test:  fastavoidance.o hashdb.o test.o
-	$(CC) $(CFLAGS) -o test test.o hashdb.o fastavoidance.o
+test:  fastavoidance.cpp hashdb.cpp test.cpp
+	$(CXX) $(CXXFLAGS) -o test $^
 
-fastavoidance.o:  fastavoidance.cpp fastavoidance.h hashdb.o
-	$(CC) $(CFLAGS) -o fastavoidance.cpp
+#fastavoidance.o:  fastavoidance.cpp fastavoidance.h hashdb.o
+#	$(CC) $(CFLAGS) -o fastavoidance.cpp
 
-hashdb.o:  hashdb.cpp hashdb.h 
-	$(CC) $(CFLAGS) -o hashdb.cpp
-
-hashdb.o:  test.cpp
-	$(CC) $(CFLAGS) -o test.cpp
+#hashdb.o:  hashdb.cpp hashdb.h 
+#	$(CC) $(CFLAGS) -o hashdb.cpp
+#
+#hashdb.o:  test.cpp
+#	$(CC) $(CFLAGS) -o test.cpp
 
 # To start over from scratch, type 'make clean'.  This
 # removes the executable file, as well as old .o object
@@ -33,3 +33,5 @@ hashdb.o:  test.cpp
 #
 clean: 
 	$(RM) count *.o *~
+
+# want g++ -O2 -std=c++11  test.cpp  fastavoidance.cpp hashdb.cpp -g -o test

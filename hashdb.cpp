@@ -1,3 +1,4 @@
+/* -*- mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*- */
 /*
  *  hashdb.h
  *  A simple hash table implementation
@@ -27,17 +28,18 @@
 
 #include "hashdb.h"
 
-hashdb :: hashdb(unsigned long long startsize){ //The initial maxsize is startsize
-  array=(unsigned long long*)malloc(sizeof(*array)*startsize);
+hashdb :: hashdb(unsigned long long startsize)
+    : averageinsertiontime(0)
+    , array(new unsigned long long [startsize])
+    , maxsize(startsize)
+    , size(0)
+    , prevplace(0)
+{ //The initial maxsize is startsize
   memset(array, 0, startsize*sizeof(*array));
-  maxsize=startsize;
-  size=0;
-  averageinsertiontime=0;
-  prevplace=0;
 }
 
 hashdb :: ~hashdb() {
-  free(array);
+  delete [] array;
 }
 
 unsigned long long hashdb :: getsize () {
