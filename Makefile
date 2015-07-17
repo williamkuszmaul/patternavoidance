@@ -15,6 +15,9 @@ CXXFLAGS  = -O2 -std=c++11 -g
 #
 default: test
 
+inversionstest: fastavoidance.cpp hashdb.cpp inversionstest.cpp
+	$(CXX) $(CXXFLAGS) -o test $^
+
 test:  fastavoidance.cpp hashdb.cpp test.cpp
 	$(CXX) $(CXXFLAGS) -o test $^
 
