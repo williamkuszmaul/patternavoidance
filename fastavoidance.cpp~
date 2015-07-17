@@ -8,9 +8,8 @@
 #include <bitset>
 #include <vector>
 #include <stdint.h>
-// #include <unordered_set>
+#include <unordered_set>
 #include <queue>
-#include "hashdb.h"
 using namespace std;
 
 #define ULL (uint64_t)
@@ -55,9 +54,9 @@ inline uint64_t getinverse(uint64_t perm, int length) {
   return answer;
 }
 
-bool isavoider(uint64_t perm, int maxavoidsize, int length, hashdb &avoidset, hashdb &patternset) { 
+bool isavoider(uint64_t perm, int maxavoidsize, int length, std::unordered_set<long long> &avoidset, std::unordered_set<long long> &patternset) { 
   uint64_t inverse = getinverse(perm, length);
-  if (patternset.contains(perm)) { // if is in set of bad patterns
+  if (patternset.find(perm) != patternset.end()) { // if is in set of bad patterns
       return false;
   }
   uint64_t currentperm = perm;
@@ -69,7 +68,7 @@ bool isavoider(uint64_t perm, int maxavoidsize, int length, hashdb &avoidset, ha
       }
       currentperm = killpos(currentperm, getdigit(inverse, i));
       //displayperm(currentperm);
-      if (!avoidset.contains(currentperm)) {
+      if (avoidset.find(currentperm)  == patternset.end()) {
 	return false; // found a subword not avoiding the patterns
       }
     }
@@ -77,12 +76,13 @@ bool isavoider(uint64_t perm, int maxavoidsize, int length, hashdb &avoidset, ha
   return true;
 }
 
-int countavoiders(hashdb &patternset, int maxavoidsize, int maxsize) {
+int countavoiders(unordered_set<long long> patternset, int maxavoidsize, int maxsize) {
   int numavoiders = 0;
   
-  hashdb avoidset = hashdb(1<<20);
+  std::unordered_set<long long> avoidset;
   uint64_t startperm = 0;
-  avoidset.add(0); // identity in S_1
+  avoidset.insert(0); // identity in S_1
+  
   
   std::queue<long long> avoiderstoextend;
   avoiderstoextend.push(startperm);
@@ -91,7 +91,7 @@ int countavoiders(hashdb &patternset, int maxavoidsize, int maxsize) {
   int numleftcurrentlength = 1; // number of permutations left in avoiderstoextend until we have to increment currentlength
   int numnextlength = 0; // number of permutations of size currentlength + 1 in avoiderstoextend
 
-  while (avoiderstoextend.size() > 0) {
+  while (avoiderstoextend.empty() == false) {
     if (numleftcurrentlength == 0) {
       numleftcurrentlength = numnextlength;
       numnextlength = 0;
@@ -109,7 +109,7 @@ int countavoiders(hashdb &patternset, int maxavoidsize, int maxsize) {
       	if (currentlength + 1 == maxsize) numavoiders++;
       	avoiderstoextend.push(extendedperm);
 	numnextlength++;
-	avoidset.add(extendedperm);
+	avoidset.insert(extendedperm);
       }
     }
   }
@@ -125,9 +125,9 @@ int main() {
   perm = setdigit(perm, 1, 2);
   perm = setdigit(perm, 2, 1);
   perm = setdigit(perm, 3, 3);
-  hashdb patternset = hashdb(1<<3);
-  patternset.add(perm);
-  cout<<countavoiders(patternset, 4, 12)<<endl;
+  std::unordered_set<long long> patternset;
+  patternset.insert(perm);
+  cout<<countavoiders(patternset, 4, 11)<<endl;
 
   //for (int i = 0; i < 10; i++) perm = setdigit(perm, i, i);
   //isavoider(perm, 4, 6);
@@ -137,4 +137,3 @@ int main() {
   // displayperm(addpos(perm, 3));
   //displayperm(killpos(perm, 7));
 }
-					   
