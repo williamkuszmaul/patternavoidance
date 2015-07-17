@@ -97,12 +97,14 @@ bool isavoider(uint64_t perm, int maxavoidsize, int length, hashdb &avoidset, ha
   return true;
 }
 
-int countavoiders(hashdb &patternset, int maxavoidsize, int maxsize) {
+int buildavoiders(hashdb &patternset, int maxavoidsize, int maxsize, vector < vector < uint64_t > > &avoidervector) {
   int numavoiders = 0;
+  avoidervector.resize(maxsize + 1); // avoidervector[i] will contain the avoiders of size i. [avoidervector[0] will be empty]
   
   hashdb avoidset = hashdb(1<<20);
   uint64_t startperm = 0;
-  avoidset.add(0); // identity in S_1
+  avoidset.add(startperm); // identity in S_1
+  avoidervector[1].push_back(startperm);
   
   std::queue<long long> avoiderstoextend;
   avoiderstoextend.push(startperm);
@@ -126,7 +128,10 @@ int countavoiders(hashdb &patternset, int maxavoidsize, int maxsize) {
     for (int i = 0; i < currentlength + 1; i++) {
       uint64_t extendedperm = setdigit(addpos(perm, i), i, currentlength);
       if (isavoider(extendedperm, maxavoidsize, currentlength + 1, avoidset, patternset)) {
-      	if (currentlength + 1 == maxsize) numavoiders++;
+      	if (currentlength + 1 == maxsize) {
+	  numavoiders++;
+	}
+	avoidervector[currentlength + 1].push_back(extendedperm);
       	avoiderstoextend.push(extendedperm);
 	numnextlength++;
 	avoidset.add(extendedperm);
@@ -141,7 +146,7 @@ int countavoiders(hashdb &patternset, int maxavoidsize, int maxsize) {
 
 int main() {  
   int maxpatternsize = 3;
-  int permsize = 16;
+  int permsize = 14;
   assert(permsize <= 16);
   uint64_t perm = 0;
   perm = setdigit(perm, 0, 0);
@@ -153,7 +158,10 @@ int main() {
   timestamp_t start_time = get_timestamp();
   cout<<"Avoid set: ";
   displayperm(perm);
-  cout<<"Number of avoiders of size "<<permsize<<" is "<<countavoiders(patternset, maxpatternsize, permsize)<<endl;
+  vector < vector < uint64_t > > avoidersvector;
+  uint64_t numavoiders = buildavoiders(patternset, maxpatternsize, permsize, avoidersvector);
+  cout<<"Number of avoiders of size "<<permsize<<" is "<<numavoiders<<endl;
+  assert(numavoiders == avoidersvector[permsize].size());
   timestamp_t end_time = get_timestamp();
   cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
   return 0;
