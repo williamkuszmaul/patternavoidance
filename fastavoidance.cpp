@@ -56,6 +56,7 @@ void displayperm(uint64_t perm, int size) {
 inline uint64_t killpos(uint64_t perm, int index) {
   uint64_t bottom = perm & ((one << (4 * index)) - 1);
   uint64_t top = perm & ((~ zero) - ((one << (4 * index + 4)) - 1));
+  if (index == 15) return bottom; // top is ill-defined in this case
   return bottom + (top >> 4); 
 }
 
@@ -138,9 +139,9 @@ int countavoiders(hashdb &patternset, int maxavoidsize, int maxsize) {
 
 
 
-int main() {
+int main() {  
   int maxpatternsize = 3;
-  int permsize = 10;
+  int permsize = 16;
   assert(permsize <= 16);
   uint64_t perm = 0;
   perm = setdigit(perm, 0, 0);
