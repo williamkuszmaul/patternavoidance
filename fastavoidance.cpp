@@ -1,3 +1,4 @@
+// simplest make is g++ -O2 -std=c++11  fastavoidance.cpp  -g -o fastavoidance
 #include <assert.h>
 #include <string.h>
 #include <iostream>
@@ -11,12 +12,25 @@
 // #include <unordered_set>
 #include <queue>
 #include "hashdb.h"
+#include <sys/time.h>
 using namespace std;
 
 #define ULL (uint64_t)
 #define one ((uint64_t) 1)
 #define zero ((uint64_t) 0)
 #define bits4 ((uint64_t) 15)
+
+
+typedef unsigned long long timestamp_t;
+
+// copied from http://stackoverflow.com/questions/1861294/how-to-calculate-execution-time-of-a-code-snippet-in-c
+static timestamp_t
+    get_timestamp ()
+{
+  struct timeval now;
+  gettimeofday (&now, NULL);
+  return  now.tv_usec + (timestamp_t)now.tv_sec * 1000000;
+}
 
 // indexing starts at 0
 inline uint64_t getdigit(uint64_t perm, int index) {
@@ -30,6 +44,11 @@ inline uint64_t setdigit(uint64_t perm, int index, uint64_t newdigit) {
 
 void displayperm(uint64_t perm) {
   for (int i = 0; i < 16; i++) cout<<getdigit(perm, i)<<" ";
+  cout<<endl;
+}
+
+void displayperm(uint64_t perm, int size) {
+  for (int i = 0; i < size; i++) cout<<getdigit(perm, i)<<" ";
   cout<<endl;
 }
 
@@ -120,21 +139,22 @@ int countavoiders(hashdb &patternset, int maxavoidsize, int maxsize) {
 
 
 int main() {
+  int maxpatternsize = 3;
+  int permsize = 10;
+  assert(permsize <= 16);
   uint64_t perm = 0;
   perm = setdigit(perm, 0, 0);
   perm = setdigit(perm, 1, 2);
   perm = setdigit(perm, 2, 1);
-  perm = setdigit(perm, 3, 3);
+  //perm = setdigit(perm, 3, 3);
   hashdb patternset = hashdb(1<<3);
   patternset.add(perm);
-  cout<<countavoiders(patternset, 4, 12)<<endl;
-
-  //for (int i = 0; i < 10; i++) perm = setdigit(perm, i, i);
-  //isavoider(perm, 4, 6);
-  
-  
-  // displayperm(perm);
-  // displayperm(addpos(perm, 3));
-  //displayperm(killpos(perm, 7));
+  timestamp_t start_time = get_timestamp();
+  cout<<"Avoid set: ";
+  displayperm(perm);
+  cout<<"Number of avoiders of size "<<permsize<<" is "<<countavoiders(patternset, maxpatternsize, permsize)<<endl;
+  timestamp_t end_time = get_timestamp();
+  cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
+  return 0;
 }
 					   
