@@ -48,7 +48,7 @@ hashdb :: ~hashdb() {
   delete [] array;
 }
 
-unsigned long long hashdb :: getsize () {
+unsigned long long hashdb :: getsize () const {
   return size;
 }
 
@@ -73,7 +73,7 @@ void hashdb :: add (unsigned long long element){
   size++;
 }
 
-bool hashdb :: contains (unsigned long long element){
+bool hashdb :: contains (unsigned long long element) const {
   assert(element != -1L);
   unsigned long long place=hash(element);
   while(array[place]!=0){
@@ -83,7 +83,7 @@ bool hashdb :: contains (unsigned long long element){
   return false;
 }
 
-unsigned long long hashdb :: hash (unsigned long long key)
+unsigned long long hashdb :: hash (unsigned long long key) const
 {
   key = (~key) + (key << 21); // key = (key << 21) - key - 1;
   key = key ^ (key >> 24);
@@ -96,11 +96,11 @@ unsigned long long hashdb :: hash (unsigned long long key)
   //This hash function comes from http://www.concentric.net/~ttwang/tech/inthash.htm
 }
 
-unsigned long long hashdb :: getavtime (){ //just to check how well hash function is doing for data set; should round to zero under normal circumstances
+unsigned long long hashdb :: getavtime () const { //just to check how well hash function is doing for data set; should round to zero under normal circumstances
   if(size==0) return 0;
   return averageinsertiontime/size;
 }
 
-void hashdb::removeprev(){
+void hashdb::removeprev() {
   array[prevplace]=0;
 }

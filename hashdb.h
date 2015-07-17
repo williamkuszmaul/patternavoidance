@@ -38,12 +38,12 @@ class hashdb{
 public:
   hashdb(unsigned long long startsize);
   ~hashdb();
-  unsigned long long hash(unsigned long long key);
+  unsigned long long hash(unsigned long long key) const;
   void add(unsigned long long element);
-  bool contains(unsigned long long element);
-  unsigned long long getavtime();
+  bool contains(unsigned long long element) const;
+  unsigned long long getavtime() const;
   void removeprev();
-  unsigned long long getsize();
+  unsigned long long getsize() const;
  private:
   unsigned long long averageinsertiontime;
   unsigned long long *array;

@@ -76,6 +76,6 @@ inline uint64_t getinverse(uint64_t perm, int length) {
 }
 
 
-long long buildavoiders(hashdb &patternset, int maxavoidsize, int maxsize, vector < vector < uint64_t > > &avoidervector);
+long long buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize, vector < vector < uint64_t > > &avoidervector);
 
 #endif 
