@@ -16,10 +16,6 @@
 #include "fastavoidance.h"
 using namespace std;
 
-#define ULL (uint64_t)
-#define one ((uint64_t) 1)
-#define zero ((uint64_t) 0)
-#define bits4 ((uint64_t) 15)
 
 void displayperm(uint64_t perm) {
   for (int i = 0; i < 16; i++) cout<<getdigit(perm, i)<<" ";

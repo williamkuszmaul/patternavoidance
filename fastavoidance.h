@@ -21,10 +21,6 @@
 #include <sys/time.h>
 using namespace std;
 
-#define ULL (uint64_t)
-#define one ((uint64_t) 1)
-#define zero ((uint64_t) 0)
-#define bits4 ((uint64_t) 15)
 
 
 typedef unsigned long long timestamp_t;
@@ -41,11 +37,11 @@ static timestamp_t
 
 // indexing starts at 0
 inline uint64_t getdigit(uint64_t perm, int index) {
-  return (perm >> (index * 4))  & bits4; // grab digit
+  return (perm >> (index * 4))  & 15L; // grab digit
 }
 
 inline uint64_t setdigit(uint64_t perm, int index, uint64_t newdigit) {
-  return (perm & ~(bits4 << (index * 4))) |  (newdigit << (index * 4)); // clear digit and then rewrite its value
+  return (perm & ~(15L << (index * 4))) |  (newdigit << (index * 4)); // clear digit and then rewrite its value
 }
 
 void displayperm(uint64_t perm);
@@ -54,15 +50,15 @@ void displayperm(uint64_t perm, int size);
 
 // kills digit in position index // DOES NOT NORMALIZE PERMUTATION AFTERWARDS
 inline uint64_t killpos(uint64_t perm, int index) {
-  uint64_t bottom = perm & ((one << (4 * index)) - 1);
-  uint64_t top = perm & ((~ zero) - ((one << (4 * index + 4)) - 1));
+  uint64_t bottom = perm & ((1L << (4 * index)) - 1);
+  uint64_t top = perm & ((~ 0L) - ((1L << (4 * index + 4)) - 1));
   if (index == 15) return bottom; // top is ill-defined in this case
   return bottom + (top >> 4); 
 }
 
 inline uint64_t addpos(uint64_t perm, int index) {
-  uint64_t bottom = perm & ((one << (4 * index)) - 1);
-  uint64_t top = perm & ((~ zero) - ((one << (4 * index)) - 1));
+  uint64_t bottom = perm & ((1L << (4 * index)) - 1);
+  uint64_t top = perm & ((~ 0L) - ((1L << (4 * index)) - 1));
   return bottom + (top << 4);
 }
 
