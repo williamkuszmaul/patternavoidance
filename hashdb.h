@@ -25,10 +25,14 @@
  *  THE SOFTWARE.
  */
 
+#ifndef _HASHDB_H 
+#define _HASHDB_H // To avoid header being included twice in complilation process.
+
 using namespace std;
 #include <stdlib.h>
 #include <iostream>
 #include <string.h>
+
 
 class hashdb{
 public:
@@ -48,70 +52,4 @@ public:
   unsigned long long prevplace;
 };
 
-hashdb :: hashdb(unsigned long long startsize){ //The initial maxsize is startsize
-  array=(unsigned long long*)malloc(sizeof(*array)*startsize);
-  memset(array, 0, startsize*sizeof(*array));
-  maxsize=startsize;
-  size=0;
-  averageinsertiontime=0;
-  prevplace=0;
-}
-
-hashdb :: ~hashdb() {
-  free(array);
-}
-
-unsigned long long hashdb :: getsize () {
-  return size;
-}
-
-void hashdb :: add (unsigned long long element){
-  if(size >= maxsize/2){ //up to 50% full before we resize
-    hashdb temp = hashdb(maxsize*2);
-    unsigned long long *oldarray = array;
-    for(unsigned long long x=0; x<maxsize; x++){
-      if(array[x]!=0) temp.add(array[x]-1); //add all of the original elements
-    }
-    *this = temp;
-    temp.array = oldarray; // so that when the destructor runs on temp, it frees the oldarray, not the new array.  It's ugly, but...
-  }
-  unsigned long long place = hash(element);
-  while(array[place]!=0){
-    place=(place+1)%maxsize;
-    averageinsertiontime++;
-  }
-  array[place]=element+1; // we insert element + 1 into the array
-  prevplace=place;
-  size++;
-}
-
-bool hashdb :: contains (unsigned long long element){
-  unsigned long long place=hash(element);
-  while(array[place]!=0){
-    if(array[place]==element+1) return true; //look for element+1 in the array
-    place=(place+1)%maxsize;
-  }
-  return false;
-}
-
-unsigned long long hashdb :: hash (unsigned long long key)
-{
-  key = (~key) + (key << 21); // key = (key << 21) - key - 1;
-  key = key ^ (key >> 24);
-  key = (key + (key << 3)) + (key << 8); // key * 265
-  key = key ^ (key >> 14);
-  key = (key + (key << 2)) + (key << 4); // key * 21
-  key = key ^ (key >> 28);
-  key = key + (key << 31);
-  return key&(maxsize-1); //assume maxsize is power of two
-  //This hash function comes from http://www.concentric.net/~ttwang/tech/inthash.htm
-}
-
-unsigned long long hashdb :: getavtime (){ //just to check how well hash function is doing for data set; should round to zero under normal circumstances
-  if(size==0) return 0;
-  return averageinsertiontime/size;
-}
-
-void hashdb::removeprev(){
-  array[prevplace]=0;
-}
+#endif
