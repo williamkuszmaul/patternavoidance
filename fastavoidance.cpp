@@ -31,7 +31,7 @@ void displayperm(uint64_t perm, int size) {
   cout<<endl;
 }
 
-bool isavoider(uint64_t perm, int maxavoidsize, int length, hashdb &avoidset, hashdb &patternset) { 
+static bool isavoider(uint64_t perm, int maxavoidsize, int length, hashdb &avoidset, hashdb &patternset) { 
   uint64_t inverse = getinverse(perm, length);
   if (patternset.contains(perm)) { // if is in set of bad patterns
       return false;

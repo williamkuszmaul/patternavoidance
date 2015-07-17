@@ -28,10 +28,16 @@
 
 #include "hashdb.h"
 
+static unsigned long long next_power_of_two(unsigned long long v) {
+  unsigned long long x = 1;
+  while (x < v) x*=2;
+  return x;
+}
+
 hashdb :: hashdb(unsigned long long startsize)
     : averageinsertiontime(0)
     , array(new unsigned long long [startsize])
-    , maxsize(startsize)
+    , maxsize(next_power_of_two(startsize))
     , size(0)
     , prevplace(0)
 { //The initial maxsize is startsize
@@ -47,6 +53,7 @@ unsigned long long hashdb :: getsize () {
 }
 
 void hashdb :: add (unsigned long long element){
+  assert(element != -1L);
   if(size >= maxsize/2){ //up to 50% full before we resize
     hashdb temp = hashdb(maxsize*2);
     unsigned long long *oldarray = array;
@@ -67,6 +74,7 @@ void hashdb :: add (unsigned long long element){
 }
 
 bool hashdb :: contains (unsigned long long element){
+  assert(element != -1L);
   unsigned long long place=hash(element);
   while(array[place]!=0){
     if(array[place]==element+1) return true; //look for element+1 in the array

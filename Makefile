@@ -13,19 +13,21 @@ CXXFLAGS  = -O2 -std=c++11 -g
 # you can name this target entry anything, but "default" or "all"
 # are the most commonly used names by convention
 #
-default: test
+TESTS = test inversionstest
+# variable assignement only goes into affect if variable does not already exist. Could, for example, do make TESTS=test to only make test
 
-inversionstest: fastavoidance.cpp hashdb.cpp inversionstest.cpp
-	$(CXX) $(CXXFLAGS) -o test $^
+default: $(TESTS)
+.PHONY: default clean
+# phony because default and clean are not files
 
-test:  fastavoidance.cpp hashdb.cpp test.cpp
-	$(CXX) $(CXXFLAGS) -o test $^
+%:  fastavoidance.cpp hashdb.cpp %.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
 # To start over from scratch, type 'make clean'.  This
 # removes the executable file, as well as old .o object
 # files and *~ backup files:
 #
 clean: 
-	$(RM) count *.o *~
+	$(RM) $(TESTS) *.o *~
 
 # want g++ -O2 -std=c++11  test.cpp  fastavoidance.cpp hashdb.cpp -g -o test

@@ -32,7 +32,7 @@ using namespace std;
 #include <stdlib.h>
 #include <iostream>
 #include <string.h>
-
+#include <cassert>
 
 class hashdb{
 public:
