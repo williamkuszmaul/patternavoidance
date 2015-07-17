@@ -31,7 +31,7 @@ void displayperm(uint64_t perm, int size) {
   cout<<endl;
 }
 
-bool isavoider(uint64_t perm, int maxavoidsize, int length, hashdb &avoidset, hashdb &patternset) { 
+bool isavoider(uint64_t perm, int maxavoidsize, int length, const hashdb &avoidset, const hashdb &patternset) { 
   uint64_t inverse = getinverse(perm, length);
   if (patternset.contains(perm)) { // if is in set of bad patterns
       return false;
@@ -53,7 +53,7 @@ bool isavoider(uint64_t perm, int maxavoidsize, int length, hashdb &avoidset, ha
   return true;
 }
 
-long long buildavoiders(hashdb &patternset, int maxavoidsize, int maxsize, vector < vector < uint64_t > > &avoidervector) {
+long long buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize, vector < vector < uint64_t > > &avoidervector) {
   int numavoiders = 0;
   avoidervector.resize(maxsize + 1); // avoidervector[i] will contain the avoiders of size i. [avoidervector[0] will be empty]
   
