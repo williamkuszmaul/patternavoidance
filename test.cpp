@@ -17,14 +17,14 @@ using namespace std;
 
 
 int main() {
-    int maxpatternsize = 4;
+    int maxpatternsize = 3;
   int permsize = 12;
   assert(permsize <= 16);
   uint64_t perm = 0;
   perm = setdigit(perm, 0, 0);
   perm = setdigit(perm, 1, 2);
   perm = setdigit(perm, 2, 1);
-  perm = setdigit(perm, 3, 3);
+  //perm = setdigit(perm, 3, 3);
   hashdb patternset = hashdb(1<<3);
   patternset.add(perm);
   timestamp_t start_time = get_timestamp();
