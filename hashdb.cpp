@@ -31,12 +31,13 @@
 static unsigned long long next_power_of_two(unsigned long long v) {
   unsigned long long x = 1;
   while (x < v) x*=2;
+  cout<<x<<" "<<v<<endl;
   return x;
 }
 
 hashdb :: hashdb(unsigned long long startsize)
     : averageinsertiontime(0)
-    , array(new unsigned long long [startsize])
+    , array(new unsigned long long [next_power_of_two(startsize)])
     , maxsize(next_power_of_two(startsize))
     , size(0)
     , prevplace(0)
