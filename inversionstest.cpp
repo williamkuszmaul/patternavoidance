@@ -17,8 +17,8 @@ using namespace std;
 
 // tests conjecture 20 of http://arxiv.org/abs/1111.5736 for permutations of size <= testsize avoiding patterns of size <= patternsize 
 
-#define testsize 10
-#define patternsize 7
+#define testsize 11
+#define patternsize 6
 
 
 int numinversions(uint64_t perm, int length) {

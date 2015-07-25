@@ -17,21 +17,15 @@
 #include "fastavoidance.h"
 using namespace std;
 
-#define testsize 11
-#define patternsize 6
-
-inline int setPval(unsigned long long perm, int i, int payload, unordered_map<unsigned long long, int> &Pmap) {
-  std::pair<unsigned long long, int> pair ((perm<<4) + i, payload);
-  Pmap.insert(pair);
+inline void setPval(unsigned long long perm, int i, int payload, unordered_map<unsigned long long, int> &Pmap) {
+  Pmap[(perm<<4) + i] = payload;
 }
 
 inline int getPval(unsigned long long perm, int i, unordered_map<unsigned long long, int> &Pmap) {
-  unordered_map<unsigned long long, int>::const_iterator got = Pmap.find((perm<<4) + i);
-  assert(got != Pmap.end());
-  return got->second;
+  return Pmap[(perm << 4) + i];
 }
 
-static bool Pcount(uint64_t perm, int maxavoidsize, int length, unordered_map<unsigned long long, int> &Pmap, const hashdb &patternset) { 
+static void Pcount(uint64_t perm, int maxavoidsize, int length, unordered_map<unsigned long long, int> &Pmap, const hashdb &patternset) { 
   uint64_t inverse = getinverse(perm, length);
   int Pvals[maxavoidsize + 2]; // vals range from [0...maxavoidsize+1]
   int Pvalpos = maxavoidsize + 1;
@@ -84,6 +78,7 @@ void buildpermutations(uint64_t perm, int currentsize, int finalsize, unordered_
   }
 }
 
+// LENGTH IS FUNNY SOME TIMES!
 void createPmap(uint64_t finalsize, int maxavoidsize, hashdb &patternset, unordered_map<unsigned long long, int> &Pmap, timestamp_t start_time) {
   setPval(0, 0, 0, Pmap);
   setPval(0, 1, 0, Pmap);
@@ -91,15 +86,15 @@ void createPmap(uint64_t finalsize, int maxavoidsize, hashdb &patternset, unorde
   uint64_t perm2 = setdigit(0L, 1, 1L);
   for (int i = 2; i <= finalsize; i++) {
     buildpermutations(0L, 1, i, Pmap, maxavoidsize, patternset);
-    timestamp_t current_time = get_timestamp();
-    cout<< "Time elapsed to build perms of size "<<i<<" in seconds: "<<(current_time - start_time)/1000000.0L<<endl;
+    //timestamp_t current_time = get_timestamp();
+    //cout<< "Time elapsed to build perms of size "<<i<<" in seconds: "<<(current_time - start_time)/1000000.0L<<endl;
   }
   return;
 }
 
 int main() {
   int maxpatternsize = 3;
-  int permsize = 12;
+  int permsize = 10;
   assert(permsize <= 16);
   uint64_t perm = 0;
   perm = setdigit(perm, 0, 0);

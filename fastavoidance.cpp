@@ -29,7 +29,7 @@ void displayperm(uint64_t perm, int size) {
 
 static bool isavoider(uint64_t perm, int maxavoidsize, int length, const hashdb &avoidset, const hashdb &patternset) { 
   uint64_t inverse = getinverse(perm, length);
-  if (patternset.contains(perm)) { // if is in set of bad patterns
+  if (length <= maxavoidsize && patternset.contains(perm)) { // if is in set of bad patterns
       return false;
   }
   uint64_t currentperm = perm;
@@ -40,7 +40,8 @@ static bool isavoider(uint64_t perm, int maxavoidsize, int length, const hashdb 
 	currentperm = setdigit(currentperm, getdigit(inverse, i + 1), i);
       }
       currentperm = killpos(currentperm, getdigit(inverse, i));
-      //displayperm(currentperm);
+      //displayperm(currentperm)
+      // could make below req include i != length - 1 && 
       if (!avoidset.contains(currentperm)) {
 	return false; // found a subword not avoiding the patterns
       }
