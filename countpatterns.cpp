@@ -28,7 +28,7 @@
 #include "fastavoidance.h"
 using namespace std;
 
-const int permsize = 12;
+const int permsize = 11;
 const int maxpatternsize = 5;
 
 vector < vector<int> > finaldata;
@@ -91,7 +91,7 @@ inline unsigned short getPval(unsigned long long perm, int i, hashmap &Phashmap)
   return ((unsigned short*)Phashmap.getpayload(perm))[i];
 }
 
-static void Pcount(uint64_t perm, int length, const hashdb &patternset, hashmap &Phashmap) { 
+static void Pcount(uint64_t perm, int length, const hashdb &patternset, hashmap &Phashmap) {
   uint64_t inverse = getinverse(perm, length);
   unsigned short Pvals[maxpatternsize + 2]; // vals range from [0...maxpatternsize+1]
   int Pvalpos = maxpatternsize + 1;
@@ -177,16 +177,25 @@ int main() {
   initfinaldata();
   //  void initpopCountOfByte256();
   assert(permsize <= 16);
+  hashdb patternset = hashdb(1<<3);
+  
   uint64_t perm = 0;
   perm = setdigit(perm, 0, 0);
   perm = setdigit(perm, 1, 1);
   perm = setdigit(perm, 2, 2);
   perm = setdigit(perm, 3, 3);
   perm = setdigit(perm, 4, 4);
-  hashdb patternset = hashdb(1<<3);
-  hashdb patternset2 = hashdb(1<<3);
+
+
+  uint64_t perm2 = 0;
+  perm2 = setdigit(perm2, 0, 0);
+  perm2 = setdigit(perm2, 1, 1);
+  perm2 = setdigit(perm2, 2, 2);
+  perm2 = setdigit(perm2, 3, 3);
+
   patternset.add(perm);
-  patternset2.add(perm);
+  patternset.add(perm2);
+
  
   unsigned long long reservedspace = 0;
   for (int i = 1; i <= permsize - 1; i++) reservedspace += factorial(i);
@@ -197,5 +206,7 @@ int main() {
   createPmap(permsize, patternset, start_time, Phashmap);
   timestamp_t end_time = get_timestamp();
   cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
+
+  for (int i = 1; i <= permsize; i ++) cout<<finaldata[i][0]<<endl;
   return 0;
 }

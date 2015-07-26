@@ -31,7 +31,6 @@
 static unsigned long long next_power_of_two(unsigned long long v) {
   unsigned long long x = 1;
   while (x < v) x*=2;
-  cout<<x<<" "<<v<<endl;
   return x;
 }
 

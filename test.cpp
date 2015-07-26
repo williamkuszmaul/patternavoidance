@@ -17,8 +17,8 @@ using namespace std;
 
 
 int main() {
-    int maxpatternsize = 3;
-  int permsize = 12;
+  int maxpatternsize = 3;
+  int permsize = 15;
   assert(permsize <= 16);
   uint64_t perm = 0;
   perm = setdigit(perm, 0, 0);

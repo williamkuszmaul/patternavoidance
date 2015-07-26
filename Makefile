@@ -6,7 +6,7 @@
 #
 # for C++ define  CC = g++
 CXX = g++
-CXXFLAGS  = -O2 -std=c++11 -g
+CXXFLAGS  = -O3 -std=c++11 -march=native -g
 
 # typing 'make' will invoke the first target entry in the file 
 # (in this case the default target entry)	
@@ -20,7 +20,7 @@ default: $(TESTS)
 .PHONY: default clean
 # phony because default and clean are not files
 
-%:  fastavoidance.cpp hashdb.cpp %.cpp
+%:  fastavoidance.cpp hashdb.cpp hashmap.cpp %.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 # To start over from scratch, type 'make clean'.  This

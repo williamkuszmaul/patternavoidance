@@ -54,7 +54,7 @@ long long buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,
   int numavoiders = 0;
   avoidervector.resize(maxsize + 1); // avoidervector[i] will contain the avoiders of size i. [avoidervector[0] will be empty]
   
-  hashdb avoidset = hashdb(1<<20);
+  hashdb avoidset = hashdb(1<<26);
   uint64_t startperm = 0;
   avoidset.add(startperm); // identity in S_1
   avoidervector[1].push_back(startperm);
