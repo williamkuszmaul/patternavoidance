@@ -85,7 +85,7 @@ long long buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,
 	  numavoiders++;
 	}
 	avoidervector[currentlength + 1].push_back(extendedperm);
-      	avoiderstoextend.push(extendedperm);
+      	avoiderstoextend.push(extendedperm); // NOTE WE ARE WORKING TOO HARD HERE, ALTHOUGH NOT THAT BIG A DEAL
 	numnextlength++;
 	avoidset.add(extendedperm);
       }
@@ -93,6 +93,45 @@ long long buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,
   }
   return numavoiders;
 }
+
+
+void countavoiders(const hashdb &patternset, int maxavoidsize, int maxsize, vector < int > &numavoiders) {
+  numavoiders.resize(maxsize + 1); // counts number of avoiders of size i
+  
+  hashdb avoidset = hashdb(1<<26);
+  uint64_t startperm = 0;
+  avoidset.add(startperm); // identity in S_1
+  
+  std::queue<long long> avoiderstoextend;
+  avoiderstoextend.push(startperm);
+
+  int currentlength = 1; // maintain as length of next permutation to be popped from avoiderstoextend
+  int numleftcurrentlength = 1; // number of permutations left in avoiderstoextend until we have to increment currentlength
+  int numnextlength = 0; // number of permutations of size currentlength + 1 in avoiderstoextend
+
+  while (avoiderstoextend.size() > 0) {
+    if (numleftcurrentlength == 0) {
+      numleftcurrentlength = numnextlength;
+      numnextlength = 0;
+      currentlength++;
+    }
+    uint64_t perm = avoiderstoextend.front();
+    avoiderstoextend.pop();
+    numleftcurrentlength--;
+    for (int i = 0; i < currentlength + 1; i++) {
+      uint64_t extendedperm = setdigit(addpos(perm, i), i, currentlength);
+      if (isavoider(extendedperm, maxavoidsize, currentlength + 1, avoidset, patternset)) {
+	numavoiders[currentlength + 1]++;
+      	if (currentlength + 1 < maxsize) {
+	  avoiderstoextend.push(extendedperm);
+	  avoidset.add(extendedperm);
+	  numnextlength++;
+	}
+      }
+    }
+  }
+}
+
 
 
 
