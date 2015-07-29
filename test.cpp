@@ -46,7 +46,8 @@ uint64_t makepatterns(string permlist, hashdb &patternset, int &maxpatternsize) 
 
 int main() {
   int maxpatternsize;
-  int permsize = 15;
+  int permsize = 16;
+  int numsets = 12;
   string permlists[] = {"2431 4231 1432 4132",
 		   "3124 4123 3142 4132",
 		   "1234 1243 1324 1342",
@@ -60,7 +61,7 @@ int main() {
 		   "1342 1423 1432 2431",
 		   "1342 2413 2431 3142"};
   assert(permsize <= 16);
-  for (int i = 0; i < sizeof(permlists); i++) {
+  for (int i = 0; i < numsets; i++) {
     
     hashdb patternset = hashdb(1<<3);
     cout<<"Avoid set: ";
