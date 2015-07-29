@@ -28,8 +28,8 @@
 #include "fastavoidance.h"
 using namespace std;
 
-const int permsize = 11;
-const int maxpatternsize = 5;
+const int permsize = 12;
+const int maxpatternsize = 4;
 
 vector < vector<int> > finaldata;
 
@@ -184,17 +184,17 @@ int main() {
   perm = setdigit(perm, 1, 1);
   perm = setdigit(perm, 2, 2);
   perm = setdigit(perm, 3, 3);
-  perm = setdigit(perm, 4, 4);
+  //perm = setdigit(perm, 4, 4);
 
 
-  uint64_t perm2 = 0;
-  perm2 = setdigit(perm2, 0, 0);
-  perm2 = setdigit(perm2, 1, 1);
-  perm2 = setdigit(perm2, 2, 2);
-  perm2 = setdigit(perm2, 3, 3);
+  // uint64_t perm2 = 0;
+  // perm2 = setdigit(perm2, 0, 0);
+  // perm2 = setdigit(perm2, 1, 1);
+  // perm2 = setdigit(perm2, 2, 2);
+  // perm2 = setdigit(perm2, 3, 3);
 
   patternset.add(perm);
-  patternset.add(perm2);
+  //patternset.add(perm2);
 
  
   unsigned long long reservedspace = 0;

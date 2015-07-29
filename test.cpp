@@ -19,7 +19,8 @@ using namespace std;
 // for patterns in S_{<10} can use like this:
 //  string permlist = "3124 4123 3142 4132";
 //  makepatterns(permlist, patternset);
-uint64_t makepatterns(string permlist, hashdb &patternset) {
+uint64_t makepatterns(string permlist, hashdb &patternset, int &maxpatternsize) {
+  maxpatternsize = 0;
   int pos = 0;
   uint64_t perm = 0;
   cout<<"Pattern set: "<<endl;
@@ -27,6 +28,7 @@ uint64_t makepatterns(string permlist, hashdb &patternset) {
     if (permlist[i] == ' ') {
       patternset.add(perm);
       displayperm(perm);
+      maxpatternsize = max(pos + 1, maxpatternsize);
       pos = 0;
       perm = 0;
     } else {
@@ -37,30 +39,46 @@ uint64_t makepatterns(string permlist, hashdb &patternset) {
   // No space at end
   patternset.add(perm);
   displayperm(perm);
+  maxpatternsize = max(pos + 1, maxpatternsize);
       
   cout<<endl;
 }
 
 int main() {
-  int maxpatternsize = 4;
-  int permsize = 8;
+  int maxpatternsize;
+  int permsize = 15;
+  string permlists[] = {"2431 4231 1432 4132",
+		   "3124 4123 3142 4132",
+		   "1234 1243 1324 1342",
+		   "1234 1243 1342 1423",
+		   "1234 1243 1342 2341",
+		   "1243 1324 1342 1423",
+		   "1243 1324 1342 1432",
+		   "1243 2143 2413 2431",
+		   "1324 1342 1423 1432",
+		   "1324 1342 1432 4132",
+		   "1342 1423 1432 2431",
+		   "1342 2413 2431 3142"};
   assert(permsize <= 16);
-  hashdb patternset = hashdb(1<<3);
-  cout<<"Avoid set: ";
-
-  string permlist = "3124 4123 3142 4132";
-  makepatterns(permlist, patternset);
-  // Note: could have boolian for whether to fill avoiders vector. And could have boolian for whether to count avoiders of each size. Or just a separte function to count avoiders of each size.
-
-  //perm = setdigit(perm, 3, 3);
-  timestamp_t start_time = get_timestamp();
-  vector < int > numavoiders;
-  countavoiders(patternset, maxpatternsize, permsize, numavoiders);
-  for (int i = 2; i <= permsize; i++) {
-    cout<<"Number of avoiders of size "<<i<<" is "<<numavoiders[i]<<endl;
+  for (int i = 0; i < sizeof(permlists); i++) {
+    
+    hashdb patternset = hashdb(1<<3);
+    cout<<"Avoid set: ";
+    
+    string permlist = permlists[i];
+    makepatterns(permlist, patternset, maxpatternsize);
+    // Note: could have boolian for whether to fill avoiders vector. And could have boolian for whether to count avoiders of each size. Or just a separte function to count avoiders of each size.
+    
+    //perm = setdigit(perm, 3, 3);
+    timestamp_t start_time = get_timestamp();
+    vector < int > numavoiders;
+    countavoiders(patternset, maxpatternsize, permsize, numavoiders);
+    for (int i = 2; i <= permsize; i++) {
+      cout<<"Number of avoiders of size "<<i<<" is "<<numavoiders[i]<<endl;
+    }
+    //  assert(numavoiders == avoidersvector[permsize].size());
+    timestamp_t end_time = get_timestamp();
+    cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
   }
-  //  assert(numavoiders == avoidersvector[permsize].size());
-  timestamp_t end_time = get_timestamp();
-  cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
   return 0;
 }
