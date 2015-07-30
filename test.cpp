@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
     hashdb patternset = hashdb(1<<3);
 
     //cout<<"Avoid-set: "<<inputs[i]<<endl;
-    //output<<inputs[i]<<endl;
+    output<<"#"<<inputs[i]<<endl;
     
     string permlist = inputs[i];
     makepatterns(permlist, patternset, maxpatternsize);

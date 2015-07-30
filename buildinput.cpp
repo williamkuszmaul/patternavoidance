@@ -16,7 +16,7 @@
 #include "fastavoidance.h"
 using namespace std;
 
-const string endfile = "input.txt";
+string endfile = "input.txt";
 
 bool isvalidbitmap(uint64_t map) {
   if (__builtin_popcountll(map) == 4) return true;
@@ -43,7 +43,8 @@ void buildpermutations(uint64_t perm, int currentsize, int finalsize, vector <st
 }
 
 
-int main() {
+int main(int argc, char* argv[]) {
+  
   ofstream file;
   file.open(endfile, std::ofstream::trunc);
   int numoptions = 24;

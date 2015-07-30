@@ -70,6 +70,15 @@ struct hash<Sequence<sequencesize>>
 };
 }
 
+string numtooeis(int num) {
+  string answer = "";
+  for (int i = 0; i < 6; i++) {
+    answer = (char)((char)(num % 10) + '0')+ answer;
+    num /= 10;
+  }
+  return "A" + answer;
+}
+
 
 int main(int argc, char* argv[]) {
   int maxsequencelength = maxshift + sequencesize - 1; // maximum length of oeis sequence we need to look at
@@ -107,7 +116,7 @@ int main(int argc, char* argv[]) {
   input.close();
 
 
-  unordered_map<Sequence<sequencesize>, int> sequencemap; // stores pairs (sequence, OEIS number)
+  unordered_map<Sequence<sequencesize>, int> sequencemap; // stores pairs (sequence, OEIS number) // Note, only one OEIS number is stored per sequence -- ends up being smallest-valued oe
   for (int i = 0; i < sequences.size(); i++) {
     for (int start = 0; start < maxshift; start++) { // start pos
       Sequence<sequencesize> tempsequence;
@@ -136,29 +145,36 @@ int main(int argc, char* argv[]) {
 
   ifstream inputsequences;
   inputsequences.open(filename2);
+  string outputfile = "out-"+filename2;
+  ofstream output;
+  output.open(outputfile, std::ofstream::trunc);
+
   line = "";
   while (getline(inputsequences, line)) {
-    Sequence<sequencesize> testsequence;
-    int index = 0;
-    int nextval = 0;
-    int sequencepos = 0;
-    while (sequencepos < sequencesize) {
-      assert(index < line.size());
-      if (line[index] == ' ') {
-	testsequence.data[sequencepos] = nextval;
-	//cout<<nextval<<" ";
-	nextval = 0;
-	sequencepos++;
-      } else {
-	nextval = nextval * 10 + (int)(line[index] - '0');
+    output<<line<<endl;
+    if (line[0] != '#') { // line is not just commentary
+      Sequence<sequencesize> testsequence;
+      int index = 0;
+      int nextval = 0;
+      int sequencepos = 0;
+      while (sequencepos < sequencesize) {
+	assert(index < line.size());
+	if (line[index] == ' ') {
+	  testsequence.data[sequencepos] = nextval;
+	  //cout<<nextval<<" ";
+	  nextval = 0;
+	  sequencepos++;
+	} else {
+	  nextval = nextval * 10 + (int)(line[index] - '0');
+	}
+	index++;
       }
-      index++;
+      //cout<<endl;
+      unordered_map<Sequence<sequencesize>, int>::const_iterator elt = sequencemap.find(testsequence);
+      if (elt != sequencemap.end()) output<<numtooeis(elt->second)<<endl;
     }
-    //cout<<endl;
-    unordered_map<Sequence<sequencesize>, int>::const_iterator elt = sequencemap.find(testsequence);
-    if (elt != sequencemap.end()) cout<<elt->second<<endl;
   }
   inputsequences.close();
-  
+  output.close();
   return 0;
 }
