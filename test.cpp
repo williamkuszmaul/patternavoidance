@@ -24,11 +24,11 @@ uint64_t makepatterns(string permlist, hashdb &patternset, int &maxpatternsize) 
   maxpatternsize = 0;
   int pos = 0;
   uint64_t perm = 0;
-  cout<<"Pattern set: "<<endl;
+  //cout<<"Pattern set: "<<endl;
   for (int i = 0; i < permlist.size(); i++) {
     if (permlist[i] == ' ') {
       patternset.add(perm);
-      displayperm(perm);
+      //displayperm(perm);
       maxpatternsize = max(pos + 1, maxpatternsize);
       pos = 0;
       perm = 0;
@@ -39,10 +39,10 @@ uint64_t makepatterns(string permlist, hashdb &patternset, int &maxpatternsize) 
   }
   // No space at end
   patternset.add(perm);
-  displayperm(perm);
+  //displayperm(perm);
   maxpatternsize = max(pos + 1, maxpatternsize);
       
-  cout<<endl;
+  //cout<<endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -58,13 +58,13 @@ int main(int argc, char* argv[]) {
   string line;
   while (getline(input, line)) {
     inputs.push_back(line);
-    cout<<line<<endl;
+    //cout<<line<<endl;
   }
   input.close();
 
   string outputfile = "out-"+filename;
   ofstream output;
-  output.open(outputfile);
+  output.open(outputfile, std::ofstream::trunc);
   
 
   int permsize = stoi(argv[2]);
@@ -73,8 +73,8 @@ int main(int argc, char* argv[]) {
     int maxpatternsize;
     hashdb patternset = hashdb(1<<3);
 
-    cout<<"Avoid-set: "<<inputs[i]<<endl;
-    output<<inputs[i]<<endl;
+    //cout<<"Avoid-set: "<<inputs[i]<<endl;
+    //output<<inputs[i]<<endl;
     
     string permlist = inputs[i];
     makepatterns(permlist, patternset, maxpatternsize);
@@ -83,15 +83,15 @@ int main(int argc, char* argv[]) {
     //perm = setdigit(perm, 3, 3);
     timestamp_t start_time = get_timestamp();
     vector < int > numavoiders;
-    countavoiders(patternset, maxpatternsize, permsize, numavoiders);
+    countavoiders(patternset, maxpatternsize, permsize, numavoiders, (1<<10)); // for large cases, make last argument much larger!
     for (int i = 2; i <= permsize; i++) {
       output<<numavoiders[i]<<" ";
-      cout<<"Number of avoiders of size "<<i<<" is "<<numavoiders[i]<<endl;
+      //cout<<"Number of avoiders of size "<<i<<" is "<<numavoiders[i]<<endl;
     }
     output<<endl;
     //  assert(numavoiders == avoidersvector[permsize].size());
     timestamp_t end_time = get_timestamp();
-    cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
+    //cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
   }
   output.close();
   return 0;

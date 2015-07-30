@@ -95,10 +95,10 @@ long long buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,
 }
 
 
-void countavoiders(const hashdb &patternset, int maxavoidsize, int maxsize, vector < int > &numavoiders) {
+void countavoiders(const hashdb &patternset, int maxavoidsize, int maxsize, vector < int > &numavoiders, int plannedavoidsetsize) {
   numavoiders.resize(maxsize + 1); // counts number of avoiders of size i
   
-  hashdb avoidset = hashdb(1<<26);
+  hashdb avoidset = hashdb(plannedavoidsetsize);
   uint64_t startperm = 0;
   avoidset.add(startperm); // identity in S_1
   

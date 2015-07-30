@@ -13,7 +13,7 @@ CXXFLAGS  = -O3 -std=c++11 -march=native -g
 # you can name this target entry anything, but "default" or "all"
 # are the most commonly used names by convention
 #
-TESTS = test inversionstest
+TESTS = test inversionstest buildinput
 # variable assignement only goes into affect if variable does not already exist. Could, for example, do make TESTS=test to only make test
 
 default: $(TESTS)
