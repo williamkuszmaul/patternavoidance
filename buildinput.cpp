@@ -36,6 +36,9 @@ public:
   void setpos(int pos) {
     map[pos] = true;
   }
+  void clearpos(int pos) {
+    map[pos] = false;
+  }
   bool getpos(int pos) {
     return map[pos];
   }
@@ -47,6 +50,9 @@ public:
     int answer = 0;
     for (int i = 0; i < size; i++) answer += (int)map[i];
     return answer;
+  }
+  void clear() {
+    for (int i = 0; i < size; i++) map[i] = false;
   }
 };
 
@@ -132,12 +138,12 @@ bool isminset(Bitmap& bitmap) {
 // }
 
 bool isvalidbitmap(Bitmap& map) {
-  if (map.numonbits() == 4 && isminset(map)) return true;
+  if (isminset(map)) return true;
   return false;
 }
 
 bool isvalidpattern(uint64_t perm, int currentsize) {
-  if (currentsize == 4) return true;
+  if (currentsize == 5) return true; // check not needed in current implementation
   return false;
 }
 
@@ -167,14 +173,52 @@ int find(vector<uint64_t> &vec, uint64_t val) {
   return -1;
 }
 
+void entermap(Bitmap & map, ofstream &file, int &numsetstotal, vector <string> &optionsvec) { 
+  if (isvalidbitmap(map)) {
+    vector <string> patternset;
+    for (int pos = 0; pos < map.size; pos++) {
+      if (map.getpos(pos) == true) patternset.push_back(optionsvec[pos]);
+    }
+    for (int i = 0; i < patternset.size(); i++) {
+      file<<patternset[i];
+      if (i < patternset.size() - 1) file<<" ";
+    }
+    numsetstotal++;
+    file<<endl;
+  }
+}
+
+bool getnextmap(Bitmap &map) {
+  int i = map.size - 1;
+  int numleadingones = 0;
+  while (i >= 0 && map.getpos(i) == 1) {
+    numleadingones++;
+    map.clearpos(i);
+    i--;
+  }
+  while (i >= 0 && map.getpos(i) == 0) {
+    i--;
+  }
+  if (i < 0) return false;
+  map.clearpos(i);
+  i++;
+  for (int j = 0; j < numleadingones + 1; j++) {
+    map.setpos(i+j);
+  }
+  return true;
+}
+
+
 int main(int argc, char* argv[]) {
   
   ofstream file;
   file.open(endfile, std::ofstream::trunc);
-  int numoptions = 24;
+  int numoptions = 120;
+  int patternsperset = 4;
+  int maxpatternsize = 5;
   vector <string> options;
   vector <uint64_t> optionvals;
-  buildpermutations(0L, 1, 4, options, optionvals);
+  buildpermutations(0L, 1, maxpatternsize, options, optionvals);
   
   for (int i = 0; i < optionvals.size(); i++) {
     reverseindices.push_back(find(optionvals, getreverse(optionvals[i], options[i].size())));
@@ -185,35 +229,22 @@ int main(int argc, char* argv[]) {
   //cout<<endl;
   
   int numsetstotal = 0;
-  for (uint64_t i = 0; i < (1L << numoptions); i++) {
-    Bitmap map(numoptions);
-    int temp = i;
-    int pos = 0;
-    while (temp > 0) {
-      if (temp%2 == 1) map.setpos(pos);
-      pos++;
-      temp/=2;
-    }
-    if (isvalidbitmap(map)) {
-      vector <string> patternset;
-      for (int pos = 0; pos < map.size; pos++) {
-	if (map.getpos(pos) == true) patternset.push_back(options[pos]);
-      }
-      //            uint64_t bitmap = i;
-      // int index = 0;
-
-      // while (bitmap > 0) {
-      // 	if (bitmap%2 == 1) patternset.push_back(options[index]);
-      // 	bitmap /= 2;
-      // 	index++;
-      // }
-      for (int i = 0; i < patternset.size(); i++) {
-	file<<patternset[i];
-	if (i < patternset.size() - 1) file<<" ";
-      }
-      numsetstotal++;
-      file<<endl;
-    }
+  Bitmap map(numoptions);
+  for (int j = 0; j < patternsperset; j++) map.setpos(j);
+  //int i = 0; // swap out with this commented code to go through all pattern sets of each size
+  while (1) {
+    if(!getnextmap(map)) break;
+    // if (i >= (1L << numoptions)) break;
+    // i++;
+    // map.clear();
+    // int temp = i;
+    // int pos = 0;
+    // while (temp > 0) {
+    //   if (temp%2 == 1) map.setpos(pos);
+    //   pos++;
+    //   temp/=2;
+    // }
+    entermap(map, file, numsetstotal, options);
   }
   cout<<"Number of sets to be analyzed: "<<numsetstotal<<endl;
   cout<<"Output is in file: "<<endfile<<endl;
