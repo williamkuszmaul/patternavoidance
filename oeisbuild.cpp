@@ -14,6 +14,7 @@
 #include <vector>
 #include <stdint.h>
 #include <unordered_map>
+#include <unordered_set>
 #include <queue>
 #include "hashdb.h"
 #include <sys/time.h>
@@ -149,7 +150,11 @@ int main(int argc, char* argv[]) {
   ofstream output;
   output.open(outputfile, std::ofstream::trunc);
 
+  unordered_set<int> seensequences;
+  
   line = "";
+  int numwins = 0;
+  int numtries = 0;
   while (getline(inputsequences, line)) {
     output<<line<<endl;
     if (line[0] != '#') { // line is not just commentary
@@ -171,9 +176,17 @@ int main(int argc, char* argv[]) {
       }
       //cout<<endl;
       unordered_map<Sequence<sequencesize>, int>::const_iterator elt = sequencemap.find(testsequence);
-      if (elt != sequencemap.end()) output<<numtooeis(elt->second)<<endl;
+      if (elt != sequencemap.end()) {
+	output<<numtooeis(elt->second)<<endl;
+	numwins++;
+	seensequences.insert(elt->second);
+      }
+      numtries++;
     }
   }
+  cout<<numwins<<" successes out of "<<numtries<<" tries"<<endl;
+  cout<<"Number distinct sequences: "<<seensequences.size()<<endl;
+  cout<<"Output is in file: "<<outputfile<<endl;
   inputsequences.close();
   output.close();
   return 0;

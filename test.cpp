@@ -93,6 +93,7 @@ int main(int argc, char* argv[]) {
     timestamp_t end_time = get_timestamp();
     //cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
   }
+  cout<<"Output is in file: "<<outputfile<<endl;
   output.close();
   return 0;
 }
