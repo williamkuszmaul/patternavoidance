@@ -213,13 +213,12 @@ int main(int argc, char* argv[]) {
   
   ofstream file;
   file.open(endfile, std::ofstream::trunc);
-  int numoptions = 120;
   int patternsperset = 4;
   int maxpatternsize = 5;
   vector <string> options;
   vector <uint64_t> optionvals;
   buildpermutations(0L, 1, maxpatternsize, options, optionvals);
-  
+  int numoptions = options.size();
   for (int i = 0; i < optionvals.size(); i++) {
     reverseindices.push_back(find(optionvals, getreverse(optionvals[i], options[i].size())));
     //cout<<reverseindices[i]<<" ";
