@@ -21,8 +21,9 @@
 #include "fastavoidance.h"
 using namespace std;
 
-const int sequencesize = 9; // sequence size
-const int maxshift = 10; // consider subsequences starting in pos <= maxshift-th
+const int sequencesize = 8; // sequence size
+const int maxshift = 15; // consider subsequences starting in pos <= maxshift-th
+const int inputshift= 4;
 
 template <int SEQUENCESIZE> 
 class Sequence {
@@ -82,6 +83,7 @@ string numtooeis(int num) {
 
 
 int main(int argc, char* argv[]) {
+  cout<<sequencesize<<" is length of analysis, starting in "<<(inputshift + 1)<<"-th position of input sequences, meaning inputsequences must be length at least "<<sequencesize+inputshift<<" and maxshift is "<<maxshift<<endl; 
   int maxsequencelength = maxshift + sequencesize - 1; // maximum length of oeis sequence we need to look at
   vector < vector <int> > sequences;
 
@@ -162,10 +164,10 @@ int main(int argc, char* argv[]) {
       int index = 0;
       int nextval = 0;
       int sequencepos = 0;
-      while (sequencepos < sequencesize) {
+      while (sequencepos < inputshift + sequencesize) {
 	assert(index < line.size());
 	if (line[index] == ' ') {
-	  testsequence.data[sequencepos] = nextval;
+	  if (sequencepos >= inputshift) testsequence.data[sequencepos - inputshift] = nextval;
 	  //cout<<nextval<<" ";
 	  nextval = 0;
 	  sequencepos++;

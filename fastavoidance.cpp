@@ -95,7 +95,7 @@ long long buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,
 }
 
 
-void countavoiders(const hashdb &patternset, int maxavoidsize, int maxsize, vector < int > &numavoiders, int plannedavoidsetsize) {
+void countavoiders(const hashdb &patternset, int maxavoidsize, int maxsize, vector < uint64_t > &numavoiders, int plannedavoidsetsize) {
   numavoiders.resize(maxsize + 1); // counts number of avoiders of size i
   
   hashdb avoidset = hashdb(plannedavoidsetsize);

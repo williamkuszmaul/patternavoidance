@@ -69,6 +69,8 @@ int main(int argc, char* argv[]) {
 
   int permsize = stoi(argv[2]);
   assert(permsize <= 16);
+  timestamp_t start_time = get_timestamp();
+  cout<<inputs.size()<<endl;
   for (int i = 0; i < inputs.size(); i++) {
     int maxpatternsize;
     hashdb patternset = hashdb(1<<3);
@@ -81,8 +83,7 @@ int main(int argc, char* argv[]) {
     // Note: could have boolian for whether to fill avoiders vector. And could have boolian for whether to count avoiders of each size. Or just a separte function to count avoiders of each size.
     
     //perm = setdigit(perm, 3, 3);
-    timestamp_t start_time = get_timestamp();
-    vector < int > numavoiders;
+    vector < uint64_t > numavoiders;
     countavoiders(patternset, maxpatternsize, permsize, numavoiders, (1<<10)); // for large cases, make last argument much larger!
     for (int i = 2; i <= permsize; i++) {
       output<<numavoiders[i]<<" ";
@@ -90,7 +91,11 @@ int main(int argc, char* argv[]) {
     }
     output<<endl;
     //  assert(numavoiders == avoidersvector[permsize].size());
-    timestamp_t end_time = get_timestamp();
+    if (i % 1000 == 0 && i > 0) {
+      timestamp_t end_time = get_timestamp();
+      cout<<"Thousand ran in time: "<<(end_time - start_time)/1000000.0L<<endl;
+      start_time = get_timestamp();
+    }
     //cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
   }
   cout<<"Output is in file: "<<outputfile<<endl;

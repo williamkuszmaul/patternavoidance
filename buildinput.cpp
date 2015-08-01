@@ -19,7 +19,7 @@ using namespace std;
 // Note: This seems to be the closest thing to what we're doing:
 // http://faculty.valpo.edu/lpudwell/maple/webbook/bookoutput.html
 
-string endfile = "testing.txt";
+string endfile = "allfours.txt";
 vector<int> reverseindices; // permutation which permutes pattern options to be the reverse patterns; indexing is same as in 64-bit word. Implemented only for <= 64 pattern options
 vector<int> inverseindices;
 vector<int> complementindices;
@@ -143,7 +143,7 @@ bool isvalidbitmap(Bitmap& map) {
 }
 
 bool isvalidpattern(uint64_t perm, int currentsize) {
-  if (currentsize == 5) return true; // check not needed in current implementation
+  if (currentsize == 4) return true; // check not needed in current implementation
   return false;
 }
 
@@ -214,7 +214,7 @@ int main(int argc, char* argv[]) {
   ofstream file;
   file.open(endfile, std::ofstream::trunc);
   int patternsperset = 4;
-  int maxpatternsize = 5;
+  int maxpatternsize = 4;
   vector <string> options;
   vector <uint64_t> optionvals;
   buildpermutations(0L, 1, maxpatternsize, options, optionvals);
@@ -230,19 +230,19 @@ int main(int argc, char* argv[]) {
   int numsetstotal = 0;
   Bitmap map(numoptions);
   for (int j = 0; j < patternsperset; j++) map.setpos(j);
-  //int i = 0; // swap out with this commented code to go through all pattern sets of each size
+  int i = 0; // swap out with this commented code to go through all pattern sets of each size
   while (1) {
-    if(!getnextmap(map)) break;
-    // if (i >= (1L << numoptions)) break;
-    // i++;
-    // map.clear();
-    // int temp = i;
-    // int pos = 0;
-    // while (temp > 0) {
-    //   if (temp%2 == 1) map.setpos(pos);
-    //   pos++;
-    //   temp/=2;
-    // }
+    //if(!getnextmap(map)) break;
+    if (i >= (1L << numoptions)) break;
+    i++;
+    map.clear();
+    int temp = i;
+    int pos = 0;
+    while (temp > 0) {
+      if (temp%2 == 1) map.setpos(pos);
+      pos++;
+      temp/=2;
+    }
     entermap(map, file, numsetstotal, options);
   }
   cout<<"Number of sets to be analyzed: "<<numsetstotal<<endl;
