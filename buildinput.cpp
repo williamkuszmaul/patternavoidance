@@ -19,7 +19,7 @@ using namespace std;
 // Note: This seems to be the closest thing to what we're doing:
 // http://faculty.valpo.edu/lpudwell/maple/webbook/bookoutput.html
 
-string endfile = "allfours.txt";
+string endfile = "NEEDTOPICKNAME.txt";
 vector<int> reverseindices; // permutation which permutes pattern options to be the reverse patterns; indexing is same as in 64-bit word. Implemented only for <= 64 pattern options
 vector<int> inverseindices;
 vector<int> complementindices;

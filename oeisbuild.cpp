@@ -21,9 +21,10 @@
 #include "fastavoidance.h"
 using namespace std;
 
-const int sequencesize = 8; // sequence size
+const int sequencesize = 6; // sequence size
 const int maxshift = 15; // consider subsequences starting in pos <= maxshift-th
-const int inputshift= 4;
+const int inputshift= 3;
+bool ignoreflat = true;
 
 template <int SEQUENCESIZE> 
 class Sequence {
@@ -157,6 +158,7 @@ int main(int argc, char* argv[]) {
   line = "";
   int numwins = 0;
   int numtries = 0;
+  int numignored = 0;
   while (getline(inputsequences, line)) {
     output<<line<<endl;
     if (line[0] != '#') { // line is not just commentary
@@ -177,16 +179,21 @@ int main(int argc, char* argv[]) {
 	index++;
       }
       //cout<<endl;
-      unordered_map<Sequence<sequencesize>, int>::const_iterator elt = sequencemap.find(testsequence);
-      if (elt != sequencemap.end()) {
-	output<<numtooeis(elt->second)<<endl;
-	numwins++;
-	seensequences.insert(elt->second);
+      if (ignoreflat && testsequence.data[sequencesize - 2] == testsequence.data[sequencesize - 1]) {
+	numignored++;
+      } else {
+	unordered_map<Sequence<sequencesize>, int>::const_iterator elt = sequencemap.find(testsequence);
+	if (elt != sequencemap.end()) {
+	  output<<numtooeis(elt->second)<<endl;
+	  numwins++;
+	  //if (seensequences.find(elt->second) == seensequences.end()) cout<<numtooeis(elt->second)<<endl;
+	  seensequences.insert(elt->second);
+	}
+	numtries++;
       }
-      numtries++;
     }
   }
-  cout<<numwins<<" successes out of "<<numtries<<" tries"<<endl;
+  cout<<numwins<<" successes out of "<<numtries<<" tries. And "<<numignored<<" ignored."<<endl;
   cout<<"Number distinct sequences: "<<seensequences.size()<<endl;
   cout<<"Output is in file: "<<outputfile<<endl;
   inputsequences.close();

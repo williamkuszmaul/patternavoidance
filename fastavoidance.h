@@ -76,4 +76,6 @@ long long buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,
 
 void countavoiders(const hashdb &patternset, int maxavoidsize, int maxsize, vector < uint64_t > &numavoiders, int plannedavoidsetsize);
 
+void countavoidersv2(const hashdb &patternset, int maxavoidsize, int maxsize, vector < uint64_t > &numavoiders, int plannedavoidsetsize);
+
 #endif 
