@@ -15,16 +15,17 @@
 #include <stdint.h>
 #include <unordered_map>
 #include <unordered_set>
+#include <map>
 #include <queue>
 #include "hashdb.h"
 #include <sys/time.h>
 #include "fastavoidance.h"
 using namespace std;
 
-const int sequencesize = 6; // sequence size
+const int sequencesize = 9; // sequence size
 const int maxshift = 15; // consider subsequences starting in pos <= maxshift-th
 const int inputshift= 3;
-bool ignoreflat = true;
+bool ignoreon = true;
 
 template <int SEQUENCESIZE> 
 class Sequence {
@@ -82,6 +83,40 @@ string numtooeis(int num) {
   return "A" + answer;
 }
 
+bool allowsequence(Sequence<sequencesize> &testsequence) {
+  Sequence<sequencesize> deriv1;
+  Sequence<sequencesize> deriv2;
+  Sequence<sequencesize> deriv3;
+  if (ignoreon) {
+    for (int i = 1; i < sequencesize; i++) {
+      deriv1.data[i] = testsequence.data[i] - testsequence.data[i - 1];
+    }
+    for (int i = 2; i < sequencesize; i++) {
+      deriv2.data[i] = deriv1.data[i] - deriv1.data[i - 1];
+    }
+    for (int i = 3; i < sequencesize; i++) {
+      deriv3.data[i] = deriv2.data[i] - deriv2.data[i - 1];
+    }
+
+    bool cont = false;
+    for (int i = 4; i < sequencesize - 1; i++) { // could start i as low as 1, which would allow more sequences to slip through
+      if (deriv1.data[i] != deriv1.data[i+1]) cont = true;
+    }
+    if (!cont) return false;
+    cont = false;
+    for (int i = 3; i < sequencesize - 1; i++) { // could start i as low as 2
+      if (deriv2.data[i] != deriv2.data[i+1]) cont = true;
+    }
+    if (!cont) return false;
+    cont = false;
+    for (int i = 4; i < sequencesize - 1; i++) { // could start i as low as 3
+      if (deriv3.data[i] != deriv3.data[i+1]) cont = true;
+    }
+    if (!cont) return false;
+    return true;
+  }
+  return true;
+}
 
 int main(int argc, char* argv[]) {
   cout<<sequencesize<<" is length of analysis, starting in "<<(inputshift + 1)<<"-th position of input sequences, meaning inputsequences must be length at least "<<sequencesize+inputshift<<" and maxshift is "<<maxshift<<endl; 
@@ -153,7 +188,7 @@ int main(int argc, char* argv[]) {
   ofstream output;
   output.open(outputfile, std::ofstream::trunc);
 
-  unordered_set<int> seensequences;
+  map<int, int> seensequences;
   
   line = "";
   int numwins = 0;
@@ -179,7 +214,7 @@ int main(int argc, char* argv[]) {
 	index++;
       }
       //cout<<endl;
-      if (ignoreflat && testsequence.data[sequencesize - 2] == testsequence.data[sequencesize - 1]) {
+      if (!allowsequence(testsequence)) {
 	numignored++;
       } else {
 	unordered_map<Sequence<sequencesize>, int>::const_iterator elt = sequencemap.find(testsequence);
@@ -187,7 +222,12 @@ int main(int argc, char* argv[]) {
 	  output<<numtooeis(elt->second)<<endl;
 	  numwins++;
 	  //if (seensequences.find(elt->second) == seensequences.end()) cout<<numtooeis(elt->second)<<endl;
-	  seensequences.insert(elt->second);
+	  map<int, int>::const_iterator oe  = seensequences.find(elt->second);
+	  if (oe == seensequences.end()) {
+	    seensequences[elt->second] = 1;
+	  } else {
+	    seensequences[elt->second]++;
+	  }
 	}
 	numtries++;
       }
@@ -198,5 +238,24 @@ int main(int argc, char* argv[]) {
   cout<<"Output is in file: "<<outputfile<<endl;
   inputsequences.close();
   output.close();
+
+  std::map<uint64_t, int> tempmap;
+  int marker = 0;
+  for( std::map<int, int>::iterator iter = seensequences.begin();
+     iter != seensequences.end();
+     ++iter ) {
+    cout<<iter->first<<" "<<iter->second<<endl;
+    tempmap[(((uint64_t)(iter->second))<<22) + marker] = iter->first;
+    marker++;
+  }
+
+  cout<<"------------------------------------------------"<<endl;
+
+  for( std::map<uint64_t, int>::iterator iter = tempmap.begin();
+       iter != tempmap.end();
+       ++iter ) {
+    cout<<iter->second<<" "<<((iter->first)>>22)<<endl;
+  }
+
   return 0;
 }
