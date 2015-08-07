@@ -14,16 +14,8 @@
 #include "hashdb.h"
 #include <sys/time.h>
 #include "fastavoidance.h"
+#include "buildinput.h"
 using namespace std;
-
-// Note: This seems to be the closest thing to what we're doing:
-// http://faculty.valpo.edu/lpudwell/maple/webbook/bookoutput.html
-
-string endfile = "NEEDTOPICKNAME.txt";
-vector<int> reverseindices; // permutation which permutes pattern options to be the reverse patterns; indexing is same as in 64-bit word. Implemented only for <= 64 pattern options
-vector<int> inverseindices;
-vector<int> complementindices;
-
 
 class Bitmap {
 public:
@@ -90,16 +82,6 @@ inline uint64_t getcomplement(uint64_t perm, int length) {
 }
 
 // sends i-th bit to permutation(i)-th bit
-// uint64_t shufflebits(uint64_t bitmap, vector <int> &permutation) {
-//   uint64_t answer = 0;
-//   for (int i = 0; i < 64; i++) {
-//     if ((bitmap >> i) == 0) return answer; // no more 1-bits left in bit map
-//     if ((bitmap & (1L << i)) != 0) answer += (1L << permutation[i]);
-//   }
-//   return answer;
-// }
-
-// sends i-th bit to permutation(i)-th bit
 Bitmap shufflebits(Bitmap &bitmap, vector <int> &permutation) {
   Bitmap answer(bitmap.size);
   for (int i = 0; i < bitmap.size; i++) {
@@ -108,44 +90,25 @@ Bitmap shufflebits(Bitmap &bitmap, vector <int> &permutation) {
   return answer;
 }
   
-// uint64_t rotbitmap(uint64_t bitmap) {
-//   return shufflebits(shufflebits(bitmap, inverseindices), reverseindices);
-// }
-
-Bitmap rotbitmap(Bitmap& bitmap) {
+Bitmap rotbitmap(Bitmap& bitmap, vector <int> &reverseindices, vector <int> &inverseindices) {
   Bitmap temp = shufflebits(bitmap, inverseindices);
   return shufflebits(temp, reverseindices);
 }
 
-bool isminset(Bitmap& bitmap) {
+bool isminset(Bitmap& bitmap, vector <int> &reverseindices, vector <int> &inverseindices, vector <int> &complementindices) {
   Bitmap revmap = shufflebits(bitmap, reverseindices);
   if (bitmap > revmap) return false;
   Bitmap rots1 = bitmap;
   Bitmap rots2 = revmap;
   for (int i = 0; i < 3; i++) {
-    rots1 = rotbitmap(rots1);
-    rots2 = rotbitmap(rots2);
+    rots1 = rotbitmap(rots1, reverseindices, inverseindices);
+    rots2 = rotbitmap(rots2, reverseindices, inverseindices);
     if (bitmap > rots1) return false;
     if (bitmap > rots2) return false;
   }
   return true;
 }
 
-// bool isvalidbitmap(uint64_t map) {
-//   //if (__builtin_popcountll(map) == 3 && isminset(map)) return true;
-//   if (isminset(map)) return true;
-//   return false;
-// }
-
-bool isvalidbitmap(Bitmap& map) {
-  if (isminset(map)) return true;
-  return false;
-}
-
-bool isvalidpattern(uint64_t perm, int currentsize) {
-  if (currentsize == 4) return true; // check not needed in current implementation
-  return false;
-}
 
 void buildpermutations(uint64_t perm, int currentsize, int finalsize, vector <string> &patternoptions, vector <uint64_t> &optionvals) {
   if (currentsize < finalsize) {
@@ -154,7 +117,7 @@ void buildpermutations(uint64_t perm, int currentsize, int finalsize, vector <st
       buildpermutations(extendedperm, currentsize + 1, finalsize, patternoptions, optionvals);
     }
   }
-  if (isvalidpattern(perm, currentsize)) {
+  if (currentsize == finalsize) {
     string pattern = "";
     for (int i = 0; i < currentsize; i++) pattern = pattern + (char)((char)getdigit(perm, i) + (char)1 + '0');
     patternoptions.push_back(pattern);
@@ -173,8 +136,8 @@ int find(vector<uint64_t> &vec, uint64_t val) {
   return -1;
 }
 
-void entermap(Bitmap & map, ofstream &file, int &numsetstotal, vector <string> &optionsvec) { 
-  if (isvalidbitmap(map)) {
+void entermap(Bitmap & map, ofstream &file, int &numsetstotal, vector <string> &optionsvec, vector <int> &reverseindices, vector <int> &inverseindices, vector <int> &complementindices) { 
+  if (isminset(map, reverseindices, inverseindices, complementindices)) {
     vector <string> patternset;
     for (int pos = 0; pos < map.size; pos++) {
       if (map.getpos(pos) == true) patternset.push_back(optionsvec[pos]);
@@ -209,30 +172,24 @@ bool getnextmap(Bitmap &map) {
 }
 
 
-int main(int argc, char* argv[]) {
-  
-  ofstream file;
-  file.open(endfile, std::ofstream::trunc);
-  int patternsperset = 4;
-  int maxpatternsize = 4;
+void writepatternsetstofile(ofstream &file, int patternsize, bool verbose) {
+  vector<int> reverseindices; // permutation which permutes pattern options to be the reverse patterns; indexing is same as in 64-bit word. Implemented only for <= 64 pattern options
+  vector<int> inverseindices;
+  vector<int> complementindices;
   vector <string> options;
   vector <uint64_t> optionvals;
-  buildpermutations(0L, 1, maxpatternsize, options, optionvals);
+  buildpermutations(0L, 1, patternsize, options, optionvals);
   int numoptions = options.size();
   for (int i = 0; i < optionvals.size(); i++) {
     reverseindices.push_back(find(optionvals, getreverse(optionvals[i], options[i].size())));
-    //cout<<reverseindices[i]<<" ";
     inverseindices.push_back(find(optionvals, getinverse_local_copy(optionvals[i], options[i].size())));
     complementindices.push_back(find(optionvals, getcomplement(optionvals[i], options[i].size())));
   }
-  //cout<<endl;
-  
+
   int numsetstotal = 0;
   Bitmap map(numoptions);
-  for (int j = 0; j < patternsperset; j++) map.setpos(j);
-  int i = 0; // swap out with this commented code to go through all pattern sets of each size
+  long long i = 0;
   while (1) {
-    //if(!getnextmap(map)) break;
     if (i >= (1L << numoptions)) break;
     i++;
     map.clear();
@@ -243,10 +200,79 @@ int main(int argc, char* argv[]) {
       pos++;
       temp/=2;
     }
-    entermap(map, file, numsetstotal, options);
+    entermap(map, file, numsetstotal, options, reverseindices, inverseindices, complementindices);
   }
-  cout<<"Number of sets to be analyzed: "<<numsetstotal<<endl;
-  cout<<"Output is in file: "<<endfile<<endl;
-  file.close();
+  if (verbose) {
+    cout<<"Number of sets to be analyzed: "<<numsetstotal<<endl;
+  }
+}
+
+void writepatternsetstofile(ofstream &file, int setsize, int patternsize, bool verbose) {
+  vector<int> reverseindices; // permutation which permutes pattern options to be the reverse patterns; indexing is same as in 64-bit word. Implemented only for <= 64 pattern options
+  vector<int> inverseindices;
+  vector<int> complementindices;
+  vector <string> options;
+  vector <uint64_t> optionvals;
+  buildpermutations(0L, 1, patternsize, options, optionvals);
+  int numoptions = options.size();
+  for (int i = 0; i < optionvals.size(); i++) {
+    reverseindices.push_back(find(optionvals, getreverse(optionvals[i], options[i].size())));
+    inverseindices.push_back(find(optionvals, getinverse_local_copy(optionvals[i], options[i].size())));
+    complementindices.push_back(find(optionvals, getcomplement(optionvals[i], options[i].size())));
+  }
+
+  int numsetstotal = 0;
+  Bitmap map(numoptions);
+  for (int j = 0; j < setsize; j++) map.setpos(j);
+  while (1) {
+    if(!getnextmap(map)) break;
+    entermap(map, file, numsetstotal, options, reverseindices, inverseindices, complementindices);
+  }
+  if (verbose) {
+    cout<<"Number of sets to be analyzed: "<<numsetstotal<<endl;
+  }
+}
+
+int main(int argc, char* argv[]) {
+  ofstream file;
+  file.open("foo", std::ofstream::trunc);
+  writepatternsetstofile(file, 3, 3, true);
+  // ofstream file;
+  // file.open(endfile, std::ofstream::trunc);
+  // int patternsperset = 4;
+  // int maxpatternsize = 4;
+  // vector <string> options;
+  // vector <uint64_t> optionvals;
+  // buildpermutations(0L, 1, maxpatternsize, options, optionvals);
+  // int numoptions = options.size();
+  // for (int i = 0; i < optionvals.size(); i++) {
+  //   reverseindices.push_back(find(optionvals, getreverse(optionvals[i], options[i].size())));
+  //   //cout<<reverseindices[i]<<" ";
+  //   inverseindices.push_back(find(optionvals, getinverse_local_copy(optionvals[i], options[i].size())));
+  //   complementindices.push_back(find(optionvals, getcomplement(optionvals[i], options[i].size())));
+  // }
+  // //cout<<endl;
+  
+  // int numsetstotal = 0;
+  // Bitmap map(numoptions);
+  // for (int j = 0; j < patternsperset; j++) map.setpos(j);
+  // int i = 0; // swap out with this commented code to go through all pattern sets of each size
+  // while (1) {
+  //   //if(!getnextmap(map)) break;
+  //   if (i >= (1L << numoptions)) break;
+  //   i++;
+  //   map.clear();
+  //   int temp = i;
+  //   int pos = 0;
+  //   while (temp > 0) {
+  //     if (temp%2 == 1) map.setpos(pos);
+  //     pos++;
+  //     temp/=2;
+  //   }
+  //   entermap(map, file, numsetstotal, options);
+  // }
+  // cout<<"Number of sets to be analyzed: "<<numsetstotal<<endl;
+  // cout<<"Output is in file: "<<endfile<<endl;
+  // file.close();
   return 0;
 }
