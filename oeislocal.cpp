@@ -37,26 +37,20 @@ string numtooeis(int num) {
 
 // Sequence class -------------------------------------------------
 
-class Sequence {
-public:
-  vector <long long> data;
-  Sequence(int size) {
-    data.resize(size);
+Sequence :: Sequence(int size) {
+  data.resize(size);
+}
+
+Sequence :: Sequence(vector <long long> vec) {
+  data = vec;
+}
+
+void Sequence :: display() {
+  for (int i = 0; i < data.size(); i++) {
+    cout<<data[i]<<" ";
   }
-  Sequence(vector <long long> vec) {
-    data = vec;
-  }
-  bool operator==(const Sequence &other) const
-  {
-    return (data == other.data);
-  }
-  void display() {
-    for (int i = 0; i < data.size(); i++) {
-      cout<<data[i]<<" ";
-    }
-    cout<<endl;
-  }
-};
+  cout<<endl;
+}
 
 unsigned long long singlehash (unsigned long long key)
 {
@@ -71,103 +65,82 @@ unsigned long long singlehash (unsigned long long key)
   //This hash function comes from http://www.concentric.net/~ttwang/tech/inthash.htm
 }
 
-namespace std {
-  template <>
-  struct hash<Sequence>
-  {
-    std::size_t operator()(const Sequence & key) const
-    {
-      uint64_t answer = 0;
-      for (int i = 0; i < key.data.size(); i++) answer = answer ^ singlehash(key.data[i]);
-      return answer;
-    }
-  };
-}
-
 
 // OEIS class ---------------------------------------------------------------------
 
-class Oeis {
-public:
-  int sequencesize; // sequence size
-  int maxshift; // consider subsequences starting in pos <= maxshift-th
-  int inputshift;
-  unordered_map<Sequence, int> sequencemap; // stores pairs (sequence, OEIS number) // Note, only one OEIS number is stored per sequence -- ends up being smallest-valued oeis
-
-  Oeis(string filename, int sequencesize, int maxshift, int inputshift)
-    : sequencesize(sequencesize)
-    , maxshift(maxshift)
-    , inputshift(inputshift)
-  {
-
-    cout<<"Building local version of OEIS..."<<endl;
-
-    // start by making list of OEIS sequences
-    vector < vector < long long > > sequences;
-    int maxsequencelength = maxshift + sequencesize - 1; // maximum length of oeis sequence we need to look at
-    ifstream input;
-    input.open(filename);
-    string line;
-    for (int i = 0; i < 4; i++) getline(input, line); // get rid of garbage
-    while (getline(input, line)) {
-      vector < long long > sequence;
-      int index = 9;
-      long long nextval = 0;
-      while (sequence.size() < maxsequencelength && index < line.size() - 1) {
-	if (line[index] == ',') {
-	  sequence.push_back(nextval);
-	  nextval = 0;
-	} else {
-	  nextval = nextval * 10 + (int)(line[index] - '0');
-	}
-	index++;
-      }
-      sequences.push_back(sequence);
-    }
-    input.close();
-
-    // Next build the hashtables
-    for (int i = 0; i < sequences.size(); i++) {
-      for (int start = 0; start < maxshift; start++) { // start pos
-	Sequence tempsequence(sequencesize);
-	for (int place = 0; place < sequencesize; place++) {
-	  if (start + place < sequences[i].size()) {
-	    tempsequence.data[place] = sequences[i][start + place];
-	  } else {
-	    tempsequence.data[place] = 0; // if we go off the end of a sequence, just fill in rest with zeros
-	  }
-	}
-	sequencemap[tempsequence] = i + 1; // to get oeis number
-      }
-    }
-  }
-
-  Sequence extractusersequence(string line) {
-    Sequence testsequence(sequencesize);
-    int index = 0;
-    int nextval = 0;
-    int sequencepos = 0;
-    while (sequencepos < inputshift + sequencesize) {
-      assert(index < line.size());
-      if (line[index] == ' ') {
-	if (sequencepos >= inputshift) testsequence.data[sequencepos - inputshift] = nextval;
+Oeis ::  Oeis(string filename, int sequencesize, int maxshift, int inputshift)
+  : sequencesize(sequencesize)
+  , maxshift(maxshift)
+  , inputshift(inputshift)
+{
+  
+  cout<<"Building local version of OEIS..."<<endl;
+  
+  // start by making list of OEIS sequences
+  vector < vector < long long > > sequences;
+  int maxsequencelength = maxshift + sequencesize - 1; // maximum length of oeis sequence we need to look at
+  ifstream input;
+  input.open(filename);
+  string line;
+  for (int i = 0; i < 4; i++) getline(input, line); // get rid of garbage
+  while (getline(input, line)) {
+    vector < long long > sequence;
+    int index = 9;
+    long long nextval = 0;
+    while (sequence.size() < maxsequencelength && index < line.size() - 1) {
+      if (line[index] == ',') {
+	sequence.push_back(nextval);
 	nextval = 0;
-	sequencepos++;
       } else {
 	nextval = nextval * 10 + (int)(line[index] - '0');
       }
       index++;
     }
-    testsequence.display();
-    return testsequence;
+    sequences.push_back(sequence);
   }
+  input.close();
+  
+  // Next build the hashtables
+  for (int i = 0; i < sequences.size(); i++) {
+    for (int start = 0; start < maxshift; start++) { // start pos
+      Sequence tempsequence(sequencesize);
+      for (int place = 0; place < sequencesize; place++) {
+	if (start + place < sequences[i].size()) {
+	  tempsequence.data[place] = sequences[i][start + place];
+	} else {
+	  tempsequence.data[place] = 0; // if we go off the end of a sequence, just fill in rest with zeros
+	}
+      }
+      sequencemap[tempsequence] = i + 1; // to get oeis number
+    }
+  }
+}
 
-  int getoeisnum(Sequence &sequence) {
-    unordered_map<Sequence, int>::const_iterator elt = sequencemap.find(sequence);
-    if (elt == sequencemap.end()) return -1;
-    return elt->second;
+Sequence Oeis :: extractusersequence(string line) {
+  Sequence testsequence(sequencesize);
+  int index = 0;
+  int nextval = 0;
+  int sequencepos = 0;
+  while (sequencepos < inputshift + sequencesize) {
+    assert(index < line.size());
+    if (line[index] == ' ') {
+      if (sequencepos >= inputshift) testsequence.data[sequencepos - inputshift] = nextval;
+      nextval = 0;
+      sequencepos++;
+      } else {
+      nextval = nextval * 10 + (int)(line[index] - '0');
+    }
+    index++;
   }
-};
+  testsequence.display();
+  return testsequence;
+}
+
+int Oeis :: getoeisnum(Sequence &sequence) {
+  unordered_map<Sequence, int>::const_iterator elt = sequencemap.find(sequence);
+  if (elt == sequencemap.end()) return -1;
+  return elt->second;
+}
 
 bool allowsequence(Sequence &testsequence) {
   uint64_t sequencesize = testsequence.data.size();
