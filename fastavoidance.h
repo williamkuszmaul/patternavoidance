@@ -72,10 +72,17 @@ inline uint64_t getinverse(uint64_t perm, int length) {
 }
 
 
-long long buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize, vector < vector < uint64_t > > &avoidervector);
+uint64_t makepatterns(string permlist, hashdb &patternset, int &maxpatternsize);
 
-void countavoiders(const hashdb &patternset, int maxavoidsize, int maxsize, vector < uint64_t > &numavoiders, int plannedavoidsetsize);
+void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize, vector < vector < uint64_t > > &avoidervectorm, uint64_t plannedavoidsetsize);
 
-void countavoidersv2(const hashdb &patternset, int maxavoidsize, int maxsize, vector < uint64_t > &numavoiders, int plannedavoidsetsize);
+void countavoiders(const hashdb &patternset, int maxavoidsize, int maxsize, vector < uint64_t > &numavoiders, uint64_t plannedavoidsetsize);
+
+void buildavoidersfrompatternlist(string patternlist, int maxpermsize, vector < vector < uint64_t > > &avoidervector);
+
+void countavoidersfrompatternlist(string patternlist, int maxpermsize, vector < uint64_t > &numavoiders);
+//void countavoidersv2(const hashdb &patternset, int maxavoidsize, int maxsize, vector < uint64_t > &numavoiders, uint64_t plannedavoidsetsize);
+
+void countavoidersfromfile(ifstream &infile, ofstream &outfile, int maxpermsize, bool verbose);
 
 #endif 

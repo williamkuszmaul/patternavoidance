@@ -233,46 +233,9 @@ void writepatternsetstofile(ofstream &file, int setsize, int patternsize, bool v
   }
 }
 
-int main(int argc, char* argv[]) {
-  ofstream file;
-  file.open("foo", std::ofstream::trunc);
-  writepatternsetstofile(file, 3, 3, true);
-  // ofstream file;
-  // file.open(endfile, std::ofstream::trunc);
-  // int patternsperset = 4;
-  // int maxpatternsize = 4;
-  // vector <string> options;
-  // vector <uint64_t> optionvals;
-  // buildpermutations(0L, 1, maxpatternsize, options, optionvals);
-  // int numoptions = options.size();
-  // for (int i = 0; i < optionvals.size(); i++) {
-  //   reverseindices.push_back(find(optionvals, getreverse(optionvals[i], options[i].size())));
-  //   //cout<<reverseindices[i]<<" ";
-  //   inverseindices.push_back(find(optionvals, getinverse_local_copy(optionvals[i], options[i].size())));
-  //   complementindices.push_back(find(optionvals, getcomplement(optionvals[i], options[i].size())));
-  // }
-  // //cout<<endl;
-  
-  // int numsetstotal = 0;
-  // Bitmap map(numoptions);
-  // for (int j = 0; j < patternsperset; j++) map.setpos(j);
-  // int i = 0; // swap out with this commented code to go through all pattern sets of each size
-  // while (1) {
-  //   //if(!getnextmap(map)) break;
-  //   if (i >= (1L << numoptions)) break;
-  //   i++;
-  //   map.clear();
-  //   int temp = i;
-  //   int pos = 0;
-  //   while (temp > 0) {
-  //     if (temp%2 == 1) map.setpos(pos);
-  //     pos++;
-  //     temp/=2;
-  //   }
-  //   entermap(map, file, numsetstotal, options);
-  // }
-  // cout<<"Number of sets to be analyzed: "<<numsetstotal<<endl;
-  // cout<<"Output is in file: "<<endfile<<endl;
-  // file.close();
-  return 0;
-}
+// int main(int argc, char* argv[]) {
+//   ofstream file;
+//   file.open("foo", std::ofstream::trunc);
+//   writepatternsetstofile(file, 3, 3, true);
+//   return 0;
+// }

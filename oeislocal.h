@@ -63,18 +63,13 @@ class Oeis {
 public:
   int sequencesize; // sequence size
   int maxshift; // consider subsequences starting in pos <= maxshift-th
-  int inputshift;
   unordered_map<Sequence, int> sequencemap; // stores pairs (sequence, OEIS number) // Note, only one OEIS number is stored per sequence -- ends up being smallest-valued oeis
-
-  Oeis(string filename, int sequencesize, int maxshift, int inputshift);
-
-  Sequence extractusersequence(string line);
-
+  Oeis(string filename, int sequencesize, int maxshift);
+  Sequence extractusersequence(string line, int inputshift);
   int getoeisnum(Sequence &sequence);
 };
 
 bool allowsequence(Sequence &testsequence);
-
-void analyzesequencefile(string infile, string outfile, Oeis &OEIS, bool verbose);
+void analyzesequencefile(ifstream &inputsequences, ofstream &output, int inputshift, Oeis &OEIS, bool verbose);
 
 #endif 

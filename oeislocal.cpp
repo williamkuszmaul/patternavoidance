@@ -68,13 +68,12 @@ unsigned long long singlehash (unsigned long long key)
 
 // OEIS class ---------------------------------------------------------------------
 
-Oeis ::  Oeis(string filename, int sequencesize, int maxshift, int inputshift)
+Oeis ::  Oeis(string filename, int sequencesize, int maxshift)
   : sequencesize(sequencesize)
   , maxshift(maxshift)
-  , inputshift(inputshift)
 {
   
-  cout<<"Building local version of OEIS..."<<endl;
+  //cout<<"Building local version of OEIS..."<<endl;
   
   // start by making list of OEIS sequences
   vector < vector < long long > > sequences;
@@ -116,7 +115,7 @@ Oeis ::  Oeis(string filename, int sequencesize, int maxshift, int inputshift)
   }
 }
 
-Sequence Oeis :: extractusersequence(string line) {
+Sequence Oeis :: extractusersequence(string line, int inputshift) {
   Sequence testsequence(sequencesize);
   int index = 0;
   int nextval = 0;
@@ -175,16 +174,11 @@ bool allowsequence(Sequence &testsequence) {
   return true;
 }
 
-void analyzesequencefile(string infile, string outfile, Oeis &OEIS, bool verbose) {
+void analyzesequencefile(ifstream &inputsequences, ofstream &output, int inputshift, Oeis &OEIS, bool verbose) {
   if (verbose) cout<<"Analyzing sequences..."<<endl;
   // string winfilename = argv[3];
   // ofstream winfile;
   // winfile.open(winfilename, std::ofstream::trunc);
-
-  ifstream inputsequences;
-  inputsequences.open(infile);
-  ofstream output;
-  output.open(outfile, std::ofstream::trunc);
 
   map<int, int> seensequences;
   string prevline = "";
@@ -195,7 +189,7 @@ void analyzesequencefile(string infile, string outfile, Oeis &OEIS, bool verbose
   while (getline(inputsequences, line)) {
     output<<line<<endl;
     if (line[0] != '#') { // line is not just commentary
-      Sequence testsequence = OEIS.extractusersequence(line);
+      Sequence testsequence = OEIS.extractusersequence(line, inputshift);
       if (!allowsequence(testsequence)) {
   	numignored++;
       } else {
@@ -218,7 +212,6 @@ void analyzesequencefile(string infile, string outfile, Oeis &OEIS, bool verbose
   if (verbose) {
     cout<<numwins<<" successes out of "<<numtries<<" tries. And "<<numignored<<" ignored."<<endl;
     cout<<"Number distinct sequences: "<<seensequences.size()<<endl;
-    cout<<"Output is in file: "<<outfile<<endl;
   }
   inputsequences.close();
   output.close();
@@ -246,8 +239,8 @@ void analyzesequencefile(string infile, string outfile, Oeis &OEIS, bool verbose
   }
 }
 
-int main(int argc, char* argv[]) {
-  Oeis OEIS("stripped", 8, 15, 5);
-  analyzesequencefile("out-foo", "out-out-foo", OEIS, true);
-  return 0;
-}
+// int main(int argc, char* argv[]) {
+//   Oeis OEIS("stripped", 8, 15);
+//   analyzesequencefile("out-foo", "out-out-foo", 5, OEIS, true);
+//   return 0;
+// }

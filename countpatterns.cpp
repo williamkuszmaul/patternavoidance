@@ -28,41 +28,6 @@
 #include "fastavoidance.h"
 using namespace std;
 
-const int permsize = 12;
-const int maxpatternsize = 4;
-
-vector < vector<int> > finaldata;
-
-void initfinaldata() {
-  finaldata.resize(permsize + 1);
-  int fac = 1;
-  for (int i = 1; i <= permsize; i++) {
-    fac *= i;
-    finaldata[i].resize(fac);
-  }
-  return;
-}
-
-template <unsigned int MAXPATTERNSIZE> 
-class myarray {
-  public:
-    unsigned short dataset[MAXPATTERNSIZE];
-    myarray() {}
-    myarray(unsigned short *array) {
-    for (int i = 0 ; i < MAXPATTERNSIZE; i++) {
-      dataset[i] = array[i];
-    }
-  }
-};
-
-
-// This is a non-portable way to use the built-in popcnt. But using -march=native in makefile and builtin g++ command seems to work just as well and be more portable
-// inline int popcount (unsigned int input) {
-//   int answer;
-//   asm("popcnt %1, %0" : "=r" (answer) : "r" (input));
-//   return answer;
-// }
-
 unsigned long long permtonum(uint64_t perm, int length) {
   int answer = 0;
   unsigned long long fac = 1;
@@ -91,7 +56,17 @@ inline unsigned short getPval(unsigned long long perm, int i, hashmap &Phashmap)
   return ((unsigned short*)Phashmap.getpayload(perm))[i];
 }
 
-static void Pcount(uint64_t perm, int length, const hashdb &patternset, hashmap &Phashmap) {
+
+void increasetally(vector < int > &tally, uint64_t val) {
+  if (val + 1 > tally.size()) {
+    uint64_t oldsize = tally.size();
+    tally.resize(oldsize * 2);
+    for (int i = oldsize; i < oldsize * 2; i++) tally[i] = 0;
+  }
+  tally[val]++;
+}
+				       
+static void Pcount(uint64_t perm, int length, int maxpatternsize, int maxpermsize, const hashdb &patternset, hashmap &Phashmap, vector < vector < int > > &tally, vector < vector < int > > &completelist) {
   uint64_t inverse = getinverse(perm, length);
   unsigned short Pvals[maxpatternsize + 2]; // vals range from [0...maxpatternsize+1]
   int Pvalpos = maxpatternsize + 1;
@@ -127,39 +102,39 @@ static void Pcount(uint64_t perm, int length, const hashdb &patternset, hashmap 
     Pvals[Pvalpos] = Pvals[Pvalpos + 1] + oldPvals[Pvalpos];
     Pvalpos--;
   }
-    if (length != permsize) {
+    if (length != maxpermsize) {
       //setPvals(perm, Pvals, Pmap);
       setPvals(perm, Pvals, Phashmap);
     }
     int index = permtonum(perm, length);
-    finaldata[length][index] = Pvals[0];
+    completelist[length][index] = Pvals[0];
+    increasetally(tally[length], Pvals[0]);
   //  displayperm(perm);
   //cout<<"num hits: "<<Pvals[0]<<endl;
 }
 
 
-void buildpermutations(uint64_t perm, int currentsize, int finalsize, hashdb &patternset, hashmap &Phashmap) {
+void buildpermutations(uint64_t perm, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patternset, hashmap &Phashmap, vector < vector < int > > &tally, vector < vector < int > > &completelist) {
   if (currentsize < finalsize) {
     for (int i = 0; i < currentsize + 1; i++) {
       uint64_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
-      buildpermutations(extendedperm, currentsize + 1, finalsize, patternset, Phashmap);
+      buildpermutations(extendedperm, currentsize + 1, finalsize, maxpatternsize,  maxpermsize, patternset, Phashmap, tally, completelist);
     }
   } else {
-    Pcount(perm, currentsize, patternset, Phashmap);
+    Pcount(perm, currentsize, maxpatternsize, maxpermsize, patternset, Phashmap, tally, completelist);
   }
 }
 
-// LENGTH IS FUNNY SOME TIMES!
-void createPmap(uint64_t finalsize, hashdb &patternset, timestamp_t start_time, hashmap &Phashmap) {
+
+void createPmap(uint64_t finalsize, hashdb &patternset, int maxpatternsize, timestamp_t start_time, hashmap &Phashmap, vector < vector < int > > &tally, vector < vector < int > > &completelist, bool verbose) {
   unsigned short temp[4] = {0, 0, 0, 0};
-  //setPvals(0, temp, Pmap);
   setPvals(0, temp, Phashmap);
   uint64_t perm1 = setdigit(0L, 0, 1L);
   uint64_t perm2 = setdigit(0L, 1, 1L);
   for (int i = 2; i <= finalsize; i++) {
-    buildpermutations(0L, 1, i, patternset, Phashmap);
+    buildpermutations(0L, 1, i, maxpatternsize, finalsize, patternset, Phashmap, tally, completelist);
     timestamp_t current_time = get_timestamp();
-    cout<< "Time elapsed to build perms of size "<<i<<" in seconds: "<<(current_time - start_time)/1000000.0L<<endl;
+    if (verbose) cout<< "Time elapsed to build perms of size "<<i<<" in seconds: "<<(current_time - start_time)/1000000.0L<<endl;
   }
   return;
 }
@@ -173,40 +148,41 @@ unsigned long long factorial(long long num) {
   return answer;
 }
 
-int main() {
-  initfinaldata();
-  //  void initpopCountOfByte256();
-  assert(permsize <= 16);
-  hashdb patternset = hashdb(1<<3);
+void countpatterns(string patternlist, int maxpermsize, vector < vector <int> > & tally, vector < vector < int > > &completelist, bool verbose) {
+  assert(maxpermsize <= 16);
   
-  uint64_t perm = 0;
-  perm = setdigit(perm, 0, 0);
-  perm = setdigit(perm, 1, 1);
-  perm = setdigit(perm, 2, 2);
-  perm = setdigit(perm, 3, 3);
-  //perm = setdigit(perm, 4, 4);
+  tally.resize(maxpermsize + 1);
+  completelist.resize(maxpermsize + 1);
+  int fac = 1;
+  for (int i = 1; i <= maxpermsize; i++) {
+    fac *= i;
+    completelist[i].resize(fac);
+    tally[i].resize((1L << 10), 0);
+  }
+  // Note tally's components are not appropriately sized at this point
 
+  int maxpatternsize;
+  hashdb patternset = hashdb(1<<3);
+  makepatterns(patternlist, patternset, maxpatternsize);
 
-  // uint64_t perm2 = 0;
-  // perm2 = setdigit(perm2, 0, 0);
-  // perm2 = setdigit(perm2, 1, 1);
-  // perm2 = setdigit(perm2, 2, 2);
-  // perm2 = setdigit(perm2, 3, 3);
-
-  patternset.add(perm);
-  //patternset.add(perm2);
-
- 
   unsigned long long reservedspace = 0;
-  for (int i = 1; i <= permsize - 1; i++) reservedspace += factorial(i);
-  hashmap Phashmap(reservedspace * 3, sizeof(myarray<maxpatternsize + 1>));
-  timestamp_t start_time = get_timestamp();
-  cout<<"Pattern set: ";
-  displayperm(perm);
-  createPmap(permsize, patternset, start_time, Phashmap);
-  timestamp_t end_time = get_timestamp();
-  cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
-
-  for (int i = 1; i <= permsize; i ++) cout<<finaldata[i][0]<<endl;
-  return 0;
+  for (int i = 1; i <= maxpermsize - 1; i++) reservedspace += factorial(i);
+  hashmap Phashmap(reservedspace * 3, sizeof(short)*(maxpatternsize + 1));
+  timestamp_t current_time = get_timestamp();
+  createPmap(maxpermsize, patternset, maxpatternsize, current_time, Phashmap, tally, completelist, verbose);
+  return;
 }
+
+// int main() {
+//   vector < vector < int > > tally;
+//   vector < vector < int > > completelist;
+//   countpatterns("1234 123", 8, tally, completelist);
+//   for (int i = 1; i <= 8; i ++) cout<<completelist[i][0]<<endl;
+//   cout<<"-----------------"<<endl;
+//   for (int i = 8; i <= 8; i++) {
+//     for (int j = 0; j < tally[i].size(); j++) {
+//       cout<<j<<" "<<tally[i][j]<<endl;
+//     }
+//   }
+//   return 0;
+// }

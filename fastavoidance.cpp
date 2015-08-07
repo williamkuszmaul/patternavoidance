@@ -8,6 +8,7 @@
 #include <cstring>
 #include <ctime> 
 #include <iostream>
+#include <fstream>
 #include <queue>
 #include <sys/time.h>
 #include <vector>
@@ -49,34 +50,11 @@ static bool isavoider(uint64_t perm, int maxavoidsize, int length, const hashdb 
   return true;
 }
 
-static bool isavoiderspecial(uint64_t perm, int maxavoidsize, int length, const hashdb &avoidset, const hashdb &patternset) { 
-  uint64_t inverse = getinverse(perm, length);
-  if (length <= maxavoidsize && patternset.contains(perm)) { // if is in set of bad patterns
-      return false;
-  }
-  uint64_t currentperm = perm;
-  if (length > 1) { // don't deal with permutations of size zero
-    for (int i = length - 1; i >= 0 && i >= length - maxavoidsize - 1; i--) {
-      if (i < length - 1) { // add back in digit we deleted a moment ago, but with value one smaller
-        currentperm = addpos(currentperm, getdigit(inverse, i + 1));
-	currentperm = setdigit(currentperm, getdigit(inverse, i + 1), i);
-      }
-      currentperm = killpos(currentperm, getdigit(inverse, i));
-      //displayperm(currentperm)
-      // could make below req include i != length - 1 && 
-      if (i < length - 2 && !avoidset.contains(currentperm)) {
-	return false; // found a subword not avoiding the patterns
-      }
-    }
-  }
-  return true;
-}
 
-long long buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize, vector < vector < uint64_t > > &avoidervector) {
-  int numavoiders = 0;
-  avoidervector.resize(maxsize + 1); // avoidervector[i] will contain the avoiders of size i. [avoidervector[0] will be empty]
+void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vector < vector < uint64_t > > &avoidervector, uint64_t plannedavoidsetsize) {
+  avoidervector.resize(maxsize + 1);
   
-  hashdb avoidset = hashdb(1<<26);
+  hashdb avoidset = hashdb(plannedavoidsetsize);
   uint64_t startperm = 0;
   avoidset.add(startperm); // identity in S_1
   avoidervector[1].push_back(startperm);
@@ -97,27 +75,23 @@ long long buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,
     uint64_t perm = avoiderstoextend.front();
     avoiderstoextend.pop();
     numleftcurrentlength--;
-    if (currentlength >= maxsize) {
-      break;
-    }    
     for (int i = 0; i < currentlength + 1; i++) {
       uint64_t extendedperm = setdigit(addpos(perm, i), i, currentlength);
       if (isavoider(extendedperm, maxavoidsize, currentlength + 1, avoidset, patternset)) {
-      	if (currentlength + 1 == maxsize) {
-	  numavoiders++;
-	}
 	avoidervector[currentlength + 1].push_back(extendedperm);
-      	avoiderstoextend.push(extendedperm); // NOTE WE ARE WORKING TOO HARD HERE, ALTHOUGH NOT THAT BIG A DEAL
-	numnextlength++;
-	avoidset.add(extendedperm);
+      	if (currentlength + 1 < maxsize) {
+	  avoiderstoextend.push(extendedperm);
+	  avoidset.add(extendedperm);
+	  numnextlength++;
+	}
       }
     }
   }
-  return numavoiders;
 }
 
 
-void countavoiders(const hashdb &patternset, int maxavoidsize, int maxsize, vector < uint64_t > &numavoiders, int plannedavoidsetsize) {
+
+void countavoiders(const hashdb &patternset, int maxavoidsize, int maxsize, vector < uint64_t > &numavoiders, uint64_t plannedavoidsetsize) {
   numavoiders.resize(maxsize + 1); // counts number of avoiders of size i
   
   hashdb avoidset = hashdb(plannedavoidsetsize);
@@ -154,6 +128,94 @@ void countavoiders(const hashdb &patternset, int maxavoidsize, int maxsize, vect
   }
 }
 
+
+// for patterns in S_{<10} can use like this:
+//  string permlist = "3124 4123 3142 4132";
+//  makepatterns(permlist, patternset);
+uint64_t makepatterns(string permlist, hashdb &patternset, int &maxpatternsize) {
+  maxpatternsize = 0;
+  int pos = 0;
+  uint64_t perm = 0;
+  //cout<<"Pattern set: "<<endl;
+  for (int i = 0; i < permlist.size(); i++) {
+    if (permlist[i] == ' ') {
+      patternset.add(perm);
+      //displayperm(perm);
+      maxpatternsize = max(pos + 1, maxpatternsize);
+      pos = 0;
+      perm = 0;
+    } else {
+      perm = setdigit(perm, pos, (int)(permlist[i] - '0' - 1));
+      pos++;
+    }
+  }
+
+  if (permlist[permlist.size() - 1] != ' ') { // if no space at end
+    patternset.add(perm);
+  }
+  maxpatternsize = max(pos + 1, maxpatternsize);
+}
+
+
+void buildavoidersfrompatternlist(string patternlist, int maxpermsize, vector < vector < uint64_t > > &avoidervector) {
+  int maxpatternsize;
+  hashdb patternset = hashdb(1<<3);
+  makepatterns(patternlist, patternset, maxpatternsize);
+  buildavoiders(patternset, maxpatternsize, maxpermsize, avoidervector, (1L << 10)); // for large cases, make last argument much larger!
+}
+
+
+void countavoidersfrompatternlist(string patternlist, int maxpermsize, vector < uint64_t > &numavoiders) {
+  int maxpatternsize;
+  hashdb patternset = hashdb(1<<3);
+  makepatterns(patternlist, patternset, maxpatternsize);
+  countavoiders(patternset, maxpatternsize, maxpermsize, numavoiders, (1L << 10)); // for large cases, make last argument much larger!
+}
+
+void countavoidersfromfile(ifstream &infile, ofstream &outfile, int maxpermsize, bool verbose) {
+  string line;
+  while (getline(infile, line)) {
+    outfile<<"#"<<line<<endl;
+    vector < uint64_t > numavoiders;
+    timestamp_t start_time = get_timestamp();
+    countavoidersfrompatternlist(line, maxpermsize, numavoiders);
+    timestamp_t end_time = get_timestamp();
+    if (verbose) cout<<line<<endl;
+    if (verbose) cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
+    for (int i = 1; i < numavoiders.size(); i++) {
+      outfile<<numavoiders[i]<<" ";
+    }
+    outfile<<endl;
+  }
+  return;
+}
+
+// ------------------- A different version of countavoiders which uses a bitmap to get some speed-up, based on a hack in permlab
+
+// for special usage in countavoidersv2
+static bool isavoiderv2(uint64_t perm, int maxavoidsize, int length, const hashdb &avoidset, const hashdb &patternset) { 
+  uint64_t inverse = getinverse(perm, length);
+  if (length <= maxavoidsize && patternset.contains(perm)) { // if is in set of bad patterns
+      return false;
+  }
+  uint64_t currentperm = perm;
+  if (length > 1) { // don't deal with permutations of size zero
+    for (int i = length - 1; i >= 0 && i >= length - maxavoidsize - 1; i--) {
+      if (i < length - 1) { // add back in digit we deleted a moment ago, but with value one smaller
+        currentperm = addpos(currentperm, getdigit(inverse, i + 1));
+	currentperm = setdigit(currentperm, getdigit(inverse, i + 1), i);
+      }
+      currentperm = killpos(currentperm, getdigit(inverse, i));
+      //displayperm(currentperm)
+      // could make below req include i != length - 1 && 
+      if (i < length - 2 && !avoidset.contains(currentperm)) {
+	return false; // found a subword not avoiding the patterns
+      }
+    }
+  }
+  return true;
+}
+
 inline uint64_t getbit(uint64_t word, int pos) {
   return (word >> pos) & 1;
 }
@@ -167,9 +229,9 @@ inline uint64_t insertbit(uint64_t word, uint64_t pos, uint64_t val) { // val is
   return (word & ((1 << pos) - 1) ) + ((word >> pos) << (pos + 1)) + val * (1 << pos);
 }
 
-
 // Incorporates the bitmap idea from permlab
-void countavoidersv2(const hashdb &patternset, int maxavoidsize, int maxsize, vector < uint64_t > &numavoiders, int plannedavoidsetsize) {
+// still experimental
+void countavoidersv2(const hashdb &patternset, int maxavoidsize, int maxsize, vector < uint64_t > &numavoiders, uint64_t plannedavoidsetsize) {
   numavoiders.resize(maxsize + 1); // counts number of avoiders of size i
   
   hashdb avoidset = hashdb(plannedavoidsetsize);
@@ -199,7 +261,7 @@ void countavoidersv2(const hashdb &patternset, int maxavoidsize, int maxsize, ve
     for (int i = 0; i < currentlength + 1; i++) {
       if (getbit(bitmap, i) == 1) {
 	uint64_t extendedperm = setdigit(addpos(perm, i), i, currentlength);
-	if (isavoiderspecial(extendedperm, maxavoidsize, currentlength + 1, avoidset, patternset)) {
+	if (isavoiderv2(extendedperm, maxavoidsize, currentlength + 1, avoidset, patternset)) {
 	  numavoiders[currentlength + 1]++;
 	  if (currentlength + 1 < maxsize) {
 	    avoiderstoextend.push(extendedperm);
