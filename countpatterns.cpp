@@ -25,27 +25,8 @@
 #include "hashdb.h"
 #include "hashmap.h"
 #include <sys/time.h>
-#include "fastavoidance.h"
+#include "perm.h"
 using namespace std;
-
-unsigned long long permtonum(uint64_t perm, int length) {
-  int answer = 0;
-  unsigned long long fac = 1;
-  uint64_t seenletters = 0; // bit map of which letters we've seen so far
-  for (int i = length - 1; i >= 0; i--) {
-    unsigned long long facdig = 0;
-    int digit = getdigit(perm, i);
-    if (digit != 0) {
-      unsigned int temp = seenletters << (32 - digit);
-      facdig = __builtin_popcount(temp);
-    }
-    answer += facdig * fac;
-    fac *= (length - i);
-    seenletters = seenletters | (1 << digit);
-  }
-  return answer;
-}
-
 
 
 inline void setPvals(unsigned long long perm, unsigned short* payload, hashmap &Phashmap) {

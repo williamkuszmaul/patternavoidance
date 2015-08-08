@@ -17,6 +17,7 @@
 #include "buildinput.h"
 #include "oeislocal.h"
 #include "countpatterns.h"
+#include "perm.h"
 using namespace std;
 
 void countallfromfiletest(ifstream &infile, int maxpermsize, bool verbose) {

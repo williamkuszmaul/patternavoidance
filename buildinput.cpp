@@ -15,6 +15,7 @@
 #include <sys/time.h>
 #include "fastavoidance.h"
 #include "buildinput.h"
+#include "perm.h"
 using namespace std;
 
 class Bitmap {
@@ -55,30 +56,6 @@ bool operator> (Bitmap &map1, Bitmap &map2) {
     }
   }
   return false;
-}
-
-inline uint64_t getinverse_local_copy(uint64_t perm, int length) { 
-  uint64_t answer = 0;
-  for (int i = 0; i < length; i++) {
-    answer = setdigit(answer, getdigit(perm, i), i);
-  }
-  return answer;
-}
-
-inline uint64_t getreverse(uint64_t perm, int length) {
-  uint64_t answer = 0;
-  for (int i = 0; i < length; i++) {
-    answer = setdigit(answer, i, getdigit(perm, length - i - 1));
-  }
-  return answer;
-}
-
-inline uint64_t getcomplement(uint64_t perm, int length) {
-  uint64_t answer = 0;
-  for (int i = 0; i < length; i++) {
-    answer = setdigit(answer, i, length - getdigit(perm, i) - 1);
-  }
-  return answer;
 }
 
 // sends i-th bit to permutation(i)-th bit
@@ -182,7 +159,7 @@ void writepatternsetstofile(ofstream &file, int patternsize, bool verbose) {
   int numoptions = options.size();
   for (int i = 0; i < optionvals.size(); i++) {
     reverseindices.push_back(find(optionvals, getreverse(optionvals[i], options[i].size())));
-    inverseindices.push_back(find(optionvals, getinverse_local_copy(optionvals[i], options[i].size())));
+    inverseindices.push_back(find(optionvals, getinverse(optionvals[i], options[i].size())));
     complementindices.push_back(find(optionvals, getcomplement(optionvals[i], options[i].size())));
   }
 
@@ -217,7 +194,7 @@ void writepatternsetstofile(ofstream &file, int setsize, int patternsize, bool v
   int numoptions = options.size();
   for (int i = 0; i < optionvals.size(); i++) {
     reverseindices.push_back(find(optionvals, getreverse(optionvals[i], options[i].size())));
-    inverseindices.push_back(find(optionvals, getinverse_local_copy(optionvals[i], options[i].size())));
+    inverseindices.push_back(find(optionvals, getinverse(optionvals[i], options[i].size())));
     complementindices.push_back(find(optionvals, getcomplement(optionvals[i], options[i].size())));
   }
 

@@ -76,6 +76,7 @@ int main(int argc, char* argv[]) {
     hashdb patternset = hashdb(1<<3);
 
     //cout<<"Avoid-set: "<<inputs[i]<<endl;
+    cout<<inputs[i]<<endl;
     output<<"#"<<inputs[i]<<endl;
     
     string permlist = inputs[i];
@@ -85,19 +86,21 @@ int main(int argc, char* argv[]) {
     //perm = setdigit(perm, 3, 3);
     vector < uint64_t > numavoiders;
     // make last arg (1<<28) for single big computation. (1<<10) otherwise
-    countavoidersv2(patternset, maxpatternsize, permsize, numavoiders, (1<<28)); // for large cases, make last argument much larger!
-    for (int i = 2; i <= permsize; i++) {
-      output<<numavoiders[i]<<" ";
-      //cout<<"Number of avoiders of size "<<i<<" is "<<numavoiders[i]<<endl;
+    if (patternset.getsize() <= 4 && patternset.getsize() > 3) {
+      countavoidersv2(patternset, maxpatternsize, permsize, numavoiders, (1<<10)); // for large cases, make last argument much larger!
+      for (int i = 2; i <= permsize; i++) {
+	output<<numavoiders[i]<<" ";
+	//cout<<"Number of avoiders of size "<<i<<" is "<<numavoiders[i]<<endl;
+      }
+      output<<endl;
+      //  assert(numavoiders == avoidersvector[permsize].size());
+      if (i % 1 == 0 && i > 0) {
+	timestamp_t end_time = get_timestamp();
+	cout<<"Batch ran in time: "<<(end_time - start_time)/1000000.0L<<endl;
+	start_time = get_timestamp();
+      }
+      //cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
     }
-    output<<endl;
-    //  assert(numavoiders == avoidersvector[permsize].size());
-    if (i % 1000 == 0 && i > 0) {
-      timestamp_t end_time = get_timestamp();
-      cout<<"Thousand ran in time: "<<(end_time - start_time)/1000000.0L<<endl;
-      start_time = get_timestamp();
-    }
-    //cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
   }
   cout<<"Output is in file: "<<outputfile<<endl;
   output.close();

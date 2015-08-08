@@ -14,19 +14,10 @@
 #include <vector>
 #include "hashdb.h"
 #include "fastavoidance.h"
+#include "perm.h"
 using namespace std;
 
 #define USEBITHACK 0
-
-void displayperm(uint64_t perm) {
-  for (int i = 0; i < 16; i++) cout<<getdigit(perm, i)<<" ";
-  cout<<endl;
-}
-
-void displayperm(uint64_t perm, int size) {
-  for (int i = 0; i < size; i++) cout<<getdigit(perm, i)<<" ";
-  cout<<endl;
-}
 
 
 static bool isavoider(uint64_t perm, int maxavoidsize, int length, const hashdb &avoidset, const hashdb &patternset) { 
@@ -120,34 +111,6 @@ void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vec
     }
   }
 }
-
-// for patterns in S_{<10} can use like this:
-//  string permlist = "3124 4123 3142 4132";
-//  makepatterns(permlist, patternset);
-uint64_t makepatterns(string permlist, hashdb &patternset, int &maxpatternsize) {
-  maxpatternsize = 0; // IN COUNT AVOIDERS AM I CORRECTLY INITIALIZING ARRAY THINGS AT ZERO
-  int pos = 0;
-  uint64_t perm = 0;
-  //cout<<"Pattern set: "<<endl;
-  for (int i = 0; i < permlist.size(); i++) {
-    if (permlist[i] == ' ') {
-      patternset.add(perm);
-      //displayperm(perm);
-      maxpatternsize = max(pos + 1, maxpatternsize);
-      pos = 0;
-      perm = 0;
-    } else {
-      perm = setdigit(perm, pos, (int)(permlist[i] - '0' - 1));
-      pos++;
-    }
-  }
-
-  if (permlist[permlist.size() - 1] != ' ') { // if no space at end
-    patternset.add(perm);
-  }
-  maxpatternsize = max(pos + 1, maxpatternsize);
-}
-
 
 void buildavoidersfrompatternlist(string patternlist, int maxpermsize, vector < vector < uint64_t > > &avoidervector) {
   int maxpatternsize;

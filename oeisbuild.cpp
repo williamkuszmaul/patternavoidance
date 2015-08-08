@@ -8,9 +8,11 @@
 #include <fstream>
 #include <math.h>
 #include <stdio.h>      /* printf, scanf, puts, NULL */
+#include <algorithm>
 #include <time.h> 
 #include <stdlib.h>
 #include <bitset>
+#include <string>
 #include <vector>
 #include <stdint.h>
 #include <unordered_map>
@@ -123,11 +125,10 @@ int main(int argc, char* argv[]) {
   int maxsequencelength = maxshift + sequencesize - 1; // maximum length of oeis sequence we need to look at
   vector < vector <int> > sequences;
 
-  if (argc != 3) {
-    cout<<"Program takes argument of oeis file name (in stripped form obtainable at http://oeis.org/wiki/Welcome#Compressed_Versions  and file containing sequences of interest"<<endl;
+  if (argc != 4) {
+    cout<<"Program takes argument of oeis file name (in stripped form obtainable at http://oeis.org/wiki/Welcome#Compressed_Versions  and file containing sequences of interest and file for output of sequences which worked"<<endl;
     return 0;
-  }
-
+  }  
   cout<<"Building local version of OEIS..."<<endl;
   string filename = argv[1];
   ifstream input;
@@ -180,6 +181,9 @@ int main(int argc, char* argv[]) {
 
   cout<<"Analyzing sequences..."<<endl;
   string filename2 = argv[2];
+  string winfilename = argv[3];
+  ofstream winfile;
+  winfile.open(winfilename, std::ofstream::trunc);
 
 
   ifstream inputsequences;
@@ -189,7 +193,8 @@ int main(int argc, char* argv[]) {
   output.open(outputfile, std::ofstream::trunc);
 
   map<int, int> seensequences;
-  
+
+  string prevline = "";
   line = "";
   int numwins = 0;
   int numtries = 0;
@@ -219,6 +224,7 @@ int main(int argc, char* argv[]) {
       } else {
 	unordered_map<Sequence<sequencesize>, int>::const_iterator elt = sequencemap.find(testsequence);
 	if (elt != sequencemap.end()) {
+	  // winfile<<prevline.substr(1)<<endl; // get rid of hashtag at start
 	  output<<numtooeis(elt->second)<<endl;
 	  numwins++;
 	  //if (seensequences.find(elt->second) == seensequences.end()) cout<<numtooeis(elt->second)<<endl;
@@ -232,6 +238,7 @@ int main(int argc, char* argv[]) {
 	numtries++;
       }
     }
+    prevline = line;
   }
   cout<<numwins<<" successes out of "<<numtries<<" tries. And "<<numignored<<" ignored."<<endl;
   cout<<"Number distinct sequences: "<<seensequences.size()<<endl;
@@ -244,10 +251,12 @@ int main(int argc, char* argv[]) {
   for( std::map<int, int>::iterator iter = seensequences.begin();
      iter != seensequences.end();
      ++iter ) {
+    winfile<<iter->first<<" ";
     cout<<iter->first<<" "<<iter->second<<endl;
     tempmap[(((uint64_t)(iter->second))<<22) + marker] = iter->first;
     marker++;
   }
+  winfile.close();
 
   cout<<"------------------------------------------------"<<endl;
 
