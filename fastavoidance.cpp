@@ -65,15 +65,15 @@ inline uint64_t insertbit(uint64_t word, uint64_t pos, uint64_t val) { // val is
   return (word & ((1 << pos) - 1) ) + ((word >> pos) << (pos + 1)) + val * (1 << pos);
 }
 
-
-
-void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vector < vector < uint64_t > > &avoidervector, uint64_t plannedavoidsetsize) {
-  avoidervector.resize(maxsize + 1);
+void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vector < vector < uint64_t > > &avoidervector, vector < uint64_t > &numavoiders, bool justcount, uint64_t plannedavoidsetsize) {
+  if (!justcount) avoidervector.resize(maxsize + 1);
+  else numavoiders.resize(maxsize + 1);
   
   hashdb avoidset = hashdb(plannedavoidsetsize);
   uint64_t startperm = 0;
   avoidset.add(startperm); // identity in S_1
-  avoidervector[1].push_back(startperm);
+  if (!justcount) avoidervector[1].push_back(startperm);
+  else numavoiders[0] = 1;
   
   std::queue<unsigned long long> avoiderstoextend;
   std::queue<unsigned long long> bitmaps;
@@ -99,61 +99,8 @@ void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vec
       if (!USEBITHACK || getbit(bitmap, i) == 1) {
 	uint64_t extendedperm = setdigit(addpos(perm, i), i, currentlength);
 	if (isavoider(extendedperm, maxavoidsize, currentlength + 1, avoidset, patternset)) {
-	  avoidervector[currentlength + 1].push_back(extendedperm);
-	  if (currentlength + 1 < maxsize) {
-	    avoiderstoextend.push(extendedperm);
-	    avoidset.add(extendedperm);
-	    numnextlength++; 
-	  }
-	} else {
-	  if (USEBITHACK) bitmap = setbit(bitmap, i, 0);
-	}
-      }
-    }
-    if (USEBITHACK && currentlength + 1 < maxsize) {
-      for (int i = 0; i < currentlength + 1; i++) {
-	if (getbit(bitmap, i) == 1) {
-	  bitmaps.push(insertbit(bitmap, i + 1, 1));
-	}
-      }
-    }
-  }
-}
-
-
-void countavoiders(const hashdb &patternset, int maxavoidsize, int maxsize, vector < uint64_t > &numavoiders, uint64_t plannedavoidsetsize) {
-  numavoiders.resize(maxsize + 1); // counts number of avoiders of size i
-  
-  hashdb avoidset = hashdb(plannedavoidsetsize);
-  uint64_t startperm = 0;
-  avoidset.add(startperm); // identity in S_1
-  numavoiders[0]++;
-  
-  std::queue<unsigned long long> avoiderstoextend;
-  std::queue<unsigned long long> bitmaps;
-  avoiderstoextend.push(startperm);
-  if (USEBITHACK) bitmaps.push(3L);
-
-  int currentlength = 1; // maintain as length of next permutation to be popped from avoiderstoextend
-  int numleftcurrentlength = 1; // number of permutations left in avoiderstoextend until we have to increment currentlength
-  int numnextlength = 0; // number of permutations of size currentlength + 1 in avoiderstoextend
-
-  while (avoiderstoextend.size() > 0) {
-    if (numleftcurrentlength == 0) {
-      numleftcurrentlength = numnextlength;
-      numnextlength = 0;
-      currentlength++;
-    }
-    uint64_t perm = avoiderstoextend.front();
-    uint64_t bitmap = bitmaps.front();
-    avoiderstoextend.pop();
-    if (USEBITHACK) bitmaps.pop();
-    numleftcurrentlength--;
-    for (int i = 0; i < currentlength + 1; i++) {
-      if (!USEBITHACK || getbit(bitmap, i) == 1) {
-	uint64_t extendedperm = setdigit(addpos(perm, i), i, currentlength);
-	if (isavoider(extendedperm, maxavoidsize, currentlength + 1, avoidset, patternset)) {
-	  numavoiders[currentlength + 1]++;
+	  if (!justcount) avoidervector[currentlength + 1].push_back(extendedperm);
+	  else numavoiders[currentlength + 1]++;
 	  if (currentlength + 1 < maxsize) {
 	    avoiderstoextend.push(extendedperm);
 	    avoidset.add(extendedperm);
@@ -206,7 +153,8 @@ void buildavoidersfrompatternlist(string patternlist, int maxpermsize, vector < 
   int maxpatternsize;
   hashdb patternset = hashdb(1<<3);
   makepatterns(patternlist, patternset, maxpatternsize);
-  buildavoiders(patternset, maxpatternsize, maxpermsize, avoidervector, (1L << 10)); // for large cases, make last argument much larger!
+  vector < uint64_t > numavoiders;
+  buildavoiders(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, false, (1L << 10)); // for large cases, make last argument much larger!
 }
 
 
@@ -214,10 +162,8 @@ void countavoidersfrompatternlist(string patternlist, int maxpermsize, vector < 
   int maxpatternsize;
   hashdb patternset = hashdb(1<<3);
   makepatterns(patternlist, patternset, maxpatternsize);
-  countavoiders(patternset, maxpatternsize, maxpermsize, numavoiders, (1L << 10)); // for large cases, make last argument much larger!
   vector < vector < uint64_t > > avoidervector;
-  //buildavoiders(patternset, maxpatternsize, maxpermsize, avoidervector, (1L << 10));
-  //assert(avoidervector[maxpermsize].size() == numavoiders[maxpermsize]);
+  buildavoiders(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true, (1L << 10)); // for large cases, make last argument much larger!
 }
 
 void countavoidersfromfile(ifstream &infile, ofstream &outfile, int maxpermsize, bool verbose) {
