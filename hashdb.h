@@ -1,6 +1,9 @@
 /*
  *  hashdb.h
- *  A simple hash table implementation
+ *  A simple hash table implementation for storing 64 bit integers.
+ *  CANNOT store -1. Will abort if -1 is added or queried.
+ *  Uses simple linear probing. In practice, seems to often run much faster than unordered_set<unsigned long long>, which uses chaining.
+ *  If same element is added twice, hashdb.cpp will simply store it twice. (although this could easily be changed if needed)
  *
  *  This code is released under the MIT license.
  * 

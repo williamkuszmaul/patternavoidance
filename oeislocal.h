@@ -25,7 +25,7 @@
 using namespace std;
 
 
-// helper functions ---------------------------------------------------
+// Given a number, formats it as an OEIS sequence number
 string numtooeis(int num);
 
 // Sequence class -------------------------------------------------
@@ -42,8 +42,10 @@ public:
 };
 
 
+// good hash function for unsigned long long
+//This hash function comes from http://www.concentric.net/~ttwang/tech/inthash.htm
 unsigned long long singlehash (unsigned long long key);
-
+//Extension of hash function to sequences of unsigned long longs. Just xors individual hash functions
 namespace std {
   template <>
   struct hash<Sequence>
@@ -58,18 +60,28 @@ namespace std {
 }
 
 // OEIS class ---------------------------------------------------------------------
-
 class Oeis {
 public:
   int sequencesize; // sequence size
-  int maxshift; // consider subsequences starting in pos <= maxshift-th
+  int maxshift; // consider subsequences starting in positions 1, 2, ..., maxshift
   unordered_map<Sequence, int> sequencemap; // stores pairs (sequence, OEIS number) // Note, only one OEIS number is stored per sequence -- ends up being smallest-valued oeis
   Oeis(string filename, int sequencesize, int maxshift);
+  // Given a string containing a sequence separated by spaces of
+  // length at least inputshift + sequencesize, extracts the sequence
+  // starting with the (inputshift)-th number of line. Indexed so that
+  // if inputshift = 0, will start with first entry of line.
   Sequence extractusersequence(string line, int inputshift);
+  // Returns -1 if sequence is not detected in an OEIS sequence. Otherwise, return OEIS number of (arbitrarily selected) OEIS sequence containing this as a subsequence.
   int getoeisnum(Sequence &sequence);
 };
 
+// Returns false if sequence is detected to become either constant, quadratic, or cubic. Useful if you want to get rid of boring sequences
 bool allowsequence(Sequence &testsequence);
-void analyzesequencefile(ifstream &inputsequences, ofstream &output, int inputshift, Oeis &OEIS, bool verbose);
+
+// Takes input file and for each line l in input file, writes to output file:
+// (1) l (as one line)
+// (2) if l does not start with #, checks if l corresponds with an oeis sequence and if so writes the OEIS sequence (as next line)
+// If ignoreboring, however, then (2) is NOT printed if the sequence represented by l is detected to be "boring" by allowsequence
+void analyzesequencefile(ifstream &inputsequences, ofstream &output, int inputshift, Oeis &OEIS, bool ignoreboring, bool verbose);
 
 #endif 

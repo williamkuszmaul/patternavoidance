@@ -1,3 +1,5 @@
+// A simple program for speed testing countpatterns.h and fastavoidance.h
+
 #include <assert.h>
 #include <string.h>
 #include <iostream>
@@ -20,6 +22,7 @@
 #include "perm.h"
 using namespace std;
 
+// given a file, speed-tests countpatterns on that file
 void countallfromfiletest(ifstream &infile, int maxpermsize, bool verbose) {
   string line;
   while (getline(infile, line)) {
@@ -36,9 +39,12 @@ void countallfromfiletest(ifstream &infile, int maxpermsize, bool verbose) {
 }
 
 
+// arguments can either be:
+// (1) av <input file name> <output file name> <permsize> <whether or not to be verbose>
+// (2) cnt <input file name> <permsize> <whether to be verbose> 
 int main(int argc, char* argv[]) {
   string choice = argv[1];
-  if (choice == "av") {
+  if (choice == "av") { // in this case, speed-test countaviodersfromfile
     string infile = argv[2];
     ifstream input(infile);
     string outfile = argv[3];
@@ -48,7 +54,7 @@ int main(int argc, char* argv[]) {
     string verbose = argv[5];
     countavoidersfromfile(input, output, permsize, (verbose == "1"));
     cout<<"Complete"<<endl;
-  } else if (choice == "cnt") {
+  } else if (choice == "cnt") { // in this case speed test countpatterns
     string infile = argv[2];
     int permsize = stoi(argv[3]);
     ifstream input(infile);

@@ -79,7 +79,7 @@ Oeis ::  Oeis(string filename, int sequencesize, int maxshift)
   vector < vector < long long > > sequences;
   int maxsequencelength = maxshift + sequencesize - 1; // maximum length of oeis sequence we need to look at
   ifstream input;
-  input.open(filename);
+  input.open(filename); // file containing list of oeis sequences. Can be downloaded at http://oeis.org/wiki/Welcome#Compressed_Versions
   string line;
   for (int i = 0; i < 4; i++) getline(input, line); // get rid of garbage
   while (getline(input, line)) {
@@ -99,7 +99,10 @@ Oeis ::  Oeis(string filename, int sequencesize, int maxshift)
   }
   input.close();
   
-  // Next build the hashtables
+  // Next build the sequencemap. In particular, for each sequence
+  // tempsequence which can be obtained by starting in the <=
+  // maxshift-th position of OEIS sequence i,
+  // sequencemap[tempsequence] is set to i.
   for (int i = 0; i < sequences.size(); i++) {
     for (int start = 0; start < maxshift; start++) { // start pos
       Sequence tempsequence(sequencesize);
@@ -115,6 +118,10 @@ Oeis ::  Oeis(string filename, int sequencesize, int maxshift)
   }
 }
 
+ // Given a string containing a sequence separated by spaces of
+  // length at least inputshift + sequencesize, extracts the sequence
+  // starting with the (inputshift)-th number of line. Indexed so that
+  // if inputshift = 0, will start with first entry of line.
 Sequence Oeis :: extractusersequence(string line, int inputshift) {
   Sequence testsequence(sequencesize);
   int index = 0;
@@ -126,7 +133,7 @@ Sequence Oeis :: extractusersequence(string line, int inputshift) {
       if (sequencepos >= inputshift) testsequence.data[sequencepos - inputshift] = nextval;
       nextval = 0;
       sequencepos++;
-      } else {
+    } else {
       nextval = nextval * 10 + (int)(line[index] - '0');
     }
     index++;
@@ -141,6 +148,7 @@ int Oeis :: getoeisnum(Sequence &sequence) {
   return elt->second;
 }
 
+// returns false if sequence is detected to start growing as a constant, linear, or quadratic
 bool allowsequence(Sequence &testsequence) {
   uint64_t sequencesize = testsequence.data.size();
   Sequence deriv1(sequencesize);
@@ -174,11 +182,12 @@ bool allowsequence(Sequence &testsequence) {
   return true;
 }
 
-void analyzesequencefile(ifstream &inputsequences, ofstream &output, int inputshift, Oeis &OEIS, bool verbose) {
+// Takes input file and for each line l in input file, writes to output file:
+// (1) l (as one line)
+// (2) if l does not start with #, checks if l corresponds with an oeis sequence and if so writes the OEIS sequence (as next line)
+// If ignoreboring, however, then (2) is NOT printed if the sequence represented by l is detected to be "boring" by allowsequence
+void analyzesequencefile(ifstream &inputsequences, ofstream &output, int inputshift, Oeis &OEIS, bool ignoreboring, bool verbose) {
   if (verbose) cout<<"Analyzing sequences..."<<endl;
-  // string winfilename = argv[3];
-  // ofstream winfile;
-  // winfile.open(winfilename, std::ofstream::trunc);
 
   map<int, int> seensequences;
   string prevline = "";
@@ -190,7 +199,7 @@ void analyzesequencefile(ifstream &inputsequences, ofstream &output, int inputsh
     output<<line<<endl;
     if (line[0] != '#') { // line is not just commentary
       Sequence testsequence = OEIS.extractusersequence(line, inputshift);
-      if (!allowsequence(testsequence)) {
+      if (ignoreboring && !allowsequence(testsequence)) {
   	numignored++;
       } else {
 	int oeisnum = OEIS.getoeisnum(testsequence);
@@ -222,9 +231,8 @@ void analyzesequencefile(ifstream &inputsequences, ofstream &output, int inputsh
     for( std::map<int, int>::iterator iter = seensequences.begin();
 	 iter != seensequences.end();
 	 ++iter ) {
-      //  winfile<<iter->first<<" ";
-      cout<<iter->first<<" "<<iter->second<<endl;
-      tempmap[(((uint64_t)(iter->second))<<22) + marker] = iter->first;
+      cout<<iter->first<<" "<<iter->second<<endl; // print out sequences detected in order of oeis number, as well as number of times sequence appears
+      tempmap[(((uint64_t)(iter->second))<<22) + marker] = iter->first; // this is a silly hack so that we can in a minute get sequences in order of number of times they appear
       marker++;
     }
     //winfile.close();
@@ -234,11 +242,12 @@ void analyzesequencefile(ifstream &inputsequences, ofstream &output, int inputsh
     for( std::map<uint64_t, int>::iterator iter = tempmap.begin();
 	 iter != tempmap.end();
 	 ++iter ) {
-      cout<<iter->second<<" "<<((iter->first)>>22)<<endl;
+      cout<<iter->second<<" "<<((iter->first)>>22)<<endl; // print out sequences detected in order of number of times sequence appears
     }
   }
 }
 
+// example usage
 // int main(int argc, char* argv[]) {
 //   Oeis OEIS("stripped", 8, 15);
 //   analyzesequencefile("out-foo", "out-out-foo", 5, OEIS, true);

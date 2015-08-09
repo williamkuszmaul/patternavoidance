@@ -19,6 +19,10 @@
 using namespace std;
 
 int main() {
+  // Writes all pattern sets of S_4 up to trivial wilf-equivalence to setsfilename
+  // For each one, computes |S_1(Pi)|, ..., |S_maxpermsize(Pi)| and writes to sequencesfilename
+  // For each sequence in sequencesfilename, looks up S_minpermsize(Pi), ..., S_maxpermsize(Pi) in OEIS and writes found oeis sequences to oeismatchesfilename
+  
   int maxpermsize = 10;
   int minpermsize = 5;
   string setsfilename = "testallfours.txt";
@@ -27,7 +31,7 @@ int main() {
   
   ofstream setsfile;
   setsfile.open(setsfilename, std::ofstream::trunc);
-  writepatternsetstofile(setsfile, 3, true);
+  writepatternsetstofile(setsfile, 4, true);
   setsfile.close();
 
   ifstream setsfilein;
@@ -39,12 +43,12 @@ int main() {
   sequencesfile.close();
 
   cout<<"Building local version of OEIS..."<<endl;
-  Oeis OEIS("stripped", maxpermsize - minpermsize + 1, 15);
+  Oeis OEIS("stripped", maxpermsize - minpermsize + 1, 15); // Note: we allow sequences to start in any of positions 1, 2, ..., 15
   ifstream sequencesfilein;
   sequencesfilein.open(sequencesfilename);
   ofstream oeismatchesfile;
   oeismatchesfile.open(oeismatchesfilename, std::ofstream::trunc);
-  analyzesequencefile(sequencesfilein, oeismatchesfile, minpermsize - 1, OEIS, true);
+  analyzesequencefile(sequencesfilein, oeismatchesfile, minpermsize - 1, OEIS, true, true);
   sequencesfilein.close();
   oeismatchesfile.close();
 }

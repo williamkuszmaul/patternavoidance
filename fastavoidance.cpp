@@ -17,57 +17,89 @@
 #include "perm.h"
 using namespace std;
 
-#define USEBITHACK 0
+// 1 to use a bithack inspired by permlab. Upshot: Code runs about a third faster. Downshot: Code is around 1/4 less memory efficient
+#define USEBITHACK 1
 
-
+// Detects if perm is in S_{length}(patternset), where maxavoidsize is the length of the longest pattern in patternset.
+// Prerequisite:
+// -- The subset of S_{n-1} contained in avoidset is exactly S_{n-1}(patternset)
+// -- If USEBITHACK, then we also require that the user has already verified that all patterns in perm use both n and n-1.
 static bool isavoider(uint64_t perm, int maxavoidsize, int length, const hashdb &avoidset, const hashdb &patternset) { 
   uint64_t inverse = getinverse(perm, length);
-  if (length <= maxavoidsize && patternset.contains(perm)) { // if is in set of bad patterns
+  if (length <= maxavoidsize && patternset.contains(perm)) { // if perm is an offending pattern
       return false;
   }
   uint64_t currentperm = perm;
   if (length > 1) { // don't deal with permutations of size zero
-    for (int i = length - 1; i >= 0 && i >= length - maxavoidsize - 1; i--) {
+    for (int i = length - 1; i >= 0 && i >= length - maxavoidsize - 1; i--) { // for i ranging from the largest-valued letter in perm to the (maxavoidsize + 1)-th largest-valued letter in perm
       if (i < length - 1) { // add back in digit we deleted a moment ago, but with value one smaller
         currentperm = addpos(currentperm, getdigit(inverse, i + 1));
 	currentperm = setdigit(currentperm, getdigit(inverse, i + 1), i);
       }
-      currentperm = killpos(currentperm, getdigit(inverse, i));
+      currentperm = killpos(currentperm, getdigit(inverse, i)); // now currentperm is perm, except with the letter of value i removed, and the permutation normalized to be on the letters 0,...,(length - 2)
       //displayperm(currentperm)
-      // could make below req include i != length - 1 && 
-      if ((!USEBITHACK || i < length - 2) && !avoidset.contains(currentperm)) {
+      if ((!USEBITHACK || i < length - 2) && !avoidset.contains(currentperm)) { // Check if this sub-permutation of perm is in S_{length - 1}(patternset)
 	return false; // found a subword not avoiding the patterns
       }
+
+      // The next two lines are special for when there is a single pattern and it is the identity. They reduce cache misses significantly. For |pi|=5, this gets roughly a x2 speedup
+      // Can this hack be extended efficiently to arbitrary choices of pattern-sets?
+      //if (i < length - 1 && getdigit(inverse, i) > getdigit(inverse, i + 1)) return true;
+      //if (i == length - maxavoidsize) return false;
     }
   }
   return true;
 }
 
+// Get pos-th bit from bitmap. Indexing starts at 0
 inline uint64_t getbit(uint64_t word, int pos) {
   return (word >> pos) & 1;
 }
 
+// Set pos-th bit from bitmap. Indexing starts at 0
 inline uint64_t setbit(uint64_t word, uint64_t pos, uint64_t val) { // val is 1 or 0
   return (word & (~(0L) - (1<<pos))) + (1<<pos)*val;
 }
 
-// Note that due to bit-shift setup, is not capable to inserting in final position of word
+// Shift the bits in positions pos, pos+1, ... to the right and insert bit with value val in position pos. Indexing starts at 0
+// Note that due to bit-shift setup, is not capable to inserting in final position ==> Prereq: pos < 63
 inline uint64_t insertbit(uint64_t word, uint64_t pos, uint64_t val) { // val is 1 or 0
   return (word & ((1 << pos) - 1) ) + ((word >> pos) << (pos + 1)) + val * (1 << pos);
 }
 
+// Builds the permutations in $S_1, ..., S_maxsize$ avoiding the
+// patterns in patternset, the longest of which is length
+// maxavoidsize. If justcount, does nothing with avoidervector but
+// makes nuavoiders[i] be the number of avoiders in S_i (for i >
+// 0). If !justcount, does nothing with numavoiders, but makes
+// avoidervector contain a vector of all permutations in S_i in
+// avoidervector[i] (for i > 0). plannedavoisetsize should be large if
+// we expect a major computation and small otherwise (dictates how
+// much memory is initially allocated to data structures at start of
+// algorithm.).
+// Note: Patternset patterns required to be size >= 2
 void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vector < vector < uint64_t > > &avoidervector, vector < uint64_t > &numavoiders, bool justcount, uint64_t plannedavoidsetsize) {
   if (!justcount) avoidervector.resize(maxsize + 1);
   else numavoiders.resize(maxsize + 1);
   
-  hashdb avoidset = hashdb(plannedavoidsetsize);
+  hashdb avoidset = hashdb(plannedavoidsetsize); // hash table containing avoiders of all sizes
   uint64_t startperm = 0;
   avoidset.add(startperm); // identity in S_1
   if (!justcount) avoidervector[1].push_back(startperm);
-  else numavoiders[0] = 1;
+  else numavoiders[1] = 1;
   
-  std::queue<unsigned long long> avoiderstoextend;
-  std::queue<unsigned long long> bitmaps;
+  std::queue<unsigned long long> avoiderstoextend; // queue of avoiders built so far.
+  // when we find an avoider, we will add it to this queue. We will
+  // then later take it out of the queue and use it to generate
+  // options for avoiders of length one larger
+  std::queue<unsigned long long> bitmaps; // Contains a bitmap associated with each avoider in avoiderstoextendd (if USEBITHACK)
+  // The bitmap for a permutation w \in S_n has a 1 in position i iff
+  // inserting letter (n + 1) in position i of w would result in
+  // permutation w' such that if you removed the letter n from w', the
+  // result would be a patternset-avoiding word. Thus when checking
+  // whether w' is an avoider, we do not have to explicitly check for
+  // this property, preventing a cache-miss.
+  
   avoiderstoextend.push(startperm);
   if (USEBITHACK) bitmaps.push(3L);
 
@@ -76,7 +108,7 @@ void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vec
   int numnextlength = 0; // number of permutations of size currentlength + 1 in avoiderstoextend
 
   while (avoiderstoextend.size() > 0) {
-    if (numleftcurrentlength == 0) {
+    if (numleftcurrentlength == 0) { 
       numleftcurrentlength = numnextlength;
       numnextlength = 0;
       currentlength++;
@@ -87,9 +119,9 @@ void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vec
     if (USEBITHACK) bitmaps.pop();
     numleftcurrentlength--;
     for (int i = 0; i < currentlength + 1; i++) {
-      if (!USEBITHACK || getbit(bitmap, i) == 1) {
-	uint64_t extendedperm = setdigit(addpos(perm, i), i, currentlength);
-	if (isavoider(extendedperm, maxavoidsize, currentlength + 1, avoidset, patternset)) {
+      if (!USEBITHACK || getbit(bitmap, i) == 1) { // If we are using bithack, then we only bother extending perm by inserting value currentlength in i-th position if the bitmap tells tells us the result is a potential avoider
+	uint64_t extendedperm = setdigit(addpos(perm, i), i, currentlength); // insert currentlength in i-th position (remember, values are indexed starting at 0)
+	if (isavoider(extendedperm, maxavoidsize, currentlength + 1, avoidset, patternset)) { // if extended permutation is avoider
 	  if (!justcount) avoidervector[currentlength + 1].push_back(extendedperm);
 	  else numavoiders[currentlength + 1]++;
 	  if (currentlength + 1 < maxsize) {
@@ -98,20 +130,24 @@ void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vec
 	    numnextlength++; 
 	  }
 	} else {
-	  if (USEBITHACK) bitmap = setbit(bitmap, i, 0);
+	  if (USEBITHACK) bitmap = setbit(bitmap, i, 0); // keep track of which insertion positions resulted in an avoider
 	}
       }
     }
     if (USEBITHACK && currentlength + 1 < maxsize) {
       for (int i = 0; i < currentlength + 1; i++) {
 	if (getbit(bitmap, i) == 1) {
-	  bitmaps.push(insertbit(bitmap, i + 1, 1));
+	  bitmaps.push(insertbit(bitmap, i + 1, 1)); // using which insertion positions resulted in an avoider, build bitmap for each new avoider
 	}
       }
     }
   }
 }
 
+// Example:
+// string patternlist = "1234 3214"; // space separated list of patterns; need not be same sizes; must be in S_{<10}
+// vector < vector < uint64_t > > avoidervector;
+// buildavoidersfrompatternlist(patternlist, 10, avoidervector); // now avoidervector contains S_n(patternlist) stored in avoidervector[n] for 0 < n < 11
 void buildavoidersfrompatternlist(string patternlist, int maxpermsize, vector < vector < uint64_t > > &avoidervector) {
   int maxpatternsize;
   hashdb patternset = hashdb(1<<3);
@@ -120,7 +156,10 @@ void buildavoidersfrompatternlist(string patternlist, int maxpermsize, vector < 
   buildavoiders(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, false, (1L << 10)); // for large cases, make last argument much larger!
 }
 
-
+// Example:
+// string patternlist = "1234 3214"; // space separated list of patterns; need not be same sizes; must be in S_{<10}
+// vector < uint64_t > numavoiders;
+// buildavoidersfrompatternlist(patternlist, 10, numavoiders); // now avoidervector contains |S_n(patternlist)| stored in numavoiders[n] for 0 < n < 11.
 void countavoidersfrompatternlist(string patternlist, int maxpermsize, vector < uint64_t > &numavoiders) {
   int maxpatternsize;
   hashdb patternset = hashdb(1<<3);
@@ -129,6 +168,18 @@ void countavoidersfrompatternlist(string patternlist, int maxpermsize, vector < 
   buildavoiders(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true, (1L << 10)); // for large cases, make last argument much larger!
 }
 
+// Inputs file stream containing string list of patterns on each line. 
+// e.g., infile might contain
+// 1234 312
+// 231 4132 312
+// Outputs file stream alternating every other line
+// (1) #<list of patterns>
+// (2) |S_1(list of patterns)| |S_2(list of patterns)| ... |S_maxpermsize(list of patterns)|
+// e.g., output file might contain
+// #1234 312
+// 0 2 5 13 31 66 127 225 373 586 
+// #231 4132 312
+// 0 2 4 8 16 32 64 128 256 512
 void countavoidersfromfile(ifstream &infile, ofstream &outfile, int maxpermsize, bool verbose) {
   string line;
   while (getline(infile, line)) {
@@ -148,34 +199,3 @@ void countavoidersfromfile(ifstream &infile, ofstream &outfile, int maxpermsize,
   }
   return;
 }
-
-// ------------------- A different version of countavoiders which uses a bitmap to get some speed-up, based on a hack in permlab
-
-
-
-
-
-
-// int main() {  
-//   int maxpatternsize = 3;
-//   int permsize = 14;
-//   assert(permsize <= 16);
-//   uint64_t perm = 0;
-//   perm = setdigit(perm, 0, 0);
-//   perm = setdigit(perm, 1, 2);
-//   perm = setdigit(perm, 2, 1);
-//   //perm = setdigit(perm, 3, 3);
-//   hashdb patternset = hashdb(1<<3);
-//   patternset.add(perm);
-//   timestamp_t start_time = get_timestamp();
-//   cout<<"Avoid set: ";
-//   displayperm(perm);
-//   vector < vector < uint64_t > > avoidersvector;
-//   uint64_t numavoiders = buildavoiders(patternset, maxpatternsize, permsize, avoidersvector);
-//   cout<<"Number of avoiders of size "<<permsize<<" is "<<numavoiders<<endl;
-//   assert(numavoiders == avoidersvector[permsize].size());
-//   timestamp_t end_time = get_timestamp();
-//   cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
-//   return 0;
-// }
-					   

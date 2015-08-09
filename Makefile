@@ -13,14 +13,14 @@ CXXFLAGS  = -O3 -std=c++11 -march=native -g
 # you can name this target entry anything, but "default" or "all"
 # are the most commonly used names by convention
 #
-TESTS = test inversionstest buildinput
+TESTS = example testallfours speedtest
 # variable assignement only goes into affect if variable does not already exist. Could, for example, do make TESTS=test to only make test
 
 default: $(TESTS)
 .PHONY: default clean
 # phony because default and clean are not files
 
-%:  fastavoidance.cpp hashdb.cpp hashmap.cpp %.cpp
+%:  fastavoidance.cpp countpatterns.cpp buildinput.cpp oeislocal.cpp hashdb.cpp hashmap.cpp perm.cpp %.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 # To start over from scratch, type 'make clean'.  This

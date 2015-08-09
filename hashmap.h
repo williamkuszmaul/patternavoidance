@@ -1,7 +1,16 @@
 /*
  *  hashmap.h
- *  A simple hash map implementation
- *
+ *  A very simple hash map implementation for storing pairs
+ *  (unsigned long long, payloadsize byte object) Only has insert and
+ *  lookup ability. No update or delete.  Uses linear probing,
+ *  which often yields better performance than c++ unordered map.
+ *  Will throw error if -1 is inserted as a key. (Is only screw case)
+ *  If a key is inserted multiple times, it will be stored multiple
+ *  times; Is undefined which payload will then be returned for
+ *  lookups. (This could easily be made better if it mattered for a
+ *  usage case)
+ *  Note: Does not call any kind of destructor on payload object when hash table is destructed. So payload object cannot have pointers which need to be freed.
+ *  
  *  This code is released under the MIT license.
  * 
  *  Copyright (c) 2013 William Kuszmaul
@@ -34,7 +43,7 @@ using namespace std;
 #include <string.h>
 #include <cassert>
 
-// NOTE: KEYS ARE ADDED AS 1 + THEMSELVES. SO 0 IS NOT A VALID KEY
+// NOTE: KEYS ARE ADDED AS 1 + THEMSELVES. SO -1 IS NOT A VALID KEY
 class hashmap{
 public:
   hashmap(unsigned long long startsize, int payloadsize);

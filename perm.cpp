@@ -44,19 +44,21 @@ uint64_t makepatterns(string permlist, hashdb &patternset, int &maxpatternsize) 
 }
 
 
-
+// If the i-th to last letter (starting with i = 1) is greater than j letters to its right, then we add j * (i-1)! to our final answer.
+// This yields a unique number because of how base factorial works (https://en.wikipedia.org/wiki/Factorial_number_system)
 unsigned long long permtonum(uint64_t perm, int length) {
   int answer = 0;
-  unsigned long long fac = 1;
+  unsigned long long fac = 1; // will be updated to take values of factorials
   uint64_t seenletters = 0; // bit map of which letters we've seen so far
   for (int i = length - 1; i >= 0; i--) {
-    unsigned long long facdig = 0;
+    unsigned long long facdig = 0; // will be the number of letters to the right of the i-th letter with value less than the i-th letter
     int digit = getdigit(perm, i);
-    if (digit != 0) {
-      unsigned int temp = seenletters << (32 - digit);
-      facdig = __builtin_popcount(temp);
+    if (digit != 0) { 
+      unsigned int temp = seenletters << (32 - digit); // Note: shifting by 32 is ill-defined, which is why we explicitly eliminate digit = 0 case.
+      facdig = __builtin_popcount(temp);  // By taking the popcount of temp, we get the number of letters to the right of the i-th letter with value less than the i-th letter
+      // Note: builtin_popcount is a single machine instruction for obtaining the number of ones in a 32-bit word.
     }
-    answer += facdig * fac;
+    answer += facdig * fac; // Using base factorial, make next digit be fac
     fac *= (length - i);
     seenletters = seenletters | (1 << digit);
   }

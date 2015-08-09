@@ -18,6 +18,7 @@
 #include "perm.h"
 using namespace std;
 
+// A simple bitmap. Will be used to keep represent a set of patterns
 class Bitmap {
 public:
   vector <bool> map;
@@ -58,7 +59,7 @@ bool operator> (Bitmap &map1, Bitmap &map2) {
   return false;
 }
 
-// sends i-th bit to permutation(i)-th bit
+// Permutes a bitmap by sending i-th bit to permutation(i)-th bit
 Bitmap shufflebits(Bitmap &bitmap, vector <int> &permutation) {
   Bitmap answer(bitmap.size);
   for (int i = 0; i < bitmap.size; i++) {
@@ -66,14 +67,19 @@ Bitmap shufflebits(Bitmap &bitmap, vector <int> &permutation) {
   }
   return answer;
 }
-  
+
+// Given a bitmap, returns bitmap where each permutation perm
+// represented by a 1 bit is replaced by a
+// reverse(inverse(perm)). This corresponds with a rotation if we are
+// viewing the trivial-wilf symmetries as the symmetries of a square
 Bitmap rotbitmap(Bitmap& bitmap, vector <int> &reverseindices, vector <int> &inverseindices) {
   Bitmap temp = shufflebits(bitmap, inverseindices);
   return shufflebits(temp, reverseindices);
 }
 
+// Builds bit maps corresponding with trivially wilf-equivalent pattern sets. Returns whether this bitmap is the lexicographically smallest bitmap of these.
 bool isminset(Bitmap& bitmap, vector <int> &reverseindices, vector <int> &inverseindices, vector <int> &complementindices) {
-  Bitmap revmap = shufflebits(bitmap, reverseindices);
+  Bitmap revmap = shufflebits(bitmap, reverseindices); // Corresponds with reflectional symmetry 
   if (bitmap > revmap) return false;
   Bitmap rots1 = bitmap;
   Bitmap rots2 = revmap;
@@ -86,7 +92,7 @@ bool isminset(Bitmap& bitmap, vector <int> &reverseindices, vector <int> &invers
   return true;
 }
 
-
+// Builds all permutations of size finalsize. Adds them to optionvals and the string representation of them to patternoptions
 void buildpermutations(uint64_t perm, int currentsize, int finalsize, vector <string> &patternoptions, vector <uint64_t> &optionvals) {
   if (currentsize < finalsize) {
     for (int i = 0; i < currentsize + 1; i++) {
@@ -105,14 +111,17 @@ void buildpermutations(uint64_t perm, int currentsize, int finalsize, vector <st
 }
 
 
+// Finds position of val in a vector of values. There is probably a C++ built-in for this...
 int find(vector<uint64_t> &vec, uint64_t val) {
   for (int i = 0; i < vec.size(); i++) {
     if (vec[i] == val) return i;
   }
-  assert(1 == 2);
+  assert(1 == 2); // should never get here
   return -1;
 }
 
+// Given a bitmap for a set of patterns, checks if map is the unique represetative for its trivial wilf-class.
+// If it is, writes the set of patterns to output file.
 void entermap(Bitmap & map, ofstream &file, int &numsetstotal, vector <string> &optionsvec, vector <int> &reverseindices, vector <int> &inverseindices, vector <int> &complementindices) { 
   if (isminset(map, reverseindices, inverseindices, complementindices)) {
     vector <string> patternset;
@@ -128,6 +137,8 @@ void entermap(Bitmap & map, ofstream &file, int &numsetstotal, vector <string> &
   }
 }
 
+// replaces map with next bitmap lexicographically to have same number of on bits as this one
+// returns false if map is the largest such map
 bool getnextmap(Bitmap &map) {
   int i = map.size - 1;
   int numleadingones = 0;
@@ -139,7 +150,7 @@ bool getnextmap(Bitmap &map) {
   while (i >= 0 && map.getpos(i) == 0) {
     i--;
   }
-  if (i < 0) return false;
+  if (i < 0) return false; 
   map.clearpos(i);
   i++;
   for (int j = 0; j < numleadingones + 1; j++) {
@@ -149,15 +160,21 @@ bool getnextmap(Bitmap &map) {
 }
 
 
+// Writes to file all pattern sets containing patterns of size
+// patternsize. HOWERVER, only writes one pattern set per trivial
+// wilf-equivalence class (so that the same computation is not done
+// multiple times due to symmetry). This is implemented to be faster
+// than repeated calls to the function-interface above.
+// Note: only implemented for patternsize < 5. (is not feasible to use for patternset >= 5 anyway)
 void writepatternsetstofile(ofstream &file, int patternsize, bool verbose) {
-  vector<int> reverseindices; // permutation which permutes pattern options to be the reverse patterns; indexing is same as in 64-bit word. Implemented only for <= 64 pattern options
+  vector<int> reverseindices; // maintains permutation that permutes pattern options to be the reverse patterns
   vector<int> inverseindices;
   vector<int> complementindices;
-  vector <string> options;
-  vector <uint64_t> optionvals;
-  buildpermutations(0L, 1, patternsize, options, optionvals);
+  vector <string> options; // stores string representation of S_patternsize
+  vector <uint64_t> optionvals; // stores each element of S_patternsize as unsigned long long
+  buildpermutations(0L, 1, patternsize, options, optionvals); // builds options and optionvals
   int numoptions = options.size();
-  for (int i = 0; i < optionvals.size(); i++) {
+  for (int i = 0; i < optionvals.size(); i++) { // builds permutations mapping each element of options to its reverse, inverse, and complement respectively
     reverseindices.push_back(find(optionvals, getreverse(optionvals[i], options[i].size())));
     inverseindices.push_back(find(optionvals, getinverse(optionvals[i], options[i].size())));
     complementindices.push_back(find(optionvals, getcomplement(optionvals[i], options[i].size())));
@@ -173,26 +190,32 @@ void writepatternsetstofile(ofstream &file, int patternsize, bool verbose) {
     int temp = i;
     int pos = 0;
     while (temp > 0) {
-      if (temp%2 == 1) map.setpos(pos);
+      if (temp%2 == 1) map.setpos(pos); // make bitmap have same bit setup as i
       pos++;
       temp/=2;
     }
-    entermap(map, file, numsetstotal, options, reverseindices, inverseindices, complementindices);
+    entermap(map, file, numsetstotal, options, reverseindices, inverseindices, complementindices); // output pattern set if it is the unique representative of its trivial wilf-class
   }
   if (verbose) {
     cout<<"Number of sets to be analyzed: "<<numsetstotal<<endl;
   }
 }
 
+// Writes to file all pattern sets containing patterns of size
+// patternsize. HOWERVER, only writes one pattern set per trivial
+// wilf-equivalence class (so that the same computation is not done
+// multiple times due to symmetry). This is implemented to be faster
+// than repeated calls to the function-interface above.
+// Note: only implemented for patternsize < 5. (is not feasible to use for patternset >= 5 anyway)
 void writepatternsetstofile(ofstream &file, int setsize, int patternsize, bool verbose) {
-  vector<int> reverseindices; // permutation which permutes pattern options to be the reverse patterns; indexing is same as in 64-bit word. Implemented only for <= 64 pattern options
+  vector<int> reverseindices; // permutation which permutes pattern options to be the reverse patterns
   vector<int> inverseindices;
   vector<int> complementindices;
-  vector <string> options;
-  vector <uint64_t> optionvals;
-  buildpermutations(0L, 1, patternsize, options, optionvals);
+  vector <string> options; // stores string representation of S_patternsize
+  vector <uint64_t> optionvals; // stores each element of S_patternsize as unsigned long long
+  buildpermutations(0L, 1, patternsize, options, optionvals); // builds options and optionvals
   int numoptions = options.size();
-  for (int i = 0; i < optionvals.size(); i++) {
+  for (int i = 0; i < optionvals.size(); i++) { // builds permutations mapping each element of options to its reverse, inverse, and complement respectively
     reverseindices.push_back(find(optionvals, getreverse(optionvals[i], options[i].size())));
     inverseindices.push_back(find(optionvals, getinverse(optionvals[i], options[i].size())));
     complementindices.push_back(find(optionvals, getcomplement(optionvals[i], options[i].size())));
@@ -210,9 +233,3 @@ void writepatternsetstofile(ofstream &file, int setsize, int patternsize, bool v
   }
 }
 
-// int main(int argc, char* argv[]) {
-//   ofstream file;
-//   file.open("foo", std::ofstream::trunc);
-//   writepatternsetstofile(file, 3, 3, true);
-//   return 0;
-// }

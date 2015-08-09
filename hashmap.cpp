@@ -1,7 +1,6 @@
 /* -*- mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*- */
 /*
- *  hashdb.h
- *  A simple hash table implementation
+ *  hashmap.cpp
  *
  *  This code is released under the MIT license.
  * 
@@ -40,7 +39,7 @@ hashmap :: hashmap(unsigned long long startsize, int payloadsize)
   , size(0)
   , payloadsize(payloadsize)
   , stepsize(payloadsize + sizeof(unsigned long long))
-{ //The initial maxsize is startsize
+{
   memset(array, 0, maxsize * stepsize);
 }
 
