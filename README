@@ -1,0 +1,64 @@
+Author: William Kuszmaul
+Contact: william.kuszmaul@gmail.com
+
+                     Core files
+
+Makefile: Does what a makefile ought to do.
+
+paper.pdf: Contains in depth discussion of the algorithms implemented
+here.
+
+perm.cpp/.h: We represent permutation in 64-bit integers, using a
+half-byte per letter. We can only represent permutations of size <=
+16. This file contains basic functions for using this
+permutation-representation.
+
+fastavoidance.cpp/.h: Implements algorithm for building S_n(Pi) for
+each n in [1..N] and some set of patterns (which need not be the same
+size) Pi. Could easily be modified to build S \cap S_n(Pi) for a
+down-closed set of permutation S.
+
+countpatterns.cpp/.h: Implements algorithm for counting the number of
+Pi-patterns appearing in each permutation in S_n for n in [1..N]. Pi's
+patterns need not be the same length. Could easily be modified to
+build S \cap S_n(Pi) for a down-closed set of permutation S.
+
+buildinput.cpp/.h: Writes to a file either (a) all pattern sets with
+patterns of size k up to trivial wilf-equivalence, or (b) all pattern
+sets of size j with patterns of size k up to trivial wilf-equivalence.
+
+stripped: NOT INCLUDED. This file needs to be downloaded at
+http://oeis.org/wiki/Welcome#Compressed_Versions, and decompressed to
+get a list of OEIS sequences, which are interpreted by
+oeislocal.cpp/.h.
+
+oeislocal.cpp/.h: Implements an OEIS object which on initialization
+builds data structures for doing OEIS look-ups using file
+stripped. Comes with user interface for looking up sequences in OEIS
+(using only local copy of OEIS), or for looking up all of the
+sequences in a file.
+
+hashdb.cpp/.h: A simple linear-probing hash table storing 64 bit
+integers. Often runs several times faster than unordered_set<unsigned
+long long>. Does not distinguish between insertions of duplicates.
+
+hashmap.cpp/.h: A simple linear-probing hash table for storing
+(unsigned long long, <payload>) pairs. Often runs faster than C++
+unordered map. Payload must be fixed size. No special destructor is
+called on payload. Undefined behavior for insertions of duplicates.
+
+                     Usage Example Files
+
+example.cpp: Example use of fastavoidance.h module
+
+speedtest.cpp: Command-line driven program to test speed of
+countpatterns.h and fastavoidance.h on an input file containing a
+pattern set on each line. For testing fastavoidance.h, also inputs an
+output file to which the number of permuations of each size avoiding
+each set of patterns is written.
+
+testallfours.cpp: For each pattern set of S_4 up to trivial wilf
+equivalence, computes number of permutations of each size (up to some
+maximum size) avoiding the pattern set. Then looks up which of the
+resulting sequences can be found in OEIS. Writes all of this to an
+output file.
