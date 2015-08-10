@@ -19,7 +19,7 @@ using namespace std;
 // for patterns in S_{<10} can use like this:
 //  string permlist = "3124 4123 3142 4132";
 //  makepatterns(permlist, patternset);
-uint64_t makepatterns(string permlist, hashdb &patternset, int &maxpatternsize) {
+void makepatterns(string permlist, hashdb &patternset, int &maxpatternsize) {
   maxpatternsize = 0; // IN COUNT AVOIDERS AM I CORRECTLY INITIALIZING ARRAY THINGS AT ZERO
   int pos = 0;
   uint64_t perm = 0;

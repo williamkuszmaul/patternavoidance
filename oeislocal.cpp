@@ -138,7 +138,7 @@ Sequence Oeis :: extractusersequence(string line, int inputshift) {
     }
     index++;
   }
-  testsequence.display();
+  //testsequence.display();
   return testsequence;
 }
 
@@ -218,10 +218,11 @@ void analyzesequencefile(ifstream &inputsequences, ofstream &output, int inputsh
     }
     prevline = line;
   }
-  if (verbose) {
-    cout<<numwins<<" successes out of "<<numtries<<" tries. And "<<numignored<<" ignored."<<endl;
-    cout<<"Number distinct sequences: "<<seensequences.size()<<endl;
-  }
+
+  // print this regardless of verbose-ness
+  cout<<numwins<<" successes out of "<<numtries<<" tries. And "<<numignored<<" ignored."<<endl;
+  cout<<"Number distinct sequences: "<<seensequences.size()<<endl;
+  
   inputsequences.close();
   output.close();
 

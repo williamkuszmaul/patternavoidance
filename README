@@ -3,7 +3,7 @@ Contact: william.kuszmaul@gmail.com
 
                      Core files
 
-Makefile: Does what a makefile ought to do.
+Makefile: Simple makefile.
 
 paper.pdf: Contains in depth discussion of the algorithms implemented
 here.
@@ -49,7 +49,8 @@ called on payload. Undefined behavior for insertions of duplicates.
 
                      Usage Example Files
 
-example.cpp: Example use of fastavoidance.h module
+example.cpp: Example use of fastavoidance.h and countpatterns.h
+modules. And a bit of use of perm.h module.
 
 speedtest.cpp: Command-line driven program to test speed of
 countpatterns.h and fastavoidance.h on an input file containing a

@@ -103,7 +103,14 @@ inline uint64_t getcomplement(uint64_t perm, int length) {
 //  string permlist = "3124 4123 3142 4132";
 //  makepatterns(permlist, patternset);
 // Fills patternset with permutations in permlist, each as a 64 bit integer
-uint64_t makepatterns(string permlist, hashdb &patternset, int &maxpatternsize);
+void makepatterns(string permlist, hashdb &patternset, int &maxpatternsize);
+
+// gives permuation corresponding with a string
+inline uint64_t stringtoperm(string perm) {
+  uint64_t answer = 0;
+  for (int i = 0; i < perm.size(); i++) answer = setdigit(answer, i, (unsigned long long)(perm[i] - '0'));
+  return answer;
+}
 
 // A fast map bijection from S_length to \mathbb{Z}_{length!}
 unsigned long long permtonum(uint64_t perm, int length);

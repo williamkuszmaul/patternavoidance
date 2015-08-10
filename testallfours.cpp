@@ -31,14 +31,14 @@ int main() {
   
   ofstream setsfile;
   setsfile.open(setsfilename, std::ofstream::trunc);
-  writepatternsetstofile(setsfile, 4, true);
+  writepatternsetstofile(setsfile, 4, false);
   setsfile.close();
 
   ifstream setsfilein;
   setsfilein.open(setsfilename);
   ofstream sequencesfile;
   sequencesfile.open(sequencesfilename, std::ofstream::trunc);
-  countavoidersfromfile(setsfilein, sequencesfile, maxpermsize, true);
+  countavoidersfromfile(setsfilein, sequencesfile, maxpermsize, false);
   setsfilein.close();
   sequencesfile.close();
 
@@ -48,7 +48,7 @@ int main() {
   sequencesfilein.open(sequencesfilename);
   ofstream oeismatchesfile;
   oeismatchesfile.open(oeismatchesfilename, std::ofstream::trunc);
-  analyzesequencefile(sequencesfilein, oeismatchesfile, minpermsize - 1, OEIS, true, true);
+  analyzesequencefile(sequencesfilein, oeismatchesfile, minpermsize - 1, OEIS, true, false);
   sequencesfilein.close();
   oeismatchesfile.close();
 }
