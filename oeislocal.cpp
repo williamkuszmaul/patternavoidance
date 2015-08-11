@@ -113,10 +113,12 @@ Oeis ::  Oeis(string filename, int sequencesize, int maxshift)
 	  tempsequence.data[place] = 0; // if we go off the end of a sequence, just fill in rest with zeros
 	}
       }
-      sequencemap[tempsequence] = i + 1; // to get oeis number
+      // since earlier oeis sequence tend to be more relevent, better to use them
+      if (sequencemap.find(tempsequence) == sequencemap.end()) sequencemap[tempsequence] = i + 1; // to get oeis number
     }
   }
 }
+
 
  // Given a string containing a sequence separated by spaces of
   // length at least inputshift + sequencesize, extracts the sequence
@@ -182,14 +184,45 @@ bool allowsequence(Sequence &testsequence) {
   return true;
 }
 
+void buildoeisnames(vector <string> & oeisnames) {
+  string filename = "names";
+  ifstream file(filename);
+  string line;
+  oeisnames.push_back("No first sequence");
+  for (int i = 0; i < 4; i++) getline(file, line);
+  while (getline(file, line)) {
+    oeisnames.push_back(line);
+  }
+}
+
+struct oeishitinfo {
+  int numhits;
+  int oeisnum;
+  string additionalinfo;
+  oeishitinfo(int a, int b, string c) {
+    numhits = a;
+    oeisnum = b;
+    additionalinfo = c;
+  }
+  oeishitinfo() {
+    numhits = 0;
+    oeisnum = -1;
+    additionalinfo = "FAILED TO INITIALIZE";
+  }
+};
+
 // Takes input file and for each line l in input file, writes to output file:
 // (1) l (as one line)
 // (2) if l does not start with #, checks if l corresponds with an oeis sequence and if so writes the OEIS sequence (as next line)
 // If ignoreboring, however, then (2) is NOT printed if the sequence represented by l is detected to be "boring" by allowsequence
 void analyzesequencefile(ifstream &inputsequences, ofstream &output, int inputshift, Oeis &OEIS, bool ignoreboring, bool verbose) {
   if (verbose) cout<<"Analyzing sequences..."<<endl;
+  vector <string> oeisnames;
+  buildoeisnames(oeisnames); 
+  
 
-  map<int, int> seensequences;
+
+  map<int, oeishitinfo> seensequences;
   string prevline = "";
   string line = "";
   int numwins = 0;
@@ -206,11 +239,12 @@ void analyzesequencefile(ifstream &inputsequences, ofstream &output, int inputsh
   	if (oeisnum != -1) {
   	  output<<numtooeis(oeisnum)<<endl;
   	  numwins++;
-  	  map<int, int>::const_iterator oe  = seensequences.find(oeisnum);
+  	  map<int, oeishitinfo>::const_iterator oe  = seensequences.find(oeisnum);
   	  if (oe == seensequences.end()) {
-  	    seensequences[oeisnum] = 1;
+	    oeishitinfo hitinfo(1, oeisnum, prevline);
+  	    seensequences[oeisnum] = hitinfo;
   	  } else {
-  	    seensequences[oeisnum]++;
+  	    seensequences[oeisnum].numhits++;
   	  }
   	}
   	numtries++;
@@ -227,23 +261,29 @@ void analyzesequencefile(ifstream &inputsequences, ofstream &output, int inputsh
   output.close();
 
   if (verbose) {
-    std::map<uint64_t, int> tempmap;
+    std::map<uint64_t, oeishitinfo> tempmap;
     int marker = 0;
-    for( std::map<int, int>::iterator iter = seensequences.begin();
+    for( std::map<int, oeishitinfo>::iterator iter = seensequences.begin();
 	 iter != seensequences.end();
 	 ++iter ) {
-      cout<<iter->first<<" "<<iter->second<<endl; // print out sequences detected in order of oeis number, as well as number of times sequence appears
-      tempmap[(((uint64_t)(iter->second))<<22) + marker] = iter->first; // this is a silly hack so that we can in a minute get sequences in order of number of times they appear
+      cout<<"-----------"<<endl;
+      cout<<"Number and number of hits: "<<iter->first<<" "<<iter->second.numhits<<endl; // print out sequences detected in order of oeis number, as well as number of times sequence appears
+      cout<<oeisnames[iter->first]<<endl;
+      cout<<iter->second.additionalinfo<<endl;
+      tempmap[(((uint64_t)(iter->second.numhits))<<22) + marker] = iter->second; // this is a silly hack so that we can in a minute get sequences in order of number of times they appear
       marker++;
     }
     //winfile.close();
     
     cout<<"------------------------------------------------"<<endl;
     
-    for( std::map<uint64_t, int>::iterator iter = tempmap.begin();
+    for( std::map<uint64_t, oeishitinfo>::iterator iter = tempmap.begin();
 	 iter != tempmap.end();
 	 ++iter ) {
-      cout<<iter->second<<" "<<((iter->first)>>22)<<endl; // print out sequences detected in order of number of times sequence appears
+      cout<<"-----------"<<endl;
+      cout<<"Number and number of hits: "<<iter->second.oeisnum<<" "<<((iter->first)>>22)<<endl; // print out sequences detected in order of number of times sequence appears
+      cout<<oeisnames[iter->second.oeisnum]<<endl;
+      cout<<"Example set: "<<iter->second.additionalinfo<<endl;
     }
   }
 }
