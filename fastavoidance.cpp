@@ -19,16 +19,57 @@ using namespace std;
 
 // 1 to use a bithack inspired by permlab. Upshot: Code runs about a third faster. Downshot: Code is around 1/4 less memory efficient
 #define USEBITHACK 1
+#define USEPREFIXMAP 1
+
+// Input: perm, inverse (which needs to be right in pos length - index - 1), perm length, index, complement of normalization of index - 1 largest letters in perm, a bitmap which should start off at zero for index = 0
+// Output: bitmap is updated. answer is updated to be complement of normalization of index largest letters in perm
+void extendnormalizetop(uint64_t perm, uint64_t inverse, int length, int index, uint64_t &answer, uint32_t & seenpos) {
+  int i = length - index - 1;
+  int oldpos = getdigit(inverse, i);
+  int newpos = 0;
+  if (oldpos != 0){
+    uint32_t temp = seenpos << (32 - oldpos); // Note: shifting by 32 is ill-defined, which is why we explicitly eliminate digit = 0 case.
+    newpos = __builtin_popcount(temp);
+  }
+  answer = setdigit(addpos(answer, newpos), newpos, index);
+  seenpos = seenpos | (1 << oldpos);
+}
+
+void addprefixeshelper(uint64_t perm, int length, hashdb &table) {
+  uint64_t entry = 0;
+  uint64_t inverse = getinverse(perm, length);
+  uint32_t seenpos = 0; // bit map of which letters we've seen so far
+  for (int i = 0; i < length; i++) {
+    extendnormalizetop(perm, inverse, length, i, entry, seenpos);
+    //cout<<entry<<endl;
+    if (!table.contains(entry)) table.add(entry);
+  }
+}
+
+// build prefix table
+void addprefixes(const hashdb &permset, hashdb &table) {
+  vector <unsigned long long> patterns;
+  permset.getvals(patterns);
+  for (int i = 0; i < patterns.size(); i++) {
+    uint64_t perm = patterns[i];
+    int length = getmaxdigit(perm) + 1;
+    displayperm(perm,length);
+    addprefixeshelper(perm, length, table);
+  }
+}
+
 
 // Detects if perm is in S_{length}(patternset), where maxavoidsize is the length of the longest pattern in patternset.
 // Prerequisite:
 // -- The subset of S_{n-1} contained in avoidset is exactly S_{n-1}(patternset)
 // -- If USEBITHACK, then we also require that the user has already verified that all patterns in perm use both n and n-1.
-static bool isavoider(uint64_t perm, int maxavoidsize, int length, const hashdb &avoidset, const hashdb &patternset) { 
+static bool isavoider(uint64_t perm, int maxavoidsize, int length, const hashdb &avoidset, const hashdb &patternset, const hashdb &prefixmap) { 
   uint64_t inverse = getinverse(perm, length);
   if (length <= maxavoidsize && patternset.contains(perm)) { // if perm is an offending pattern
       return false;
   }
+  uint32_t seenpos = 0;
+  uint64_t prefixentry = 0;
   uint64_t currentperm = perm;
   if (length > 1) { // don't deal with permutations of size zero
     for (int i = length - 1; i >= 0 && i >= length - maxavoidsize - 1; i--) { // for i ranging from the largest-valued letter in perm to the (maxavoidsize + 1)-th largest-valued letter in perm
@@ -42,10 +83,15 @@ static bool isavoider(uint64_t perm, int maxavoidsize, int length, const hashdb 
 	return false; // found a subword not avoiding the patterns
       }
 
+      if (USEPREFIXMAP) {
+	extendnormalizetop(perm, inverse, length, length - 1 - i, prefixentry, seenpos);
+	if (i < length - 1 && !prefixmap.contains(prefixentry)) return true;
+	if (i == length - maxavoidsize) return false;
+      }
       // The next two lines are special for when there is a single pattern and it is the identity. They reduce cache misses significantly. For |pi|=5, this gets roughly a x2 speedup
       // Can this hack be extended efficiently to arbitrary choices of pattern-sets?
-      //if (i < length - 1 && getdigit(inverse, i) > getdigit(inverse, i + 1)) return true;
-      //if (i == length - maxavoidsize) return false;
+      // if (i < length - 1 && getdigit(inverse, i) > getdigit(inverse, i + 1)) return true;
+      // if (i == length - maxavoidsize) return false;
     }
   }
   return true;
@@ -80,8 +126,10 @@ inline uint64_t insertbit(uint64_t word, uint64_t pos, uint64_t val) { // val is
 // Note: Patternset patterns required to be size >= 2
 void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vector < vector < uint64_t > > &avoidervector, vector < uint64_t > &numavoiders, bool justcount, uint64_t plannedavoidsetsize) {
   if (!justcount) avoidervector.resize(maxsize + 1);
-  else numavoiders.resize(maxsize + 1);
-  
+    else numavoiders.resize(maxsize + 1);
+
+  hashdb prefixmap(1<<3);
+  addprefixes(patternset, prefixmap);
   hashdb avoidset = hashdb(plannedavoidsetsize); // hash table containing avoiders of all sizes
   uint64_t startperm = 0;
   avoidset.add(startperm); // identity in S_1
@@ -108,7 +156,8 @@ void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vec
   int numnextlength = 0; // number of permutations of size currentlength + 1 in avoiderstoextend
 
   while (avoiderstoextend.size() > 0) {
-    if (numleftcurrentlength == 0) { 
+    if (numleftcurrentlength == 0) {
+      //cout<<"Finished n = "<<currentlength + 1<<" with "<<numavoiders[currentlength + 1]<<" avoiders"<<endl; // MEMORY EFFICIENCY NOTE: I TEMPORARILY LOOSE A FACTOR OF 1/3 WHEN I RESIZE
       numleftcurrentlength = numnextlength;
       numnextlength = 0;
       currentlength++;
@@ -121,7 +170,7 @@ void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vec
     for (int i = 0; i < currentlength + 1; i++) {
       if (!USEBITHACK || getbit(bitmap, i) == 1) { // If we are using bithack, then we only bother extending perm by inserting value currentlength in i-th position if the bitmap tells tells us the result is a potential avoider
 	uint64_t extendedperm = setdigit(addpos(perm, i), i, currentlength); // insert currentlength in i-th position (remember, values are indexed starting at 0)
-	if (isavoider(extendedperm, maxavoidsize, currentlength + 1, avoidset, patternset)) { // if extended permutation is avoider
+	if (isavoider(extendedperm, maxavoidsize, currentlength + 1, avoidset, patternset, prefixmap)) { // if extended permutation is avoider
 	  if (!justcount) avoidervector[currentlength + 1].push_back(extendedperm);
 	  else numavoiders[currentlength + 1]++;
 	  if (currentlength + 1 < maxsize) {

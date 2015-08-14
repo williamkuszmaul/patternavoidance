@@ -17,6 +17,7 @@
 #include <iostream>
 #include <fstream>
 #include <queue>
+#include "math.h"
 #include <sys/time.h>
 #include <vector>
 #include "hashdb.h"
@@ -108,13 +109,20 @@ void makepatterns(string permlist, hashdb &patternset, int &maxpatternsize);
 // gives permuation corresponding with a string
 inline uint64_t stringtoperm(string perm) {
   uint64_t answer = 0;
-  for (int i = 0; i < perm.size(); i++) answer = setdigit(answer, i, (unsigned long long)(perm[i] - '0'));
+  for (int i = 0; i < perm.size(); i++) answer = setdigit(answer, i, (unsigned long long)(perm[i] - '1'));
   return answer;
 }
 
 // A fast map bijection from S_length to \mathbb{Z}_{length!}
 unsigned long long permtonum(uint64_t perm, int length);
 
+inline uint64_t getmaxdigit(uint64_t perm) {
+  uint64_t answer = 0;
+  for (int i = 0; i < 16; i++) {
+    answer = max(answer, getdigit(perm, i));
+  }
+  return answer;
+}
 
 
 

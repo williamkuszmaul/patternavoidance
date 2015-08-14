@@ -26,6 +26,7 @@
  *  THE SOFTWARE.
  */
 
+#include <vector>
 #include "hashdb.h"
 
 static unsigned long long next_power_of_two(unsigned long long v) {
@@ -103,4 +104,16 @@ unsigned long long hashdb :: getavtime () const { //just to check how well hash 
 
 void hashdb::removeprev() {
   array[prevplace]=0;
+}
+
+void hashdb::getvals(vector <unsigned long long> & vals) const{
+  vals.resize(0);
+  int count = 0;
+  for (int i = 0; i < maxsize; i++) {
+    if (array[i] != 0) {
+      count++;
+      vals.push_back(array[i] - 1);
+    }
+  }
+  assert(count == size);
 }

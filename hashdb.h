@@ -35,6 +35,7 @@ using namespace std;
 #include <stdlib.h>
 #include <iostream>
 #include <string.h>
+#include <vector>
 #include <cassert>
 
 class hashdb{
@@ -47,6 +48,8 @@ public:
   unsigned long long getavtime() const;
   void removeprev();
   unsigned long long getsize() const;
+  // makes vals contain all entries in hash table
+  void getvals(vector <unsigned long long> &vals) const;
  private:
   unsigned long long averageinsertiontime;
   unsigned long long *array;
