@@ -58,13 +58,20 @@ void addprefixes(const hashdb &permset, hashdb &table) {
   }
 }
 
+unsigned long long stat1 = 0, stat2 = 0;
+
+// THIS IS HOW YOU KEEP A FUNCTION FROM INLINING!
+__attribute__((noinline)) uint64_t getinversecover(uint64_t perm, size_t length) {
+  //__attribute__((noinline));
+  return getinverse(perm, length);
+}
 
 // Detects if perm is in S_{length}(patternset), where maxavoidsize is the length of the longest pattern in patternset.
 // Prerequisite:
 // -- The subset of S_{n-1} contained in avoidset is exactly S_{n-1}(patternset)
 // -- If USEBITHACK, then we also require that the user has already verified that all patterns in perm use both n and n-1.
-static bool isavoider(uint64_t perm, int maxavoidsize, int length, const hashdb &avoidset, const hashdb &patternset, const hashdb &prefixmap) { 
-  uint64_t inverse = getinverse(perm, length);
+static bool isavoider(uint64_t perm, uint64_t inverse, int maxavoidsize, int length, const hashdb &avoidset, const hashdb &patternset, const hashdb &prefixmap) {
+  stat1++;
   if (length <= maxavoidsize && patternset.contains(perm)) { // if perm is an offending pattern
       return false;
   }
@@ -79,6 +86,7 @@ static bool isavoider(uint64_t perm, int maxavoidsize, int length, const hashdb 
       }
       currentperm = killpos(currentperm, getdigit(inverse, i)); // now currentperm is perm, except with the letter of value i removed, and the permutation normalized to be on the letters 0,...,(length - 2)
       //displayperm(currentperm)
+      if (!USEBITHACK || i < length - 2) stat2++;
       if ((!USEBITHACK || i < length - 2) && !avoidset.contains(currentperm)) { // Check if this sub-permutation of perm is in S_{length - 1}(patternset)
 	return false; // found a subword not avoiding the patterns
       }
@@ -167,10 +175,14 @@ void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vec
     avoiderstoextend.pop();
     if (USEBITHACK) bitmaps.pop();
     numleftcurrentlength--;
-    for (int i = 0; i < currentlength + 1; i++) {
+    uint64_t inverse = getinversecover(perm, currentlength);
+    uint64_t newinverse = setdigit(inverse, currentlength, currentlength); // inverse of the extended permutation
+    for (int i = currentlength; i >= 0; i--) {
+      // need to increment newinverse[perm[i]], decrement newinverse[currentlength]
+      if (i < currentlength) newinverse = newinverse + (1L << (4 * getdigit(perm, i))) - (1L << (4 * currentlength));
       if (!USEBITHACK || getbit(bitmap, i) == 1) { // If we are using bithack, then we only bother extending perm by inserting value currentlength in i-th position if the bitmap tells tells us the result is a potential avoider
 	uint64_t extendedperm = setdigit(addpos(perm, i), i, currentlength); // insert currentlength in i-th position (remember, values are indexed starting at 0)
-	if (isavoider(extendedperm, maxavoidsize, currentlength + 1, avoidset, patternset, prefixmap)) { // if extended permutation is avoider
+	if (isavoider(extendedperm, newinverse, maxavoidsize, currentlength + 1, avoidset, patternset, prefixmap)) { // if extended permutation is avoider
 	  if (!justcount) avoidervector[currentlength + 1].push_back(extendedperm);
 	  else numavoiders[currentlength + 1]++;
 	  if (currentlength + 1 < maxsize) {
@@ -184,7 +196,7 @@ void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vec
       }
     }
     if (USEBITHACK && currentlength + 1 < maxsize) {
-      for (int i = 0; i < currentlength + 1; i++) {
+      for (int i = currentlength; i >= 0; i--) {
 	if (getbit(bitmap, i) == 1) {
 	  bitmaps.push(insertbit(bitmap, i + 1, 1)); // using which insertion positions resulted in an avoider, build bitmap for each new avoider
 	}
@@ -246,5 +258,6 @@ void countavoidersfromfile(ifstream &infile, ofstream &outfile, int maxpermsize,
     outfile<<endl;
     if (verbose) cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
   }
+  cout<<(double)stat2/(double)stat1<<endl;
   return;
 }
