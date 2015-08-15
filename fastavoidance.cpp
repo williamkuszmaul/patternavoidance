@@ -58,7 +58,7 @@ void addprefixes(const hashdb &permset, hashdb &table) {
   }
 }
 
-unsigned long long stat1 = 0, stat2 = 0;
+unsigned long long stat1 = 0, stat2 = 0, stat3 = 0;
 
 // THIS IS HOW YOU KEEP A FUNCTION FROM INLINING!
 __attribute__((noinline)) uint64_t getinversecover(uint64_t perm, size_t length) {
@@ -179,6 +179,7 @@ void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vec
     uint64_t newinverse = setdigit(inverse, currentlength, currentlength); // inverse of the extended permutation
     for (int i = currentlength; i >= 0; i--) {
       // need to increment newinverse[perm[i]], decrement newinverse[currentlength]
+      stat3++;
       if (i < currentlength) newinverse = newinverse + (1L << (4 * getdigit(perm, i))) - (1L << (4 * currentlength));
       if (!USEBITHACK || getbit(bitmap, i) == 1) { // If we are using bithack, then we only bother extending perm by inserting value currentlength in i-th position if the bitmap tells tells us the result is a potential avoider
 	uint64_t extendedperm = setdigit(addpos(perm, i), i, currentlength); // insert currentlength in i-th position (remember, values are indexed starting at 0)
@@ -258,6 +259,6 @@ void countavoidersfromfile(ifstream &infile, ofstream &outfile, int maxpermsize,
     outfile<<endl;
     if (verbose) cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
   }
-  cout<<(double)stat2/(double)stat1<<endl;
+  cout<<(double)stat2/(double)stat3<<endl;
   return;
 }
