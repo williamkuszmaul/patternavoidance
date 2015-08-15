@@ -87,6 +87,7 @@ static bool isavoider(uint64_t perm, uint64_t inverse, int maxavoidsize, int len
       currentperm = killpos(currentperm, getdigit(inverse, i)); // now currentperm is perm, except with the letter of value i removed, and the permutation normalized to be on the letters 0,...,(length - 2)
       //displayperm(currentperm)
       if (!USEBITHACK || i < length - 2) stat2++;
+      // NEVER ACTUALLY HAVE TO DO I = LENGTH - 1
       if ((!USEBITHACK || i < length - 2) && !avoidset.contains(currentperm)) { // Check if this sub-permutation of perm is in S_{length - 1}(patternset)
 	return false; // found a subword not avoiding the patterns
       }
