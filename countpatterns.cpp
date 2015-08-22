@@ -23,9 +23,20 @@ using namespace std;
 // Turn these on to turn brute force algorithm into a memory efficient hybrid betweenthe brute-force algorithm and the asymptotically good algorithm
 #define USEADDFACTOR 1
 #define USESECONDADDFACTOR 1 // forces useaddfactor on
-
 // Input: perm, inverse (which needs to be right in pos length - index - 1), perm length, index, complement of normalization of index - 1 largest letters in perm, a bitmap which should start off at zero for index = 0
 // Output: bitmap is updated. answer is updated to be complement of normalization of index largest letters in perm
+
+// updates tally
+void increasetally(vector < int > &tally, uint64_t val) {
+  if (val + 1 > tally.size()) {
+    uint64_t oldsize = tally.size();
+    tally.resize(oldsize * 2);
+    for (int i = oldsize; i < oldsize * 2; i++) tally[i] = 0;
+  }
+  tally[val]++;
+}
+
+
 static void extendnormalizetop(uint64_t perm, uint64_t inverse, int length, int index, uint64_t &answer, uint32_t & seenpos) {
   int i = length - index - 1;
   int oldpos = getdigit(inverse, i);
@@ -93,7 +104,7 @@ void buildpermutations_brute(uint64_t perm, uint64_t inverse, int currentsize, i
   int count = 0;
   checkpatterns(perm, inverse, 0, 0, currentsize, maxpatternsize, 0, patterncomplements, prefixmap, count);
   if (USEADDFACTOR) count += addfactor;
-  tally[currentsize][count]++;
+  increasetally(tally[currentsize], count);
   completelist[currentsize][permtonum(perm, currentsize)] = count;
   
   uint64_t newinverse = setdigit(inverse, currentsize, currentsize); // inverse of the extended permutation
@@ -120,7 +131,7 @@ void buildpermutations_brute_usingbothaddfactors(uint64_t perm, uint64_t inverse
       int indexignoringsecondtofinal = i;
       if (getdigit(newinverse, currentsize) > getdigit(newinverse, currentsize - 1)) indexignoringsecondtofinal--; 
       int actualcount = countusingfinaltwo + prevcount + prevextensions[indexignoringsecondtofinal];
-      tally[currentsize + 1][actualcount]++;
+      increasetally(tally[currentsize + 1], actualcount);
       completelist[currentsize + 1][permtonum(extendedperm, currentsize + 1)] = actualcount;
       newextensions[i] = countusingfinaltwo + prevextensions[indexignoringsecondtofinal];
       actualcounts[i] = actualcount;
@@ -176,15 +187,6 @@ inline unsigned short getPval(unsigned long long perm, int i, hashmap &Phashmap)
   return ((unsigned short*)Phashmap.getpayload(perm))[i];
 }
 
-// updates tally
-void increasetally(vector < int > &tally, uint64_t val) {
-  if (val + 1 > tally.size()) {
-    uint64_t oldsize = tally.size();
-    tally.resize(oldsize * 2);
-    for (int i = oldsize; i < oldsize * 2; i++) tally[i] = 0;
-  }
-  tally[val]++;
-}
 
 // Inputs perm \in S_length, set of pattern patternset with longest pattern of size maxpatternsize, tally, completelist.
 // Computes P_i(perm) for i from 0 , ... , maxpatternsize + 1; and if length < maxpermsize. stores all but final one
