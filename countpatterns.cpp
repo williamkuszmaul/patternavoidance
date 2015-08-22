@@ -20,6 +20,109 @@
 #include "perm.h"
 using namespace std;
 
+#define USEADDFACTOR 1
+//A#define USESECONDADDFACTOR 1 // Requires USEADDFACTOR on
+
+// Input: perm, inverse (which needs to be right in pos length - index - 1), perm length, index, complement of normalization of index - 1 largest letters in perm, a bitmap which should start off at zero for index = 0
+// Output: bitmap is updated. answer is updated to be complement of normalization of index largest letters in perm
+static void extendnormalizetop(uint64_t perm, uint64_t inverse, int length, int index, uint64_t &answer, uint32_t & seenpos) {
+  int i = length - index - 1;
+  int oldpos = getdigit(inverse, i);
+  int newpos = 0;
+  if (oldpos != 0){
+    uint32_t temp = seenpos << (32 - oldpos); // Note: shifting by 32 is ill-defined, which is why we explicitly eliminate digit = 0 case.
+    newpos = __builtin_popcount(temp);
+  }
+  answer = setdigit(addpos(answer, newpos), newpos, index);
+  seenpos = seenpos | (1 << oldpos);
+}
+
+
+static void addprefixeshelper(uint64_t perm, int length, hashdb &table) {
+  uint64_t entry = 0;
+  uint64_t inverse = getinverse(perm, length);
+  uint32_t seenpos = 0; // bit map of which letters we've seen so far
+  for (int i = 0; i < length; i++) {
+    extendnormalizetop(perm, inverse, length, i, entry, seenpos);
+    //cout<<entry<<endl;
+    if (!table.contains(entry)) table.add(entry);
+  }
+}
+
+// build prefix table
+static void addprefixes(const hashdb &permset, hashdb &table) {
+  vector <unsigned long long> patterns;
+  permset.getvals(patterns);
+  for (int i = 0; i < patterns.size(); i++) {
+    uint64_t perm = patterns[i];
+    int length = getmaxdigit(perm) + 1;
+    displayperm(perm,length);
+    addprefixeshelper(perm, length, table);
+  }
+}
+
+
+void checkpatterns(uint64_t perm, uint64_t inverse, uint64_t currentpatterncomplement, int currentpatternlength, int largestletterused, int numlettersleft, uint32_t seenpos, const hashdb &patternset, const hashdb &prefixmap, int &count) {
+  if (currentpatterncomplement != 0 && !prefixmap.contains(currentpatterncomplement)) return;
+  if (currentpatterncomplement != 0 && patternset.contains(currentpatterncomplement)) count++;
+  if (numlettersleft == 0) return; // make sure this if statement comes AFTER checking for patternset
+  for (int i = largestletterused - 1; i >= 0; i--) {
+    if (USEADDFACTOR && currentpatternlength == 0 && i < largestletterused - 1) return; // because of our use of addfactor
+    //if (USESECONDADDFACTOR && currentpatternlength == 1 && i < largestletterused - 2) return; 
+    int oldpos = getdigit(inverse, i);
+    int newpos = 0;
+    if (oldpos != 0){  
+      uint32_t temp = seenpos << (32 - oldpos); // Note: shifting by 32 is ill-defined, which is why we explicitly eliminate digit = 0 case.
+      newpos = __builtin_popcount(temp);
+    }
+    //cout<<"Here again with i selected at "<<i<<endl;
+    checkpatterns(perm, inverse, setdigit(addpos(currentpatterncomplement, newpos), newpos, currentpatternlength), currentpatternlength + 1, i, numlettersleft - 1, seenpos | (1 << oldpos), patternset, prefixmap, count);
+  }
+  return;
+}
+
+// constructs the permutations of size finalsize. Then passes on paramaters to Pcount, in order to find number of patterns appearing in each permutation
+void buildpermutations_brute(uint64_t perm, uint64_t inverse, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patterncomplements, hashdb &prefixmap, vector < vector < int > > &tally, vector < vector < int > > &completelist, int addfactor) {
+      //    uint64_t inverse = getinverse(perm, currentsize);
+  int count = 0;
+  checkpatterns(perm, inverse, 0, 0, currentsize, maxpatternsize, 0, patterncomplements, prefixmap, count);
+  if (USEADDFACTOR) count += addfactor;
+  tally[currentsize][count]++;
+  completelist[currentsize][permtonum(perm, currentsize)] = count;
+  
+  uint64_t newinverse = setdigit(inverse, currentsize, currentsize); // inverse of the extended permutation
+  if (currentsize < finalsize) {
+    for (int i = currentsize; i >= 0; i--) {
+      if (i < currentsize) newinverse = newinverse + (1L << (4 * getdigit(perm, i))) - (1L << (4 * currentsize));
+      uint64_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
+      assert(getinverse(extendedperm, currentsize + 1) == newinverse);
+      buildpermutations_brute(extendedperm, newinverse, currentsize + 1, finalsize, maxpatternsize,  maxpermsize, patterncomplements, prefixmap, tally, completelist, count);
+    }
+  }
+}
+
+void start_brute(int maxpatternsize, int maxpermsize, hashdb &patternset, vector < vector < int > > &tally, vector < vector < int > > &completelist) {
+  cout<<"Using Brute Force Algorithm"<<endl;
+
+  hashdb prefixmap(1<<3);
+  addprefixes(patternset, prefixmap);
+  
+  vector <unsigned long long> patterns;
+  hashdb patterncomplements(1<<3);
+  patternset.getvals(patterns);
+  for (int i = 0; i < patterns.size(); i++) {
+    uint64_t perm = patterns[i];
+    int length = getmaxdigit(perm) + 1;
+    patterncomplements.add(getcomplement(perm, length));
+  }
+  cout<<"max size: "<<maxpermsize<<endl;
+  for (int i = 2; i <= maxpermsize; i++) {
+    buildpermutations_brute(0L, 0L, 1, i, maxpatternsize, maxpermsize, patterncomplements, prefixmap, tally, completelist, 0);
+    timestamp_t current_time = get_timestamp();
+    //    if (verbose) cout<< "Time elapsed to build perms of size "<<i<<" in seconds: "<<(current_time - start_time)/1000000.0L<<endl;
+  }
+}
+
 // We store P_0(perm), ..., P_{maxpatternsize}(perm) in a hash table containing arrays of shorts of size maxpatternsize + 1
 inline void setPvals(unsigned long long perm, unsigned short* payload, hashmap &Phashmap) {
   Phashmap.add(perm, payload);
@@ -155,7 +258,8 @@ void countpatterns(string patternlist, int maxpermsize, vector < vector <int> > 
   for (int i = 1; i <= maxpermsize - 1; i++) reservedspace += factorial(i);
   hashmap Phashmap(reservedspace * 3, sizeof(short)*(maxpatternsize + 1)); // initialize hash table of Pvals
   timestamp_t current_time = get_timestamp();
-  createPmap(maxpermsize, patternset, maxpatternsize, current_time, Phashmap, tally, completelist, verbose);
+  start_brute(maxpatternsize, maxpermsize, patternset, tally, completelist);
+  //createPmap(maxpermsize, patternset, maxpatternsize, current_time, Phashmap, tally, completelist, verbose);
   return;
 }
 

@@ -32,6 +32,7 @@ void countallfromfiletest(ifstream &infile, int maxpermsize, bool verbose) {
     vector < vector < int > > tally;
     vector < vector < int > > completelist;
     countpatterns(line, maxpermsize, tally, completelist, verbose);
+    cout<<tally[maxpermsize][0]<<" "<<tally[maxpermsize][1]<<endl;
     timestamp_t end_time = get_timestamp();
     if (verbose) cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
   }
