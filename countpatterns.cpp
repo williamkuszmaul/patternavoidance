@@ -20,8 +20,9 @@
 #include "perm.h"
 using namespace std;
 
+// Turn these on to turn brute force algorithm into a memory efficient hybrid betweenthe brute-force algorithm and the asymptotically good algorithm
 #define USEADDFACTOR 1
-//A#define USESECONDADDFACTOR 1 // Requires USEADDFACTOR on
+#define USESECONDADDFACTOR 1 // forces useaddfactor on
 
 // Input: perm, inverse (which needs to be right in pos length - index - 1), perm length, index, complement of normalization of index - 1 largest letters in perm, a bitmap which should start off at zero for index = 0
 // Output: bitmap is updated. answer is updated to be complement of normalization of index largest letters in perm
@@ -63,12 +64,17 @@ static void addprefixes(const hashdb &permset, hashdb &table) {
 
 
 void checkpatterns(uint64_t perm, uint64_t inverse, uint64_t currentpatterncomplement, int currentpatternlength, int largestletterused, int numlettersleft, uint32_t seenpos, const hashdb &patternset, const hashdb &prefixmap, int &count) {
+  //uint64_t tempperm = stringtoperm("1234");
+  
   if (currentpatterncomplement != 0 && !prefixmap.contains(currentpatterncomplement)) return;
-  if (currentpatterncomplement != 0 && patternset.contains(currentpatterncomplement)) count++;
+  if (currentpatterncomplement != 0 && patternset.contains(currentpatterncomplement)) {
+    count++;
+    //if (perm == tempperm) cout<<"Here! top used letter is "<<largestletterused<<endl;
+  }
   if (numlettersleft == 0) return; // make sure this if statement comes AFTER checking for patternset
   for (int i = largestletterused - 1; i >= 0; i--) {
-    if (USEADDFACTOR && currentpatternlength == 0 && i < largestletterused - 1) return; // because of our use of addfactor
-    //if (USESECONDADDFACTOR && currentpatternlength == 1 && i < largestletterused - 2) return; 
+    if ((USEADDFACTOR || USESECONDADDFACTOR) && currentpatternlength == 0 && i < largestletterused - 1) return; // because of our use of addfactor
+    if (USESECONDADDFACTOR && currentpatternlength == 1 && i < largestletterused - 1) return; // note this means i < maxpatternlength - 2, because if-statement above forces largestletterused to decrease by 1 to maxpatternlength - 1 in the previous level of recursion 
     int oldpos = getdigit(inverse, i);
     int newpos = 0;
     if (oldpos != 0){  
@@ -76,6 +82,7 @@ void checkpatterns(uint64_t perm, uint64_t inverse, uint64_t currentpatterncompl
       newpos = __builtin_popcount(temp);
     }
     //cout<<"Here again with i selected at "<<i<<endl;
+    //if (perm == tempperm) cout<<(currentpatternlength + 1)<<" to right-most letter is in position "<<i<<endl;
     checkpatterns(perm, inverse, setdigit(addpos(currentpatterncomplement, newpos), newpos, currentpatternlength), currentpatternlength + 1, i, numlettersleft - 1, seenpos | (1 << oldpos), patternset, prefixmap, count);
   }
   return;
@@ -83,7 +90,6 @@ void checkpatterns(uint64_t perm, uint64_t inverse, uint64_t currentpatterncompl
 
 // constructs the permutations of size finalsize. Then passes on paramaters to Pcount, in order to find number of patterns appearing in each permutation
 void buildpermutations_brute(uint64_t perm, uint64_t inverse, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patterncomplements, hashdb &prefixmap, vector < vector < int > > &tally, vector < vector < int > > &completelist, int addfactor) {
-      //    uint64_t inverse = getinverse(perm, currentsize);
   int count = 0;
   checkpatterns(perm, inverse, 0, 0, currentsize, maxpatternsize, 0, patterncomplements, prefixmap, count);
   if (USEADDFACTOR) count += addfactor;
@@ -95,8 +101,40 @@ void buildpermutations_brute(uint64_t perm, uint64_t inverse, int currentsize, i
     for (int i = currentsize; i >= 0; i--) {
       if (i < currentsize) newinverse = newinverse + (1L << (4 * getdigit(perm, i))) - (1L << (4 * currentsize));
       uint64_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
-      assert(getinverse(extendedperm, currentsize + 1) == newinverse);
       buildpermutations_brute(extendedperm, newinverse, currentsize + 1, finalsize, maxpatternsize,  maxpermsize, patterncomplements, prefixmap, tally, completelist, count);
+    }
+  }
+}
+
+// same as buildpermutations_brute but with USESECONDADDFACTOR installed
+void buildpermutations_brute_usingbothaddfactors(uint64_t perm, uint64_t inverse, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patterncomplements, hashdb &prefixmap, vector < vector < int > > &tally, vector < vector < int > > &completelist, int prevcount, int* prevextensions) {
+  int actualcounts[currentsize + 1];
+  int newextensions[currentsize + 1];
+  uint64_t newinverse = setdigit(inverse, currentsize, currentsize); // inverse of the extended permutation
+  if (currentsize < finalsize) {
+    for (int i = currentsize; i >= 0; i--) {
+      if (i < currentsize) newinverse = newinverse + (1L << (4 * getdigit(perm, i))) - (1L << (4 * currentsize));
+      uint64_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
+      int countusingfinaltwo = 0;
+      checkpatterns(extendedperm, newinverse, 0, 0, currentsize + 1, maxpatternsize, 0, patterncomplements, prefixmap, countusingfinaltwo);
+      int indexignoringsecondtofinal = i;
+      if (getdigit(newinverse, currentsize) > getdigit(newinverse, currentsize - 1)) indexignoringsecondtofinal--; 
+      int actualcount = countusingfinaltwo + prevcount + prevextensions[indexignoringsecondtofinal];
+      tally[currentsize + 1][actualcount]++;
+      completelist[currentsize + 1][permtonum(extendedperm, currentsize + 1)] = actualcount;
+      newextensions[i] = countusingfinaltwo + prevextensions[indexignoringsecondtofinal];
+      actualcounts[i] = actualcount;
+      //displayperm(extendedperm);
+      //cout<<"prevcount countusingfinaltwo prevextensionsportion "<<prevcount<<" "<<countusingfinaltwo<<" "<<prevextensions[indexignoringsecondtofinal]<<endl;
+    }  
+  }
+  
+  newinverse = setdigit(inverse, currentsize, currentsize); // inverse of the extended permutation
+  if (currentsize < finalsize) {
+    for (int i = currentsize; i >= 0; i--) {
+      if (i < currentsize) newinverse = newinverse + (1L << (4 * getdigit(perm, i))) - (1L << (4 * currentsize));
+      uint64_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
+      buildpermutations_brute_usingbothaddfactors(extendedperm, newinverse, currentsize + 1, finalsize, maxpatternsize,  maxpermsize, patterncomplements, prefixmap, tally, completelist, actualcounts[i], newextensions);
     }
   }
 }
@@ -117,7 +155,12 @@ void start_brute(int maxpatternsize, int maxpermsize, hashdb &patternset, vector
   }
   cout<<"max size: "<<maxpermsize<<endl;
   for (int i = 2; i <= maxpermsize; i++) {
-    buildpermutations_brute(0L, 0L, 1, i, maxpatternsize, maxpermsize, patterncomplements, prefixmap, tally, completelist, 0);
+    if (!USESECONDADDFACTOR) {
+      buildpermutations_brute(0L, 0L, 1, i, maxpatternsize, maxpermsize, patterncomplements, prefixmap, tally, completelist, 0);
+    } else {
+      int temparray[2] = {0, 0};
+      buildpermutations_brute_usingbothaddfactors(0L, 0L, 1, i, maxpatternsize, maxpermsize, patterncomplements, prefixmap, tally, completelist, 0, temparray);
+    }
     timestamp_t current_time = get_timestamp();
     //    if (verbose) cout<< "Time elapsed to build perms of size "<<i<<" in seconds: "<<(current_time - start_time)/1000000.0L<<endl;
   }
