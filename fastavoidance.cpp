@@ -77,7 +77,7 @@ static bool checkpatterns(uint64_t perm, uint64_t inverse, uint64_t currentpatte
     if (USEBITHACK && currentpatternlength == 1 && i < largestletterused - 2) return true; 
     int oldpos = getdigit(inverse, i);
     int newpos = 0;
-    if (oldpos != 0){
+    if (oldpos != 0){  
       uint32_t temp = seenpos << (32 - oldpos); // Note: shifting by 32 is ill-defined, which is why we explicitly eliminate digit = 0 case.
       newpos = __builtin_popcount(temp);
     }
@@ -310,7 +310,7 @@ void countavoidersfrompatternlist(string patternlist, int maxpermsize, vector < 
   hashdb patternset = hashdb(1<<3);
   makepatterns(patternlist, patternset, maxpatternsize);
   vector < vector < uint64_t > > avoidervector;
-  buildavoiders_brute(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true, (1L << 10)); // for large cases, make last argument much larger!
+  buildavoiders(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true, (1L << 10)); // for large cases, make last argument much larger!
 }
 
 // Inputs file stream containing string list of patterns on each line. 
