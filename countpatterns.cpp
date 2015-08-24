@@ -26,6 +26,7 @@ using namespace std;
 // Input: perm, inverse (which needs to be right in pos length - index - 1), perm length, index, complement of normalization of index - 1 largest letters in perm, a bitmap which should start off at zero for index = 0
 // Output: bitmap is updated. answer is updated to be complement of normalization of index largest letters in perm
 
+#define USEOLDP0 1
 #define USEPREFIXMAP 1 // FOR NON-BRUTE FORCE VERSION
 
 static uint64_t stat1 = 0;
@@ -196,7 +197,7 @@ inline unsigned short getPval(unsigned long long perm, int i, hashmap &Phashmap)
 // Inputs perm \in S_length, set of pattern patternset with longest pattern of size maxpatternsize, tally, completelist.
 // Computes P_i(perm) for i from 0 , ... , maxpatternsize + 1; and if length < maxpermsize. stores all but final one
 // Updates tally and completelist using P_0(perm)
-static void Pcount(uint64_t perm, int length, int maxpatternsize, int maxpermsize, const hashdb &patternset, const hashdb &prefixmap, hashmap &Phashmap, vector < vector < int > > &tally, vector < vector < int > > &completelist) {
+ static void Pcount(uint64_t perm, int length, int maxpatternsize, int maxpermsize, const hashdb &patternset, const hashdb &prefixmap, hashmap &Phashmap, uint64_t prevP0, vector < vector < int > > &tally, vector < vector < int > > &completelist) {
   stat1++;
   uint64_t inverse = getinverse(perm, length);
   unsigned short Pvals[maxpatternsize + 2]; // vals range from [0...maxpatternsize+1]
@@ -227,9 +228,13 @@ static void Pcount(uint64_t perm, int length, int maxpatternsize, int maxpermsiz
       currentperm = setdigit(currentperm, getdigit(inverse, i + 1), i);
     }
     currentperm = killpos(currentperm, getdigit(inverse, i)); // now currentperm is perm, except with i removed and the resulting permutation normalized to be on values 0, ..., length - 1
-    oldPvals[oldPvalpos] = getPval(currentperm, length - 1 - i, Phashmap);
+    if (USEOLDP0 && oldPvalpos == 0) {
+      oldPvals[0] = prevP0;
+    } else {
+      oldPvals[oldPvalpos] = getPval(currentperm, length - 1 - i, Phashmap);
+      stat2++;
+    }
     oldPvalpos++;
-    stat2++;
     if (USEPREFIXMAP) {
       extendnormalizetop(perm, inverse, length, length - 1 - i, prefixentry, seenpos);
       if (!prefixmap.contains(prefixentry)) {
@@ -243,7 +248,7 @@ static void Pcount(uint64_t perm, int length, int maxpatternsize, int maxpermsiz
       } else {
 	//if (i < length - 1)  cout<<"Here"<<endl;
       }
-    } 
+    }
   }
   //for (int i = 0; i <= Pvalpos; i++) cout<<oldPvals[i]<<" ";
   //cout<<endl;
@@ -255,8 +260,9 @@ static void Pcount(uint64_t perm, int length, int maxpatternsize, int maxpermsiz
   if (length != maxpermsize) {
     setPvals(perm, Pvals, Phashmap);
   }
-  int index = permtonum(perm, length);
-  completelist[length][index] = Pvals[0];
+    // CAN SAVE CONSIDERABLE TIME (FOR ONE-PATTERN SET) IF I MAKE NEXT TWO LINES OPTIONAL
+  //int index = permtonum(perm, length);
+  //completelist[length][index] = Pvals[0];
   increasetally(tally[length], Pvals[0]);
   //  displayperm(perm);
   //cout<<"num hits: "<<Pvals[0]<<endl;
@@ -264,14 +270,15 @@ static void Pcount(uint64_t perm, int length, int maxpatternsize, int maxpermsiz
 
 
 // constructs the permutations of size finalsize. Then passes on paramaters to Pcount, in order to find number of patterns appearing in each permutation
-void buildpermutations(uint64_t perm, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patternset, hashdb &prefixmap, hashmap &Phashmap, vector < vector < int > > &tally, vector < vector < int > > &completelist) {
+void buildpermutations(uint64_t perm, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patternset, hashdb &prefixmap, hashmap &Phashmap, vector < vector < int > > &tally, vector < vector < int > > &completelist, uint64_t prevP0) {
   if (currentsize < finalsize) {
+    uint64_t currentP0 = getPval(perm, 0, Phashmap);
     for (int i = 0; i < currentsize + 1; i++) {
       uint64_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
-      buildpermutations(extendedperm, currentsize + 1, finalsize, maxpatternsize,  maxpermsize, patternset, prefixmap, Phashmap, tally, completelist);
+       buildpermutations(extendedperm, currentsize + 1, finalsize, maxpatternsize,  maxpermsize, patternset, prefixmap, Phashmap, tally, completelist, currentP0);
     }
   } else {
-    Pcount(perm, currentsize, maxpatternsize, maxpermsize, patternset, prefixmap, Phashmap, tally, completelist);
+    Pcount(perm, currentsize, maxpatternsize, maxpermsize, patternset, prefixmap, Phashmap, prevP0, tally, completelist);
   }
 }
 
@@ -286,7 +293,7 @@ void createPmap(uint64_t finalsize, hashdb &patternset, int maxpatternsize, time
   addprefixes(patternset, prefixmap);
 
   for (int i = 2; i <= finalsize; i++) {
-    buildpermutations(0L, 1, i, maxpatternsize, finalsize, patternset, prefixmap, Phashmap, tally, completelist);
+    buildpermutations(0L, 1, i, maxpatternsize, finalsize, patternset, prefixmap, Phashmap, tally, completelist, 0L);
     timestamp_t current_time = get_timestamp();
     if (verbose) cout<< "Time elapsed to build perms of size "<<i<<" in seconds: "<<(current_time - start_time)/1000000.0L<<endl;
   }
