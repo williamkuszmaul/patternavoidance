@@ -68,7 +68,6 @@ uint64_t getstat1();
 uint64_t getstat2();
 uint64_t getstat3();
 uint64_t getstat4();
-uint64_t getstat5();
 
 
 #endif 

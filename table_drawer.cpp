@@ -155,7 +155,6 @@ int main() {
       stat2[k][n] = getstat2();
       stat3[k][n] = getstat3();
       stat4[k][n] = getstat4();
-      uint64_t prevnumwins = getstat5();
       //cout<<stat1[k][n]<<" "<<stat2[k][n]<<" "<<stat3[k][n]<<endl;
       workperavoider[k][n] = (double)stat2[k][n] / (double)stat3[k][n];
       // workperavoider[k][n] = (double)stat2[k][n] / (double)stat3[k][n];
@@ -165,7 +164,7 @@ int main() {
       //cout<<stat3[k][n]<<endl;
       // cout<<((double)stat2[k][n] / (double)prevnumwins)<<" at n = "<<n<<endl;
       // seqcheckratio[k][n] = ((double)stat2[k][n] / (double)prevnumwins) / (double)(allestimatedseqcheck(k, n)); // for brute all
-      seqcheckratio[k][n] = ((double)runtimes[k][n] / (double)prevnumwins);
+      seqcheckratio[k][n] = ((double)runtimes[k][n] / (double)stat3[k][n]);
       //specialratio[k][n] = buildspecialratio(k, n, runtimes[k][n], runtimes[k][n - 1]);
       //secspercheck[k][n] = runtimes[k][n]/(double)stat4[k][n]; // FOR BRUTE
       secspercheck[k][n] = runtimes[k][n]/(double)stat2[k][n];

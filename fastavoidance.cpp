@@ -1,4 +1,3 @@
-// simplest make is g++ -O2 -std=c++11  fastavoidance.cpp  -g -o fastavoidance
 #include <bitset>
 #include <cassert>
 #include <cmath>
@@ -17,20 +16,31 @@
 #include "perm.h"
 using namespace std;
 
-// 1 to use a bithack inspired by permlab. Upshot: Code runs about a third faster. Downshot: Code is around 1/4 less memory efficient
-#define USEBITHACK 1 // has meaning for both brute force and non-bruteforce algorithm
-#define USEPREFIXMAP 1 // only has meaning in non-brute force algorithm
-#define SPECIALTEST 0
-#define USEBRUTE 0
-#define VERBOSE 0
-#define GETSTAT 1
+// Conventions for comments: We use all the conventions from our paper in our comments. Thus the comments disagree with the code in that they do not zero-index the values or positions of a permutation
 
-// Input: perm, inverse (which needs to be right in pos length - index - 1), perm length, index, complement of normalization of index - 1 largest letters in perm, a bitmap which should start off at zero for index = 0
-// Output: bitmap is updated. answer is updated to be complement of normalization of index largest letters in perm
+#define USEBITHACK 1 // 1 to use a bithack inspired by permlab; implemented both for brute force and non-brute force algs.
+#define USEPREFIXMAP 1 // only has meaning in non-brute force algorithm. 1 to use the trick which checks for each i-prefix of w whether it is order-isomorphic to an i-prefix of some \pi \in \Pi
+#define SINGLEPATTERNOPT 0 // 1 if you want brute-force algorithm to test for each pattern separately rather than use hash table of pattern prefixes to check for all patterns at once whether a subsequence is order isomorphic to any pattern prefixes. Gets some speedup for single-pattern case.
+#define USEBRUTE 1 // whether to use brute-force algorithm
+#define VERBOSE 0 // whether to be verbose. normally should be false
+#define GETSTAT 1 // whether or not to collect statistics -- slows things down a bit. Only used in function run_interior_experiment. Is not implemented for SINGLEPATTERNOPT
+
+// IN CASE OF GETSTAT:
+// For brute force variants:
+// stat1 counts over all permutations in S_n how many subsequences of length at least three we look at in the course of the algorithm -- unless we are using USEBITHACK, in which case stat1 = stat4
+// stat2 is the number of times stat1 is incremented for permutations that end up being avoiders
+// stat3 counts total number of avoiders in S_n
+// stat4 counts how many times checkpatterns is called in total
+// For non-brute-force variants:
+static unsigned long long stat1 = 0, stat2 = 0, stat3 = 0, stat4 = 0; // only used for testing purposes in getstat
+static bool countstat1; // is set to true for permutations of size n.
+
+// Input: perm, perm's inverse (which needs to be correct in position length - index), perm's length, index, answer = complement of normalization of (index)-prefix of perm, a bitmap named seenpos which should start off at zero for index = 0. 
+// Output: bitmap is updated to keep track of the positions in perm of each letter from n - i to n. answer is updated to be complement of normalization of (index + 1)-prefix of perm
 void extendnormalizetop(uint64_t perm, uint64_t inverse, int length, int index, uint64_t &answer, uint32_t & seenpos) {
-  int i = length - index - 1;
-  int oldpos = getdigit(inverse, i);
-  int newpos = 0;
+  int i = length - index - 1; 
+  int oldpos = getdigit(inverse, i); // position of (length - index) in perm
+  int newpos = 0; // will be position of (length - index) in normalization of (i+1)-prefix of perm
   if (oldpos != 0){
     uint32_t temp = seenpos << (32 - oldpos); // Note: shifting by 32 is ill-defined, which is why we explicitly eliminate digit = 0 case.
     newpos = __builtin_popcount(temp);
@@ -39,94 +49,80 @@ void extendnormalizetop(uint64_t perm, uint64_t inverse, int length, int index, 
   seenpos = seenpos | (1 << oldpos);
 }
 
+// adds all the complements of normalizations of prefixes of perm to table
 void addprefixeshelper(uint64_t perm, int length, hashdb &table) {
   uint64_t entry = 0;
   uint64_t inverse = getinverse(perm, length);
   uint32_t seenpos = 0; // bit map of which letters we've seen so far
   for (int i = 0; i < length; i++) {
     extendnormalizetop(perm, inverse, length, i, entry, seenpos);
-    //if (VERBOSE) cout<<entry<<endl;
-    // displayperm(entry);
     if (!table.contains(entry)) table.add(entry);
   }
 }
 
-// build prefix table
+// build prefix table containing all complements of normalizations of prefixes of every perm in permset
 void addprefixes(const hashdb &permset, hashdb &table) {
   vector <unsigned long long> patterns;
   permset.getvals(patterns);
   for (int i = 0; i < patterns.size(); i++) {
     uint64_t perm = patterns[i];
     int length = getmaxdigit(perm) + 1;
-    //displayperm(perm,length);
     addprefixeshelper(perm, length, table);
   }
 }
 
-unsigned long long stat1 = 0, stat2 = 0, stat3 = 0, stat4 = 0, stat5 = 0;
-
-// THIS IS HOW YOU KEEP A FUNCTION FROM INLINING!
+// Note: to prevent a function from inlining for debugging, use this before the function decleration:
 //__attribute__((noinline))
-uint64_t getinversecover(uint64_t perm, size_t length) {
-  //__attribute__((noinline));
-  return getinverse(perm, length);
-}
-
-static int cont_count = 0;
-int maxsizetemp = 0;
 
 
-// note that here, both prefixmap and patterset contain complements of each permutation they should contain
-static bool checkpatterns(uint64_t perm, uint64_t inverse, uint64_t currentpatterncomplement, int currentpatternlength, int largestletterused, int numlettersleft, uint32_t seenpos, const hashdb &patternset, const hashdb &prefixmap, const vector < vector < uint64_t > > & prefixes, int patternindex, bool countstat1) {
-  if (GETSTAT && currentpatternlength >= 0) stat4++;
-  //displayperm(currentpatterncomplement);
+// Recursively checks whether perm contains a pattern from patternset. However, prefixmap and patternset
+// Requires that all patterns in patternset are length currentpatternlength + numlettersleft
+// currentpatterncomplement stores complement of normalization of permutation subsequence already examined
+// largestletterused tells us the value of the largest letter icnluded so far in the permutation-subsequence being examined
+// seenpos is a bitmap used to efficiently update currentpatterncomplement as we make the subsequence-being looked at one longer
+// prefixmap contains the complements of each prefix of each pattern in \Pi.
+// however, if SINGLEPATTERNOPT, then prefixes is used in place of prefixmap; prefixes[i] gives us the complement of the i-th normalized prefix of the pattern we are currently searching for.
+// Note that prefixmap contains complements of normalized prefixes of patterns 
+// Returns true if permutation subsequence cannot be completed to get a pattern, false otherwise
+static bool checkpatterns(uint64_t perm, uint64_t inverse, uint64_t currentpatterncomplement, int currentpatternlength, int largestletterused, int numlettersleft, uint32_t seenpos, const hashdb &prefixmap, const vector < uint64_t > & prefixes) {
+  if (GETSTAT) stat4++;
   if (GETSTAT && (currentpatternlength >= 3 || !USEBITHACK) && countstat1) stat1++;
-  if (!SPECIALTEST && currentpatternlength > 1 && !prefixmap.contains(currentpatterncomplement)) {
-    //if (currentpatternlength <= 4) displayperm(currentpatterncomplement);
-    //if (currentpatternlength <= 4) if (VERBOSE) cout<<"failed with prefix only size "<<currentpatternlength<<endl;
-    //assert(currentpatternlength > 4);
-    return true; 
-  }
+  if (!SINGLEPATTERNOPT && currentpatternlength > 1 && !prefixmap.contains(currentpatterncomplement)) return true; 
+  if (numlettersleft == 0) return false; // At this point, we have found a pattern
+  for (int i = largestletterused - 1; i >= numlettersleft - 1; i--) { // looking at candidates to add to current permutation subsequence
+    if (currentpatternlength == 0 && i < largestletterused - 1) return true; // because of how we build candidates for S_n(pi), we can stop here; every permutation this function operates on will have only patterns using n.
+    if (USEBITHACK && currentpatternlength == 1 && i < largestletterused - 1) return true; // bithack tells us only need to worry about patterns using both of n-1 and n
 
-  if (numlettersleft == 0) return false; // Not checking for patternset at all sizes WILL BREK THINGS FOR PATTERNS OF MULTIPLE SIZES !!!!
-  //if (numlettersleft == 0) return true; // make sure this if statement comes AFTER checking for patternset
-  for (int i = largestletterused - 1; i >= numlettersleft - 1; i--) { //THIS WILL BREK THINGS FOR PATTERNS OF MULTIPLE SIZES !!!!
-    if (currentpatternlength == 0 && i < largestletterused - 1) return true; // because of how we build candidates for S_n(pi), we can stop here
-    if (USEBITHACK && currentpatternlength == 1 && i < largestletterused - 1) return true; // this was incorrectly - 2 earlier! 
+    // Similarly to as in extendnormalizetop, we will build the complement of the normalization of the new permutation-subsequence (with the new letter added to it)
     int oldpos = getdigit(inverse, i);
     int newpos = 0;
     if (oldpos != 0){  
       uint32_t temp = seenpos << (32 - oldpos); // Note: shifting by 32 is ill-defined, which is why we explicitly eliminate digit = 0 case.
       newpos = __builtin_popcount(temp);
     }
-    //if (VERBOSE) cout<<"Here again with i selected at "<<i<<endl;
-    // if (SPECIALTEST) {
-    //   if (prefixes[0][currentpatternlength + 1] == newpattern) cont_count++;
-    //   // bool cont = prefixmap.simulatelookup(newpattern);
-    //   // cont_count += cont;
-    //   if (cont_count * 6 == 9999999) cout << "whahoo" << endl;
-    // }
     uint64_t newpattern = setdigit(addpos(currentpatterncomplement, newpos), newpos, currentpatternlength);
-    if (!SPECIALTEST || currentpatternlength == 0 || prefixes[patternindex][currentpatternlength + 1] == newpattern){ // getdigit(inverse, i) < getdigit(inverse, largestletterused)) {
-      if (checkpatterns(perm, inverse, newpattern, currentpatternlength + 1, i, numlettersleft - 1, seenpos | (1 << oldpos), patternset, prefixmap, prefixes, patternindex, countstat1) == false) return false;
+
+    // Continue down recursion of either (1) we are not using SINGLEPATTERNOPT, or (2) our newpattern is a valid complement of some prefix of the pattern we are interested in
+    if (!SINGLEPATTERNOPT || currentpatternlength == 0 || prefixes[currentpatternlength + 1] == newpattern) { 
+      if (checkpatterns(perm, inverse, newpattern, currentpatternlength + 1, i, numlettersleft - 1, seenpos | (1 << oldpos), prefixmap, prefixes) == false) return false;
+      // update seenpos and currentpatternelength to be correct as arguments for next step in recursion
     }
   }
   return true;
 }
 
 
-
-static bool isavoider_brute(uint64_t perm, uint64_t inverse, int maxavoidsize, int length, const hashdb &patterncomplements, const hashdb &prefixmap, const vector < vector < uint64_t > > & prefixes, bool countstat1) {
-  if (SPECIALTEST) {
-    for (int i = 0; i < patterncomplements.getsize(); i++) {
-      if (!checkpatterns(perm, inverse, 0, 0, length, maxavoidsize, 0, patterncomplements, prefixmap, prefixes, i, countstat1)) return false;
+// Checks using brute force algorithm whether permutation is avoider
+static bool isavoider_brute(uint64_t perm, uint64_t inverse, int maxavoidsize, int length, const hashdb &prefixmap, const vector < vector < uint64_t > > & prefixes) {
+  if (SINGLEPATTERNOPT) {
+    for (int i = 0; i < prefixes.size(); i++) {
+      if (!checkpatterns(perm, inverse, 0, 0, length, maxavoidsize, 0, prefixmap, prefixes[i])) return false;
     }
     return true;
   } else {
     uint64_t oldstat1 = stat1;
-    bool answer =  checkpatterns(perm, inverse, 0, 0, length, maxavoidsize, 0, patterncomplements, prefixmap, prefixes, 0, countstat1);
+    bool answer =  checkpatterns(perm, inverse, 0, 0, length, maxavoidsize, 0, prefixmap, prefixes[0]);
     if (GETSTAT && answer == true && countstat1) stat2 = stat2 + stat1 - oldstat1;
-    if (GETSTAT && answer == true && countstat1) stat3 ++;
     return answer;
   }
 }
@@ -242,7 +238,7 @@ void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vec
     avoiderstoextend.pop();
     if (USEBITHACK) bitmaps.pop();
     numleftcurrentlength--;
-    uint64_t inverse = getinversecover(perm, currentlength);
+    uint64_t inverse = getinverse(perm, currentlength);
     uint64_t newinverse = setdigit(inverse, currentlength, currentlength); // inverse of the extended permutation
     for (int i = currentlength; i >= 0; i--) {
       // need to increment newinverse[perm[i]], decrement newinverse[currentlength]
@@ -278,7 +274,7 @@ void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vec
   }
 }
 
-void buildavoiders_brute_helper(uint64_t perm, uint64_t inverse, uint64_t length, uint32_t bitmap, const hashdb &patterncomplements, const hashdb &prefixmap, const vector < vector < uint64_t > > & prefixes,int maxavoidsize, int maxsize,  vector < vector < uint64_t > > &avoidervector, vector < uint64_t > &numavoiders, bool justcount) {
+void buildavoiders_brute_helper(uint64_t perm, uint64_t inverse, uint64_t length, uint32_t bitmap, const hashdb &prefixmap, const vector < vector < uint64_t > > & prefixes,int maxavoidsize, int maxsize,  vector < vector < uint64_t > > &avoidervector, vector < uint64_t > &numavoiders, bool justcount) {
     uint64_t newinverse = setdigit(inverse, length, length); // inverse of the extended permutation
     uint64_t newinverses[length+1];
     uint64_t newperms[length+1];
@@ -289,9 +285,9 @@ void buildavoiders_brute_helper(uint64_t perm, uint64_t inverse, uint64_t length
       uint64_t extendedperm = setdigit(addpos(perm, i), i, length); // insert length in i-th position (remember, values are indexed starting at 0)
       newperms[i] = extendedperm;
       if (!USEBITHACK || getbit(bitmap, i) == 1) { // If we are using bithack, then we only bother extending perm by inserting value length in i-th position if the bitmap tells tells us the result is a potential avoider
-	bool countstat1 = 0;
-	if (GETSTAT && maxsize == length + 1) countstat1 = 1;
-	if (isavoider_brute(extendedperm, newinverse, maxavoidsize, length + 1, patterncomplements, prefixmap, prefixes, countstat1)) { // if extended permutation is avoider
+	if (GETSTAT) countstat1 = false;
+	if (GETSTAT && maxsize == length + 1) countstat1 = true;
+	if (isavoider_brute(extendedperm, newinverse, maxavoidsize, length + 1, prefixmap, prefixes)) { // if extended permutation is avoider
 	  if (!justcount) avoidervector[length + 1].push_back(extendedperm);
 	  else numavoiders[length + 1]++;
 	} else {
@@ -305,7 +301,7 @@ void buildavoiders_brute_helper(uint64_t perm, uint64_t inverse, uint64_t length
       for (int i = length; i >= 0; i--) {
 	if (!USEBITHACK || getbit(bitmap, i) == 1) {
 	  if (USEBITHACK) newmap = insertbit(bitmap, i + 1, 1);
-	  if (USEBITHACK || newperms[i] != -1) buildavoiders_brute_helper(newperms[i], newinverses[i], length + 1, newmap, patterncomplements, prefixmap, prefixes, maxavoidsize, maxsize,  avoidervector, numavoiders, justcount);
+	  if (USEBITHACK || newperms[i] != -1) buildavoiders_brute_helper(newperms[i], newinverses[i], length + 1, newmap, prefixmap, prefixes, maxavoidsize, maxsize,  avoidervector, numavoiders, justcount);
 	  //bitmaps.push(insertbit(bitmap, i + 1, 1)); // using which insertion positions resulted in an avoider, build bitmap for each new avoider
 	}
       }
@@ -327,12 +323,12 @@ void buildavoiders_brute(const hashdb &patternset, int maxavoidsize, int maxsize
   prefixes.resize(patternset.getsize());
 
   vector <unsigned long long> patterns;
-  hashdb patterncomplements(1<<3);
+  //hashdb patterncomplements(1<<3);
   patternset.getvals(patterns);
   for (int i = 0; i < patterns.size(); i++) {
     uint64_t perm = patterns[i];
     int length = getmaxdigit(perm) + 1;
-    patterncomplements.add(getcomplement(perm, length));
+    //patterncomplements.add(getcomplement(perm, length));
 
     prefixes[i].resize(length + 1);
     uint64_t entry = 0;
@@ -345,7 +341,7 @@ void buildavoiders_brute(const hashdb &patternset, int maxavoidsize, int maxsize
     }
   }
 
-  buildavoiders_brute_helper(0L, 0L, 0, 1, patterncomplements, prefixmap, prefixes, maxavoidsize, maxsize, avoidervector, numavoiders, justcount);
+  buildavoiders_brute_helper(0L, 0L, 0, 1, prefixmap, prefixes, maxavoidsize, maxsize, avoidervector, numavoiders, justcount);
   if (GETSTAT && VERBOSE) cout<<stat1<<" is stat1"<<endl;
   if (GETSTAT && VERBOSE) cout<<stat2<<" is stat2"<<endl;
   if (GETSTAT && VERBOSE) cout<<stat3<<" is stat3"<<endl;
@@ -380,9 +376,6 @@ uint64_t getstat3() {
 uint64_t getstat4() {
   return stat4;
 }
-uint64_t getstat5() {
-  return stat5;
-}
 
 // used for table building software
 double run_interior_experiment(string patternlist, int maxpermsize) {
@@ -400,7 +393,7 @@ double run_interior_experiment(string patternlist, int maxpermsize) {
   if (VERBOSE) cout<<"Effective pattern size "<<maxpatternsize<<endl;
   if (USEBRUTE) buildavoiders_brute(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true, (1L << 10));
   else buildavoiders(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true, (1L << 10)); // for large cases, make last argument much larger
-  stat5 = numavoiders[maxpermsize];
+  stat3 = numavoiders[maxpermsize];
   timestamp_t end_time = get_timestamp();
   //return (double)stat2 / (double)stat3;
   return (end_time - start_time)/1000000.0L;
