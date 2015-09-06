@@ -30,4 +30,7 @@ using namespace std;
 // Note: patterns in patternset required to be in S_{>1}
 void countpatterns(string patternlist, int maxpermsize, vector < vector <int> > & tally, vector < vector < int > > &completelist, bool verbose);
 
+// used for table building software
+double run_interior_experiment2(string patternlist, int maxpermsize);
+
 #endif 

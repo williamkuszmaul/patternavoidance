@@ -61,7 +61,7 @@ void hashmap :: add (unsigned long long element, void* payload) {
   }
   unsigned long long place = hash(element);
   while(getkey(place)!=0){
-    place=(place+1)%maxsize;
+    place=(place+1) & (maxsize - 1);
   }
   setkey(place, element + 1);
   setval(place, payload);
@@ -73,7 +73,7 @@ void * hashmap :: getpayload(unsigned long long element) const {
     unsigned long long place=hash(element);
     while(getkey(place) != 0){
       if(getkey(place) == element+1) return getval(place);
-      place=(place+1)%maxsize;
+      place=(place+1) & (maxsize - 1);
     }
     return NULL;
 }

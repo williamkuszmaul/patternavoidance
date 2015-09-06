@@ -42,6 +42,7 @@ hashdb :: hashdb(unsigned long long startsize)
     , size(0)
     , prevplace(0)
 { //The initial maxsize is startsize
+  //cout<<maxsize<<endl;
   memset(array, 0, startsize*sizeof(*array));
 }
 
@@ -66,7 +67,7 @@ void hashdb :: add (unsigned long long element){
   }
   unsigned long long place = hash(element);
   while(array[place]!=0){
-    place=(place+1)%maxsize;
+    place=(place+1) & (maxsize - 1);
     averageinsertiontime++;
   }
   array[place]=element+1; // we insert element + 1 into the array
@@ -76,13 +77,39 @@ void hashdb :: add (unsigned long long element){
 
 bool hashdb :: contains (unsigned long long element) const {
   assert(element != -1L);
-  unsigned long long place=hash(element);
+  unsigned long long place = hash(element);
   while(array[place]!=0){
     if(array[place]==element+1) return true; //look for element+1 in the array
-    place=(place+1)%maxsize;
+    place=(place+1) & (maxsize - 1);
   }
   return false;
 }
+
+/*
+inline bool hashdb :: simulatelookup(unsigned long long element) const {
+  // assert(element != -1L);
+  unsigned long long place = 0; //hash(element);
+  if (1) {
+    return false;
+  } else if (0) {
+    return (place + array[place]) == 3;
+  } else if (1) {
+    int count = 0;
+    while(array[place]!=0){
+      //if (count > 2) cout<<"!"<<endl;
+      if(array[place]==element+1) return true; //look for element+1 in the array
+      place=(place+1)&(maxsize-1);
+      //place=(place+1)%maxsize;
+      count++;
+    }
+    return false;
+  } else {
+    if (array[place] == 0) return false;
+    if (array[place] == element+1) return true;
+    return false;
+  }
+}
+*/
 
 unsigned long long hashdb :: hash (unsigned long long key) const
 {

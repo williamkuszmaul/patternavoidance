@@ -45,6 +45,49 @@ public:
   unsigned long long hash(unsigned long long key) const;
   void add(unsigned long long element);
   bool contains(unsigned long long element) const;
+  inline bool simulatelookup(unsigned long long element) const {
+    // assert(element != -1L);
+    if (0) {
+      return false;
+    } 
+    else if (0) {
+      unsigned long long place = element & (maxsize - 1); //hash(element);
+      return (place == 4);
+    } else {
+      if (1) {
+	//assert(place < 20);
+	//unsigned long long place = hash(element);
+	return array[element & (maxsize - 1)] == 3; // this load takes a long time relatively to everything else. But not as long as the mod
+      } else if (0) {
+	unsigned long long place = hash(element);
+	int count = 0;
+	while(array[place]!=0){
+	  //if (count > 2) cout<<"!"<<endl;
+	  if(array[place]==element+1) return true; //look for element+1 in the array
+	  place=(place+1)&(maxsize-1);
+	  //place=(place+1)%maxsize;
+	  count++;
+	}
+	return false;
+      } else {
+	unsigned long long place = hash(element);
+	assert ((maxsize & (maxsize-1)) == 0); // it's a power of two
+	uint64_t v;
+	if ((v = array[place]) == 0) return false;
+	if (v == element+1) return true;
+	place=(place+1)&(maxsize-1);
+	if ((v = array[place]) == 0) return false;
+	if (v == element+1) return true;
+	place=(place+1)&(maxsize-1);
+	if ((v = array[place]) == 0) return false;
+	if (v == element+1) return true;
+	place=(place+1)&(maxsize-1);
+	if ((v = array[place]) == 0) return false;
+	cout << "!" << endl;
+	return false;
+      }
+    }
+  }
   unsigned long long getavtime() const;
   void removeprev();
   unsigned long long getsize() const;

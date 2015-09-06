@@ -27,8 +27,7 @@ void makepatterns(string permlist, hashdb &patternset, int &maxpatternsize) {
   for (int i = 0; i < permlist.size(); i++) {
     if (permlist[i] == ' ') {
       patternset.add(perm);
-      //displayperm(perm);
-      maxpatternsize = max(pos + 1, maxpatternsize);
+      maxpatternsize = max(pos, maxpatternsize);
       pos = 0;
       perm = 0;
     } else {
@@ -40,7 +39,7 @@ void makepatterns(string permlist, hashdb &patternset, int &maxpatternsize) {
   if (permlist[permlist.size() - 1] != ' ') { // if no space at end
     patternset.add(perm);
   }
-  maxpatternsize = max(pos + 1, maxpatternsize);
+  maxpatternsize = max(pos, maxpatternsize);
 }
 
 
