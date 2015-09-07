@@ -99,10 +99,10 @@ static bool checkpatterns(uint64_t perm, uint64_t inverse, uint64_t currentpatte
 
 
 // Checks using brute force algorithm whether permutation is avoider
-static bool isavoider_brute(uint64_t perm, uint64_t inverse, int maxavoidsize, int length, const hashdb &prefixmap, const vector < vector < uint64_t > > & prefixes) {
+static bool isavoider_brute(uint64_t perm, uint64_t inverse, int maxavoidsize, int length, const hashdb &prefixmap, const vector < vector < uint64_t > > & prefixes, vector  < uint64_t > patternlengths) {
   if (SINGLEPATTERNOPT) {
     for (int i = 0; i < prefixes.size(); i++) {
-      if (!checkpatterns(perm, inverse, 0, 0, length, maxavoidsize, 0, prefixmap, prefixes[i])) return false;
+      if (!checkpatterns(perm, inverse, 0, 0, length, patternlengths[i], 0, prefixmap, prefixes[i])) return false;
     }
     return true;
   } else {
@@ -113,7 +113,7 @@ static bool isavoider_brute(uint64_t perm, uint64_t inverse, int maxavoidsize, i
   }
 }
 
-void buildavoiders_brute_helper(uint64_t perm, uint64_t inverse, uint64_t length, uint32_t bitmap, const hashdb &prefixmap, const vector < vector < uint64_t > > & prefixes,int maxavoidsize, int maxsize,  vector < vector < uint64_t > > &avoidervector, vector < uint64_t > &numavoiders, bool justcount) {
+void buildavoiders_brute_helper(uint64_t perm, uint64_t inverse, uint64_t length, uint32_t bitmap, const hashdb &prefixmap, const vector < vector < uint64_t > > & prefixes, vector  < uint64_t > patternlengths, int maxavoidsize, int maxsize,  vector < vector < uint64_t > > &avoidervector, vector < uint64_t > &numavoiders, bool justcount) {
   uint64_t newinverse = setdigit(inverse, length, length); // inverse of the extended permutation
   uint64_t newinverses[length+1]; // inverses of each of the extended perms
   uint64_t newperms[length+1]; // each of the extended perms
@@ -126,7 +126,7 @@ void buildavoiders_brute_helper(uint64_t perm, uint64_t inverse, uint64_t length
     if (!USEBITHACK || getbit(bitmap, i) == 1) { // If we are using bithack, then we only bother extending perm by inserting value length in i-th position if the bitmap tells tells us the result is a potential avoider
       if (GETSTAT) countstat1 = false;
       if (GETSTAT && maxsize == length + 1) countstat1 = true;
-      if (isavoider_brute(extendedperm, newinverse, maxavoidsize, length + 1, prefixmap, prefixes)) { // if extended permutation is avoider
+      if (isavoider_brute(extendedperm, newinverse, maxavoidsize, length + 1, prefixmap, prefixes, patternlengths)) { // if extended permutation is avoider
 	if (!justcount) avoidervector[length + 1].push_back(extendedperm);
 	else numavoiders[length + 1]++;
       } else {
@@ -140,7 +140,7 @@ void buildavoiders_brute_helper(uint64_t perm, uint64_t inverse, uint64_t length
     for (int i = length; i >= 0; i--) {
       if (!USEBITHACK || getbit(bitmap, i) == 1) {
 	if (USEBITHACK) newmap = insertbit(bitmap, i + 1, 1);
-	if (USEBITHACK || newperms[i] != -1) buildavoiders_brute_helper(newperms[i], newinverses[i], length + 1, newmap, prefixmap, prefixes, maxavoidsize, maxsize,  avoidervector, numavoiders, justcount);
+	if (USEBITHACK || newperms[i] != -1) buildavoiders_brute_helper(newperms[i], newinverses[i], length + 1, newmap, prefixmap, prefixes, patternlengths, maxavoidsize, maxsize,  avoidervector, numavoiders, justcount);
 	//bitmaps.push(insertbit(bitmap, i + 1, 1)); // using which insertion positions resulted in an avoider, build bitmap for each new avoider
       }
     }
@@ -160,7 +160,9 @@ void buildavoiders_brute(const hashdb &patternset, int maxavoidsize, int maxsize
   hashdb prefixmap(1<<3);
   addprefixes(patternset, prefixmap); // defined in perm.cpp
   vector < vector < uint64_t > > prefixes;
+  vector  < uint64_t > patternlengths;
   prefixes.resize(patternset.getsize());
+  patternlengths.resize(patternset.getsize());
 
   vector <unsigned long long> patterns;
   //hashdb patterncomplements(1<<3);
@@ -171,6 +173,7 @@ void buildavoiders_brute(const hashdb &patternset, int maxavoidsize, int maxsize
     //patterncomplements.add(getcomplement(perm, length));
 
     prefixes[i].resize(length + 1);
+    patternlengths[i] = length;
     uint64_t entry = 0;
     uint64_t inverse = getinverse(perm, length);
     uint32_t seenpos = 0; // bit map of which positions we've seen so far
@@ -180,7 +183,7 @@ void buildavoiders_brute(const hashdb &patternset, int maxavoidsize, int maxsize
     }
   }
 
-  buildavoiders_brute_helper(0L, 0L, 0, 1, prefixmap, prefixes, maxavoidsize, maxsize, avoidervector, numavoiders, justcount);
+  buildavoiders_brute_helper(0L, 0L, 0, 1, prefixmap, prefixes, patternlengths, maxavoidsize, maxsize, avoidervector, numavoiders, justcount);
 }
 
 
