@@ -249,36 +249,34 @@ static void Pcount(uint64_t perm, int length, int maxpatternsize, int maxpermsiz
 
 
 // constructs the permutations of size finalsize. Then passes on paramaters to Pcount, in order to find number of patterns appearing in each permutation
+// Requires that it has already been run for each smaller currentsize >= 1
 // Note first call to this function should be with currentsize = 1
-void buildpermutations(uint64_t perm, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patternset, hashdb &prefixmap, hashmap &Phashmap, vector < vector < int > > &tally, vector < vector < int > > &completelist, uint64_t prevP0, uint64_t *cachedP1s, bool justcount) {
+void buildpermutations(uint64_t perm, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patternset, hashdb &prefixmap, hashmap &Phashmap, vector < vector < int > > &tally, vector < vector < int > > &completelist, uint64_t *cachedP1s, bool justcount) {
   if (USEOLDP1 && currentsize == finalsize - 2) {
     for (int i = 0; i < currentsize + 1; i++) {
       uint64_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
-      cachedP1s[i] = getPval(extendedperm, 1, Phashmap);
+      cachedP1s[i] = getPval(extendedperm, 1, Phashmap); // store these Pvals now, and they will be used many times two levels down from now
     }
   }
-  uint64_t currentP0 = 0;
-  if (USEOLDP0 && currentsize > 1) currentP0 = getPval(perm, 0, Phashmap);
-  bool nseen = false;
+  bool nseen = false; // whether or not we've seen currentsize in perm yet
+  uint64_t currentP0 = 0; // only will be filled in if currentsize == finalsize - 1
+  if (currentsize == finalsize - 1) currentP0 = getPval(perm, 0, Phashmap);
   for (int i = 0; i < currentsize + 1; i++) {
     if (i > 0 && getdigit(perm, i - 1) == currentsize - 1) nseen = true;
     uint64_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
     if (currentsize < finalsize - 1) {
-      buildpermutations(extendedperm, currentsize + 1, finalsize, maxpatternsize,  maxpermsize, patternset, prefixmap, Phashmap, tally, completelist, currentP0, cachedP1s, justcount);
+      buildpermutations(extendedperm, currentsize + 1, finalsize, maxpatternsize,  maxpermsize, patternset, prefixmap, Phashmap, tally, completelist, cachedP1s, justcount);
     } else {
       uint64_t prevP1 = cachedP1s[i];
       if (nseen) prevP1 = cachedP1s[i - 1];
       Pcount(extendedperm, currentsize + 1, maxpatternsize, maxpermsize, patternset, prefixmap, Phashmap, currentP0, prevP1, tally, completelist, justcount);
-      //tempcount++;
-      //if (tempcount == 1000000L) cout<<tempcount<<endl;;
     }
   }
 }
 
-// Fills in tally, complete list, and Pvals for all permutation in S_{<= finalsize}
+// Fills in tally, complete list, and Pvals for all permutation in S_{<= finalsize} (unles justcount, inwhich case does not fill in completelist)
 // Note: patterns in patternset required to be in S_{>1}
 void createPmap(uint64_t finalsize, hashdb &patternset, int maxpatternsize, timestamp_t start_time, hashmap &Phashmap, vector < vector < int > > &tally, vector < vector < int > > &completelist, bool verbose, bool justcount) {
-
   unsigned short temp[maxpatternsize + 1];
   for (int i = 0; i < maxpatternsize + 1; i++) temp[i] = 0;
   setPvals(0L, temp, Phashmap); // fill in Pvals to be 0 for
@@ -289,7 +287,7 @@ void createPmap(uint64_t finalsize, hashdb &patternset, int maxpatternsize, time
   for (int i = 2; i <= finalsize; i++) {
     uint64_t cachedP1s[finalsize];
     for (int x = 0; x < finalsize; x++) cachedP1s[x] = 0; // initialize to zero used in first call to buildpermutations when i = 2
-    buildpermutations(0L, 1, i, maxpatternsize, finalsize, patternset, prefixmap, Phashmap, tally, completelist, 0L, cachedP1s, justcount);
+    buildpermutations(0L, 1, i, maxpatternsize, finalsize, patternset, prefixmap, Phashmap, tally, completelist, cachedP1s, justcount);
     timestamp_t current_time = get_timestamp();
     if (verbose) cout<< "Time elapsed to build perms of size "<<i<<" in seconds: "<<(current_time - start_time)/1000000.0L<<endl;
   }
@@ -336,7 +334,7 @@ double run_interior_experiment2(string patternlist, int maxpermsize) {
 // Now tally[i][j] contains the number of permutation in S_i containing exactly j pattern-list-patterns. Range: 0 < i < maxpermsize + 1, 0 < j <= largest j such that tally[i][j] should exceed zero
 // Now completelist[i][permtonum(perm)] is the number of pattern-set-hits appearing in perm, where perm \in S_i. Range 0 < i < maxsize + 1.
 // Note: patterns in patternset required to be in S_{>1}
-void countpatterns(string patternlist, int maxpermsize, vector < vector <int> > & tally, vector < vector < int > > &completelist, bool verbose) {
+void countpatterns(string patternlist, int maxpermsize, vector < vector <int> > & tally, vector < vector < int > > &completelist, bool verbose, bool justcount) {
   timestamp_t start_time = get_timestamp();
   assert(maxpermsize <= 16);
 
@@ -358,7 +356,6 @@ void countpatterns(string patternlist, int maxpermsize, vector < vector <int> > 
   for (int i = 1; i <= maxpermsize - 1; i++) reservedspace += factorial(i);
   hashmap Phashmap(reservedspace * 3, sizeof(short)*(maxpatternsize + 1)); // initialize hash table of Pvals // should be automatically optimized out in brute-force version
   timestamp_t current_time = get_timestamp();
-  bool justcount = true;
   if (!justcount) {
     completelist.resize(maxpermsize + 1);
     for (uint64_t i = 0; i < maxpermsize + 1; i++) {

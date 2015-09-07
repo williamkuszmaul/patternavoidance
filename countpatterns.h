@@ -24,11 +24,12 @@ using namespace std;
 // int maxpermize = 10;
 // vector < vector <int> > tally;
 // vector < vector <int> > completelist;
-// countpatterns(patternlist, maxpermsize, tally, completelist, false);
+// countpatterns(patternlist, maxpermsize, tally, completelist, false, false);
 // Now tally[i][j] contains the number of permutation in S_i containing exactly j pattern-list-patterns. Range: 0 < i < maxpermsize + 1, 0 < j <= largest j such that tally[i][j] should exceed zero
 // Now completelist[i][permtonum(perm)] is the number of pattern-set-hits appearing in perm, where perm \in S_i. Range 0 < i < maxsize + 1.
+// If justcount, however, then completelist is not updated
 // Note: patterns in patternset required to be in S_{>1}
-void countpatterns(string patternlist, int maxpermsize, vector < vector <int> > & tally, vector < vector < int > > &completelist, bool verbose);
+void countpatterns(string patternlist, int maxpermsize, vector < vector <int> > & tally, vector < vector < int > > &completelist, bool verbose, bool justcount);
 
 // used for table building software
 double run_interior_experiment2(string patternlist, int maxpermsize);
