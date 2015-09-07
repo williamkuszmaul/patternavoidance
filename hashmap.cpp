@@ -60,12 +60,14 @@ void hashmap :: add (unsigned long long element, void* payload) {
     temp.array = oldarray; // so that when the destructor runs on temp, it frees the oldarray, not the new array.  It's ugly, but...
   }
   unsigned long long place = hash(element);
-  while(getkey(place)!=0){
+  while(getkey(place) != 0 && getkey(place) != element + 1){
     place=(place+1) & (maxsize - 1);
   }
-  setkey(place, element + 1);
-  setval(place, payload);
-  size++;
+  if (getkey(place) != element + 1) {
+    setkey(place, element + 1);
+    setval(place, payload);
+    size++;
+  }
 }
 
 void * hashmap :: getpayload(unsigned long long element) const {

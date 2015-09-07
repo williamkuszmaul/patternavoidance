@@ -66,13 +66,15 @@ void hashdb :: add (unsigned long long element){
     temp.array = oldarray; // so that when the destructor runs on temp, it frees the oldarray, not the new array.  It's ugly, but...
   }
   unsigned long long place = hash(element);
-  while(array[place]!=0){
+  while(array[place]!=0 && array[place] != element + 1){
     place=(place+1) & (maxsize - 1);
     averageinsertiontime++;
   }
-  array[place]=element+1; // we insert element + 1 into the array
-  prevplace=place;
-  size++;
+  if (array[place] != element + 1) {
+    size++;
+    array[place] = element+1; // we insert element + 1 into the array
+  }
+  prevplace = place;
 }
 
 bool hashdb :: contains (unsigned long long element) const {
@@ -85,31 +87,6 @@ bool hashdb :: contains (unsigned long long element) const {
   return false;
 }
 
-/*
-inline bool hashdb :: simulatelookup(unsigned long long element) const {
-  // assert(element != -1L);
-  unsigned long long place = 0; //hash(element);
-  if (1) {
-    return false;
-  } else if (0) {
-    return (place + array[place]) == 3;
-  } else if (1) {
-    int count = 0;
-    while(array[place]!=0){
-      //if (count > 2) cout<<"!"<<endl;
-      if(array[place]==element+1) return true; //look for element+1 in the array
-      place=(place+1)&(maxsize-1);
-      //place=(place+1)%maxsize;
-      count++;
-    }
-    return false;
-  } else {
-    if (array[place] == 0) return false;
-    if (array[place] == element+1) return true;
-    return false;
-  }
-}
-*/
 
 unsigned long long hashdb :: hash (unsigned long long key) const
 {
@@ -130,7 +107,7 @@ unsigned long long hashdb :: getavtime () const { //just to check how well hash 
 }
 
 void hashdb::removeprev() {
-  array[prevplace]=0;
+  array[prevplace] = 0;
 }
 
 void hashdb::getvals(vector <unsigned long long> & vals) const{

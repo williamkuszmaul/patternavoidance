@@ -6,7 +6,10 @@ Contact: william.kuszmaul@gmail.com
 Makefile: Simple makefile.
 
 paper.pdf: Contains in depth discussion of the algorithms implemented
-here.
+here. Also, introduces the notation we use in our comments. When
+discussing permutations, we use the same notation as in the paper,
+indexing both position and value at 1 in the comments; the code,
+however, indexes at zero
 
 perm.cpp/.h: We represent permutation in 64-bit integers, using a
 half-byte per letter. We can only represent permutations of size <=
@@ -40,12 +43,12 @@ sequences in a file.
 
 hashdb.cpp/.h: A simple linear-probing hash table storing 64 bit
 integers. Often runs several times faster than unordered_set<unsigned
-long long>. Does not distinguish between insertions of duplicates.
+long long>.
 
 hashmap.cpp/.h: A simple linear-probing hash table for storing
 (unsigned long long, <payload>) pairs. Often runs faster than C++
 unordered map. Payload must be fixed size. No special destructor is
-called on payload. Undefined behavior for insertions of duplicates.
+called on payload.
 
                      Usage Example Files
 
