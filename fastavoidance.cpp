@@ -61,7 +61,7 @@ inline uint64_t insertbit(uint64_t word, uint64_t pos, uint64_t val) { // val is
 //__attribute__((noinline))
 
 
-// Recursively checks whether perm contains a pattern from patternset. However, prefixmap and patternset
+// Recursively checks whether perm contains a pattern from patternset.
 // Requires that all patterns in patternset are length currentpatternlength + numlettersleft
 // currentpatterncomplement stores complement of normalization of permutation subsequence already examined
 // largestletterused tells us the value of the largest letter icnluded so far in the permutation-subsequence being examined
