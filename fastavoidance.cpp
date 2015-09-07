@@ -57,42 +57,6 @@ inline uint64_t insertbit(uint64_t word, uint64_t pos, uint64_t val) { // val is
 }
 
 
-// Input: perm, perm's inverse (which needs to be correct in position length - index), perm's length, index, answer = complement of normalization of (index)-prefix of perm, a bitmap named seenpos which should start off at zero for index = 0. 
-// Output: bitmap is updated to keep track of the positions in perm of each letter from n - i to n. answer is updated to be complement of normalization of (index + 1)-prefix of perm
-void extendnormalizetop(uint64_t perm, uint64_t inverse, int length, int index, uint64_t &answer, uint32_t & seenpos) {
-  int i = length - index - 1; 
-  int oldpos = getdigit(inverse, i); // position of (length - index) in perm
-  int newpos = 0; // will be position of (length - index) in normalization of (i+1)-prefix of perm
-  if (oldpos != 0){
-    uint32_t temp = seenpos << (32 - oldpos); // Note: shifting by 32 is ill-defined, which is why we explicitly eliminate digit = 0 case.
-    newpos = __builtin_popcount(temp);
-  }
-  answer = setdigit(addpos(answer, newpos), newpos, index);
-  seenpos = seenpos | (1 << oldpos);
-}
-
-// adds all the complements of normalizations of prefixes of perm to table
-void addprefixeshelper(uint64_t perm, int length, hashdb &table) {
-  uint64_t entry = 0;
-  uint64_t inverse = getinverse(perm, length);
-  uint32_t seenpos = 0; // bit map of which letters we've seen so far
-  for (int i = 0; i < length; i++) {
-    extendnormalizetop(perm, inverse, length, i, entry, seenpos);
-    if (!table.contains(entry)) table.add(entry);
-  }
-}
-
-// build prefix table containing all complements of normalizations of prefixes of every perm in permset
-void addprefixes(const hashdb &permset, hashdb &table) {
-  vector <unsigned long long> patterns;
-  permset.getvals(patterns);
-  for (int i = 0; i < patterns.size(); i++) {
-    uint64_t perm = patterns[i];
-    int length = getmaxdigit(perm) + 1;
-    addprefixeshelper(perm, length, table);
-  }
-}
-
 // Note: to prevent a function from inlining for debugging, use this before the function decleration:
 //__attribute__((noinline))
 
@@ -115,7 +79,7 @@ static bool checkpatterns(uint64_t perm, uint64_t inverse, uint64_t currentpatte
     if (currentpatternlength == 0 && i < largestletterused - 1) return true; // because of how we build candidates for S_n(pi), we can stop here; every permutation this function operates on will have only patterns using n.
     if (USEBITHACK && currentpatternlength == 1 && i < largestletterused - 1) return true; // bithack tells us only need to worry about patterns using both of n-1 and n
 
-    // Similarly to as in extendnormalizetop, we will build the complement of the normalization of the new permutation-subsequence (with the new letter added to it)
+    // Similarly to as in extendnormalizetop (defined in perm.cpp), we will build the complement of the normalization of the new permutation-subsequence (with the new letter added to it)
     int oldpos = getdigit(inverse, i);
     int newpos = 0;
     if (oldpos != 0){  
@@ -193,7 +157,7 @@ void buildavoiders_brute(const hashdb &patternset, int maxavoidsize, int maxsize
    else numavoiders.resize(maxsize + 1);
   
   hashdb prefixmap(1<<3);
-  addprefixes(patternset, prefixmap);
+  addprefixes(patternset, prefixmap); // defined in perm.cpp
   vector < vector < uint64_t > > prefixes;
   prefixes.resize(patternset.getsize());
 
@@ -210,7 +174,7 @@ void buildavoiders_brute(const hashdb &patternset, int maxavoidsize, int maxsize
     uint64_t inverse = getinverse(perm, length);
     uint32_t seenpos = 0; // bit map of which letters we've seen so far
     for (int j = 0; j < length; j++) {
-      extendnormalizetop(perm, inverse, length, j, entry, seenpos);
+      extendnormalizetop(perm, inverse, length, j, entry, seenpos); // defined in perm.cpp
       prefixes[i][j + 1] = entry;
       //displayperm(entry);
     }
@@ -254,7 +218,7 @@ static bool isavoider(uint64_t perm, uint64_t inverse, int maxavoidsize, int len
       }
 
       if (USEPREFIXMAP) {
-	extendnormalizetop(perm, inverse, length, length - 1 - i, prefixentry, seenpos);
+	extendnormalizetop(perm, inverse, length, length - 1 - i, prefixentry, seenpos); // defined in perm.cpp
 	if (i < length - 1 && !prefixmap.contains(prefixentry)) return true; 
 	if (i == length - maxavoidsize) return false; // in this case, the prefix must actually be a pattern
       }

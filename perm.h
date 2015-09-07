@@ -125,5 +125,12 @@ inline uint64_t getmaxdigit(uint64_t perm) {
 }
 
 
+// Input: perm, perm's inverse (which needs to be correct in position length - index), perm's length, index, answer = complement of normalization of (index)-prefix of perm, a bitmap named seenpos which should start off at zero for index = 0. 
+// Output: bitmap is updated to keep track of the positions in perm of each letter from n - i to n. answer is updated to be complement of normalization of (index + 1)-prefix of perm
+void extendnormalizetop(uint64_t perm, uint64_t inverse, int length, int index, uint64_t &answer, uint32_t & seenpos);
+
+// build prefix table containing all complements of normalizations of prefixes of every perm in permset
+void addprefixes(const hashdb &permset, hashdb &table);
+
 
 #endif 

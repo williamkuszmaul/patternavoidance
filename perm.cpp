@@ -63,3 +63,40 @@ unsigned long long permtonum(uint64_t perm, int length) {
   }
   return answer;
 }
+
+
+// Input: perm, perm's inverse (which needs to be correct in position length - index), perm's length, index, answer = complement of normalization of (index)-prefix of perm, a bitmap named seenpos which should start off at zero for index = 0. 
+// Output: bitmap is updated to keep track of the positions in perm of each letter from n - i to n. answer is updated to be complement of normalization of (index + 1)-prefix of perm
+void extendnormalizetop(uint64_t perm, uint64_t inverse, int length, int index, uint64_t &answer, uint32_t & seenpos) {
+  int i = length - index - 1; 
+  int oldpos = getdigit(inverse, i); // position of (length - index) in perm
+  int newpos = 0; // will be position of (length - index) in normalization of (i+1)-prefix of perm
+  if (oldpos != 0){
+    uint32_t temp = seenpos << (32 - oldpos); // Note: shifting by 32 is ill-defined, which is why we explicitly eliminate digit = 0 case.
+    newpos = __builtin_popcount(temp);
+  }
+  answer = setdigit(addpos(answer, newpos), newpos, index);
+  seenpos = seenpos | (1 << oldpos);
+}
+
+// adds all the complements of normalizations of prefixes of perm to table
+void addprefixeshelper(uint64_t perm, int length, hashdb &table) {
+  uint64_t entry = 0;
+  uint64_t inverse = getinverse(perm, length);
+  uint32_t seenpos = 0; // bit map of which letters we've seen so far
+  for (int i = 0; i < length; i++) {
+    extendnormalizetop(perm, inverse, length, i, entry, seenpos);
+    if (!table.contains(entry)) table.add(entry);
+  }
+}
+
+// build prefix table containing all complements of normalizations of prefixes of every perm in permset
+void addprefixes(const hashdb &permset, hashdb &table) {
+  vector <unsigned long long> patterns;
+  permset.getvals(patterns);
+  for (int i = 0; i < patterns.size(); i++) {
+    uint64_t perm = patterns[i];
+    int length = getmaxdigit(perm) + 1;
+    addprefixeshelper(perm, length, table);
+  }
+}

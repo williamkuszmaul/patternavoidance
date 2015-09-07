@@ -1,8 +1,4 @@
 
-// Uses algorithm described paper (also on this github)
-// We will use similar notation as in paper.pdf
-// However, rather than P_i(perm) being the number of patterns using the first i letters in perm, it is the number o patterns using the i smallest-valued letters in perm (is equivalent from algorithmic perspective)
-
 #include <assert.h>
 #include <string.h>
 //#include <iostream>
@@ -21,11 +17,9 @@
 #include "perm.h"
 using namespace std;
 
-// Turn these on to turn brute force algorithm into a memory efficient hybrid betweenthe brute-force algorithm and the asymptotically good algorithm
+// Turn these on to turn brute force algorithm into a memory efficient hybrid between the brute-force algorithm and the asymptotically good algorithm
 #define USEADDFACTOR 1
 #define USESECONDADDFACTOR 1 // forces useaddfactor on
-// Input: perm, inverse (which needs to be right in pos length - index - 1), perm length, index, complement of normalization of index - 1 largest letters in perm, a bitmap which should start off at zero for index = 0
-// Output: bitmap is updated. answer is updated to be complement of normalization of index largest letters in perm
 
 #define USEOLDP0 1
 #define USEOLDP1 1
@@ -49,46 +43,6 @@ void increasetally(vector < int > &tally, uint64_t val) {
   }
   tally[val]++;
 }
-
-
-static void extendnormalizetop(uint64_t perm, uint64_t inverse, int length, int index, uint64_t &answer, uint32_t & seenpos) {
-  int i = length - index - 1;
-  int oldpos = getdigit(inverse, i);
-  int newpos = 0;
-  if (oldpos != 0){
-    uint32_t temp = seenpos << (32 - oldpos); // Note: shifting by 32 is ill-defined, which is why we explicitly eliminate digit = 0 case.
-    newpos = __builtin_popcount(temp);
-  }
-  answer = setdigit(addpos(answer, newpos), newpos, index);
-  seenpos = seenpos | (1 << oldpos);
-}
-
-
-static void addprefixeshelper(uint64_t perm, int length, hashdb &table) {
-  uint64_t entry = 0;
-  uint64_t inverse = getinverse(perm, length);
-  uint32_t seenpos = 0; // bit map of which letters we've seen so far
-  for (int i = 0; i < length; i++) {
-    extendnormalizetop(perm, inverse, length, i, entry, seenpos);
-    //cout<<entry<<endl;
-    if (!table.contains(entry)) table.add(entry);
-  }
-}
-
-// build prefix table
-static void addprefixes(const hashdb &permset, hashdb &table) {
-  vector <unsigned long long> patterns;
-  permset.getvals(patterns);
-  for (int i = 0; i < patterns.size(); i++) {
-    uint64_t perm = patterns[i];
-    int length = getmaxdigit(perm) + 1;
-    //displayperm(perm,length);
-    addprefixeshelper(perm, length, table);
-  }
-}
-
-
-uint64_t lcount = 0;
 
 void checkpatterns(uint64_t perm, uint64_t inverse, uint64_t currentpatterncomplement, int currentpatternlength, int largestletterused, int numlettersleft, uint32_t seenpos, const hashdb &patternset, const hashdb &prefixmap, int &count) {
   //uint64_t tempperm = stringtoperm("1234");
@@ -122,16 +76,6 @@ void checkpatterns(uint64_t perm, uint64_t inverse, uint64_t currentpatterncompl
     //cout<<"Here again with i selected at "<<i<<endl;
     //if (perm == tempperm) cout<<(currentpatternlength + 1)<<" to right-most letter is in position "<<i<<endl;
     uint64_t newpattern = setdigit(addpos(currentpatterncomplement, newpos), newpos, currentpatternlength);
-    if (false && SPECIALTEST) { // If I don't run this, then we get almost exactly same running time for the sophisticated brute force and nonbrute force. So close, that it may not be coincidental since they may be doing almost exactly the same thing in this case; probably just coincidence though since getting rid fo division operation will probably speed up the non-brute-force version a bit.. Raises a natural question: Can this be extendd to small set of patterns case without having a few load operations total everything so that we may as well be using hash tble again. O
-      bool cont = prefixmap.simulatelookup(newpattern);
-      bool cont3 = prefixmap.simulatelookup(newpattern + 1);
-      bool cont2 = false;
-      if (cont) cont2 = patternset.simulatelookup(newpattern);
-      static int count_cont = 0;
-      count_cont += cont + cont2 + cont3;
-      if (count_cont % 1024*1024*1024 == 9999999) cout << "whahoo" << endl;
-      lcount++;
-    }
     if (!SPECIALTEST || currentpatternlength == 0 || getdigit(inverse, i) < getdigit(inverse, largestletterused)) checkpatterns(perm, inverse, newpattern, currentpatternlength + 1, i, numlettersleft - 1, seenpos | (1 << oldpos), patternset, prefixmap, count);
   }
   return;
