@@ -91,7 +91,7 @@ void buildpermutations_brute(uint64_t perm, uint64_t inverse, int currentsize, i
   uint64_t newinverse = setdigit(inverse, currentsize, currentsize); // inverse of the extended permutation
   if (currentsize < finalsize) {
     for (int i = currentsize; i >= 0; i--) {
-      if (i < currentsize) newinverse = newinverse + (1L << (4 * getdigit(perm, i))) - (1L << (4 * currentsize));
+      if (i < currentsize) newinverse = decrementdigit(incrementdigit(newinverse, getdigit(perm, i)), currentsize);
       uint64_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
       buildpermutations_brute(extendedperm, newinverse, currentsize + 1, finalsize, maxpatternsize,  maxpermsize, patterncomplements, prefixmap, tally, completelist, count);
     }
@@ -105,7 +105,7 @@ void buildpermutations_brute_usingbothaddfactors(uint64_t perm, uint64_t inverse
   uint64_t newinverse = setdigit(inverse, currentsize, currentsize); // inverse of the extended permutation
   if (currentsize < finalsize) {
     for (int i = currentsize; i >= 0; i--) {
-      if (i < currentsize) newinverse = newinverse + (1L << (4 * getdigit(perm, i))) - (1L << (4 * currentsize));
+      if (i < currentsize) newinverse = decrementdigit(incrementdigit(newinverse, getdigit(perm, i)), currentsize);
       uint64_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
       int countusingfinaltwo = 0;
       checkpatterns(extendedperm, newinverse, 0, 0, currentsize + 1, maxpatternsize, 0, patterncomplements, prefixmap, countusingfinaltwo);

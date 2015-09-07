@@ -21,7 +21,7 @@ using namespace std;
 #define USEBITHACK 1 // 1 to use a bithack inspired by permlab; implemented both for brute force and non-brute force algs.
 #define USEPREFIXMAP 1 // only has meaning in non-brute force algorithm. 1 to use the trick which checks for each i-prefix of w whether it is order-isomorphic to an i-prefix of some \pi \in \Pi
 #define SINGLEPATTERNOPT 0 // 1 if you want brute-force algorithm to test for each pattern separately rather than use hash table of pattern prefixes to check for all patterns at once whether a subsequence is order isomorphic to any pattern prefixes. Gets some speedup for single-pattern case.
-#define USEBRUTE 1 // whether to use brute-force algorithm
+#define USEBRUTE 0 // whether to use brute-force algorithm
 #define VERBOSE 0 // whether to be verbose. normally should be false
 #define GETSTAT 1 // whether or not to collect statistics -- slows things down a bit. Only used in function run_interior_experiment, and is optionally used for countavoidersfromfile when verbose argument is given to function. Is not implemented for SINGLEPATTERNOPT
 
@@ -119,7 +119,7 @@ void buildavoiders_brute_helper(uint64_t perm, uint64_t inverse, uint64_t length
   uint64_t newperms[length+1]; // each of the extended perms
   for (int i = length; i >= 0; i--) {
     // need to increment newinverse[perm[i]], decrement newinverse[length]
-    if (i < length) newinverse = newinverse + (1L << (4 * getdigit(perm, i))) - (1L << (4 * length));
+    if (i < length)  newinverse = decrementdigit(incrementdigit(newinverse, getdigit(perm, i)), length);
     newinverses[i] = newinverse;
     uint64_t extendedperm = setdigit(addpos(perm, i), i, length); // insert length in i-th position (remember, values are indexed starting at 0)
     newperms[i] = extendedperm;
@@ -280,7 +280,7 @@ void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vec
     uint64_t newinverse = setdigit(inverse, currentlength, currentlength); // inverse of the extended permutation
     for (int i = currentlength; i >= 0; i--) {
       // need to increment newinverse[perm[i]], decrement newinverse[currentlength]
-      if (i < currentlength) newinverse = newinverse + (1L << (4 * getdigit(perm, i))) - (1L << (4 * currentlength));
+      if (i < currentlength) newinverse = decrementdigit(incrementdigit(newinverse, getdigit(perm, i)), currentlength);
       if (!USEBITHACK || getbit(bitmap, i) == 1) { // If we are using bithack, then we only bother extending perm by inserting value currentlength in i-th position if the bitmap tells tells us the result is a potential avoider
 	uint64_t extendedperm = setdigit(addpos(perm, i), i, currentlength); // insert currentlength in i-th position (remember, values are indexed starting at 0, so results in permutation in S_currentlength)
 	uint64_t tempstat2 = stat2;

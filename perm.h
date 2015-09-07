@@ -46,6 +46,16 @@ inline uint64_t setdigit(uint64_t perm, int index, uint64_t newdigit) {
   return (perm & ~(15L << (index * 4))) |  (newdigit << (index * 4)); // clear digit and then rewrite its value
 }
 
+inline uint64_t incrementdigit(uint64_t perm, int index) {
+  return (perm + (1L << (4 * index)));
+}
+
+inline uint64_t decrementdigit(uint64_t perm, int index) {
+  return (perm - (1L << (4 * index)));
+}
+
+
+
 inline void displayperm(uint64_t perm) {
   for (int i = 0; i < 16; i++) cout<<getdigit(perm, i)<<" ";
   cout<<endl;
