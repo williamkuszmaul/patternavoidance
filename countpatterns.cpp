@@ -31,7 +31,7 @@ using namespace std;
 #define USEOLDP1 1
 #define USEPREFIXMAP 1 // FOR NON-BRUTE FORCE VERSION
 #define SPECIALTEST 0 // for if single identity pattern case
-#define USEBRUTE 0
+#define USEBRUTE 1
 
 static uint64_t stat1 = 0;
 static uint64_t stat2 = 0;
@@ -159,7 +159,7 @@ void buildpermutations_brute(uint64_t perm, uint64_t inverse, int currentsize, i
 }
 
 // same as buildpermutations_brute but with USESECONDADDFACTOR installed
-void buildpermutations_brute_usingbothaddfactors(uint64_t perm, uint64_t inverse, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patterncomplements, hashdb &prefixmap, vector < vector < int > > &tally, vector < vector < int > > &completelist, int prevcount, int* prevextensions) {
+void buildpermutations_brute_usingbothaddfactors(uint64_t perm, uint64_t inverse, int currentsize, int finalsize, int maxpatternsize, hashdb &patterncomplements, hashdb &prefixmap, vector < vector < int > > &tally, vector < vector < int > > &completelist, int prevcount, int* prevextensions) {
   int actualcounts[currentsize + 1];
   int newextensions[currentsize + 1];
   uint64_t newinverse = setdigit(inverse, currentsize, currentsize); // inverse of the extended permutation
@@ -184,11 +184,11 @@ void buildpermutations_brute_usingbothaddfactors(uint64_t perm, uint64_t inverse
   }
   
   newinverse = setdigit(inverse, currentsize, currentsize); // inverse of the extended permutation
-  if (currentsize < finalsize) {
+  if (currentsize < finalsize - 1) {
     for (int i = currentsize; i >= 0; i--) {
       if (i < currentsize) newinverse = newinverse + (1L << (4 * getdigit(perm, i))) - (1L << (4 * currentsize));
       uint64_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
-      buildpermutations_brute_usingbothaddfactors(extendedperm, newinverse, currentsize + 1, finalsize, maxpatternsize,  maxpermsize, patterncomplements, prefixmap, tally, completelist, actualcounts[i], newextensions);
+      buildpermutations_brute_usingbothaddfactors(extendedperm, newinverse, currentsize + 1, finalsize, maxpatternsize, patterncomplements, prefixmap, tally, completelist, actualcounts[i], newextensions);
     }
   }
 }
@@ -208,19 +208,16 @@ void start_brute(int maxpatternsize, int maxpermsize, hashdb &patternset, vector
     int length = getmaxdigit(perm) + 1;
     patterncomplements.add(getcomplement(perm, length));
   }
-  
+  timestamp_t start_time = get_timestamp();
   cout<<"max size: "<<maxpermsize<<endl;
-  for (int i = 2; i <= maxpermsize; i++) {
-    if (!USESECONDADDFACTOR) {
-      buildpermutations_brute(0L, 0L, 1, i, maxpatternsize, maxpermsize, patterncomplements, prefixmap, tally, completelist, 0);
-    } else {
-      int temparray[2] = {0, 0};
-      buildpermutations_brute_usingbothaddfactors(0L, 0L, 1, i, maxpatternsize, maxpermsize, patterncomplements, prefixmap, tally, completelist, 0, temparray);
-      cout << "lcount=" << lcount << endl;
-    }
-    timestamp_t current_time = get_timestamp();
-    //    if (verbose) cout<< "Time elapsed to build perms of size "<<i<<" in seconds: "<<(current_time - start_time)/1000000.0L<<endl;
+  if (!USESECONDADDFACTOR) {
+    buildpermutations_brute(0L, 0L, 1, maxpermsize, maxpatternsize, maxpermsize, patterncomplements, prefixmap, tally, completelist, 0);
+  } else {
+    int temparray[2] = {0, 0};
+    buildpermutations_brute_usingbothaddfactors(0L, 0L, 1, maxpermsize, maxpatternsize, patterncomplements, prefixmap, tally, completelist, 0, temparray);
   }
+  timestamp_t current_time = get_timestamp();
+  cout<< "Time elapsed to build perms of size "<<maxpermsize<<" in seconds: "<<(current_time - start_time)/1000000.0L<<endl;
 }
 
 // We store P_0(perm), ..., P_{maxpatternsize}(perm) in a hash table containing arrays of shorts of size maxpatternsize + 1
