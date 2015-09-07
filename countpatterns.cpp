@@ -27,9 +27,6 @@ using namespace std;
 #define SPECIALTEST 0 // for if single identity pattern case
 #define USEBRUTE 1
 
-static uint64_t stat1 = 0;
-static uint64_t stat2 = 0;
-
 // updates tally
 void increasetally(vector < int > &tally, uint64_t val) {
   if (val + 1 > tally.size()) {
@@ -37,7 +34,7 @@ void increasetally(vector < int > &tally, uint64_t val) {
     uint64_t size = oldsize;
     while (size < val + 1) {
       size *= 2;
-      tally.resize(size);
+      tally.resize(size); // resize if needed
     }
     for (int i = oldsize; i < size; i++) tally[i] = 0;
   }
@@ -45,7 +42,6 @@ void increasetally(vector < int > &tally, uint64_t val) {
 }
 
 void checkpatterns(uint64_t perm, uint64_t inverse, uint64_t currentpatterncomplement, int currentpatternlength, int largestletterused, int numlettersleft, uint32_t seenpos, const hashdb &patternset, const hashdb &prefixmap, int &count) {
-  //uint64_t tempperm = stringtoperm("1234");
   
   if (SPECIALTEST) {
     if (numlettersleft == 0) {
@@ -180,7 +176,6 @@ inline unsigned short getPval(unsigned long long perm, int i, hashmap &Phashmap)
 // Computes P_i(perm) for i from 0 , ... , maxpatternsize + 1; and if length < maxpermsize. stores all but final one
 // Updates tally and completelist using P_0(perm)
 static void Pcount(uint64_t perm, int length, int maxpatternsize, int maxpermsize, const hashdb &patternset, const hashdb &prefixmap, hashmap &Phashmap, uint64_t prevP0, uint64_t prevP1,  vector < vector < int > > &tally, vector < vector < int > > &completelist) {
-  stat1++;
   uint64_t inverse = getinverse(perm, length);
   unsigned short Pvals[maxpatternsize + 2]; // vals range from [0...maxpatternsize+1]
   int Pvalpos = maxpatternsize + 1;
@@ -217,7 +212,6 @@ static void Pcount(uint64_t perm, int length, int maxpatternsize, int maxpermsiz
 	oldPvals[1] = prevP1;
       } else {
 	oldPvals[oldPvalpos] = getPval(currentperm, length - 1 - i, Phashmap);
-	stat2++;
       }
     }
     oldPvalpos++;
@@ -335,10 +329,8 @@ double run_interior_experiment2(string patternlist, int maxpermsize) {
   for (int i = 1; i <= maxpermsize - 1; i++) reservedspace += factorial(i);
   hashmap Phashmap(reservedspace * 3, sizeof(short)*(maxpatternsize + 1)); // initialize hash table of Pvals
   timestamp_t current_time = get_timestamp();
-  stat1 = 0;
-  stat2 = 0;
   if (USEBRUTE)  start_brute(maxpatternsize, maxpermsize, patternset, tally, completelist);
-  else createPmap(maxpermsize, patternset, maxpatternsize, current_time, Phashmap, tally, completelist, verbose);  //cout<<"Average number of lookups per permutation checked: "<<(double)stat2 / (double)stat1<<endl;
+  else createPmap(maxpermsize, patternset, maxpatternsize, current_time, Phashmap, tally, completelist, verbose);  
   timestamp_t end_time = get_timestamp();
   return (end_time - start_time)/1000000.0L;
 }
@@ -374,11 +366,8 @@ void countpatterns(string patternlist, int maxpermsize, vector < vector <int> > 
   for (int i = 1; i <= maxpermsize - 1; i++) reservedspace += factorial(i);
   hashmap Phashmap(reservedspace * 3, sizeof(short)*(maxpatternsize + 1)); // initialize hash table of Pvals // should be automatically optimized out in brute-force version
   timestamp_t current_time = get_timestamp();
-  stat1 = 0;
-  stat2 = 0;
   if (USEBRUTE)  start_brute(maxpatternsize, maxpermsize, patternset, tally, completelist);
   else createPmap(maxpermsize, patternset, maxpatternsize, current_time, Phashmap, tally, completelist, verbose);
-  cout<<"Average number of lookups per permutation checked: "<<(double)stat2 / (double)stat1<<endl;
   timestamp_t end_time = get_timestamp();
   if (verbose) cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
   return;

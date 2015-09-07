@@ -21,7 +21,7 @@ using namespace std;
 #define USEBITHACK 1 // 1 to use a bithack inspired by permlab; implemented both for brute force and non-brute force algs.
 #define USEPREFIXMAP 1 // only has meaning in non-brute force algorithm. 1 to use the trick which checks for each i-prefix of w whether it is order-isomorphic to an i-prefix of some \pi \in \Pi
 #define SINGLEPATTERNOPT 0 // 1 if you want brute-force algorithm to test for each pattern separately rather than use hash table of pattern prefixes to check for all patterns at once whether a subsequence is order isomorphic to any pattern prefixes. Gets some speedup for single-pattern case.
-#define USEBRUTE 0 // whether to use brute-force algorithm
+#define USEBRUTE 1 // whether to use brute-force algorithm
 #define VERBOSE 0 // whether to be verbose. normally should be false
 #define GETSTAT 1 // whether or not to collect statistics -- slows things down a bit. Only used in function run_interior_experiment, and is optionally used for countavoidersfromfile when verbose argument is given to function. Is not implemented for SINGLEPATTERNOPT
 
@@ -114,47 +114,48 @@ static bool isavoider_brute(uint64_t perm, uint64_t inverse, int maxavoidsize, i
 }
 
 void buildavoiders_brute_helper(uint64_t perm, uint64_t inverse, uint64_t length, uint32_t bitmap, const hashdb &prefixmap, const vector < vector < uint64_t > > & prefixes,int maxavoidsize, int maxsize,  vector < vector < uint64_t > > &avoidervector, vector < uint64_t > &numavoiders, bool justcount) {
-    uint64_t newinverse = setdigit(inverse, length, length); // inverse of the extended permutation
-    uint64_t newinverses[length+1];
-    uint64_t newperms[length+1];
+  uint64_t newinverse = setdigit(inverse, length, length); // inverse of the extended permutation
+  uint64_t newinverses[length+1]; // inverses of each of the extended perms
+  uint64_t newperms[length+1]; // each of the extended perms
+  for (int i = length; i >= 0; i--) {
+    // need to increment newinverse[perm[i]], decrement newinverse[length]
+    if (i < length) newinverse = newinverse + (1L << (4 * getdigit(perm, i))) - (1L << (4 * length));
+    newinverses[i] = newinverse;
+    uint64_t extendedperm = setdigit(addpos(perm, i), i, length); // insert length in i-th position (remember, values are indexed starting at 0)
+    newperms[i] = extendedperm;
+    if (!USEBITHACK || getbit(bitmap, i) == 1) { // If we are using bithack, then we only bother extending perm by inserting value length in i-th position if the bitmap tells tells us the result is a potential avoider
+      if (GETSTAT) countstat1 = false;
+      if (GETSTAT && maxsize == length + 1) countstat1 = true;
+      if (isavoider_brute(extendedperm, newinverse, maxavoidsize, length + 1, prefixmap, prefixes)) { // if extended permutation is avoider
+	if (!justcount) avoidervector[length + 1].push_back(extendedperm);
+	else numavoiders[length + 1]++;
+      } else {
+	newperms[i] = -1; // signifies that we should NOT go further down recursion, for when not using bithack
+	if (USEBITHACK) bitmap = setbit(bitmap, i, 0); // keep track of which insertion positions resulted in an avoider 
+      }
+    }
+  }
+  uint32_t newmap = bitmap;
+  if (length + 1 < maxsize) {
     for (int i = length; i >= 0; i--) {
-      // need to increment newinverse[perm[i]], decrement newinverse[length]
-      if (i < length) newinverse = newinverse + (1L << (4 * getdigit(perm, i))) - (1L << (4 * length));
-      newinverses[i] = newinverse;
-      uint64_t extendedperm = setdigit(addpos(perm, i), i, length); // insert length in i-th position (remember, values are indexed starting at 0)
-      newperms[i] = extendedperm;
-      if (!USEBITHACK || getbit(bitmap, i) == 1) { // If we are using bithack, then we only bother extending perm by inserting value length in i-th position if the bitmap tells tells us the result is a potential avoider
-	if (GETSTAT) countstat1 = false;
-	if (GETSTAT && maxsize == length + 1) countstat1 = true;
-	if (isavoider_brute(extendedperm, newinverse, maxavoidsize, length + 1, prefixmap, prefixes)) { // if extended permutation is avoider
-	  if (!justcount) avoidervector[length + 1].push_back(extendedperm);
-	  else numavoiders[length + 1]++;
-	} else {
-	  newperms[i] = -1; // signifies that we should NOT go further down recursion, for when not using bithack
-	  if (USEBITHACK) bitmap = setbit(bitmap, i, 0); // keep track of which insertion positions resulted in an avoider 
-	}
+      if (!USEBITHACK || getbit(bitmap, i) == 1) {
+	if (USEBITHACK) newmap = insertbit(bitmap, i + 1, 1);
+	if (USEBITHACK || newperms[i] != -1) buildavoiders_brute_helper(newperms[i], newinverses[i], length + 1, newmap, prefixmap, prefixes, maxavoidsize, maxsize,  avoidervector, numavoiders, justcount);
+	//bitmaps.push(insertbit(bitmap, i + 1, 1)); // using which insertion positions resulted in an avoider, build bitmap for each new avoider
       }
     }
-    uint32_t newmap = bitmap;
-    if (length + 1 < maxsize) {
-      for (int i = length; i >= 0; i--) {
-	if (!USEBITHACK || getbit(bitmap, i) == 1) {
-	  if (USEBITHACK) newmap = insertbit(bitmap, i + 1, 1);
-	  if (USEBITHACK || newperms[i] != -1) buildavoiders_brute_helper(newperms[i], newinverses[i], length + 1, newmap, prefixmap, prefixes, maxavoidsize, maxsize,  avoidervector, numavoiders, justcount);
-	  //bitmaps.push(insertbit(bitmap, i + 1, 1)); // using which insertion positions resulted in an avoider, build bitmap for each new avoider
-	}
-      }
-    }
-
+  }
 }
 
 void buildavoiders_brute(const hashdb &patternset, int maxavoidsize, int maxsize,  vector < vector < uint64_t > > &avoidervector, vector < uint64_t > &numavoiders, bool justcount, uint64_t plannedavoidsetsize) {
   stat1 = 0;
   stat2 = 0;
   stat3 = 0;
-  if (VERBOSE) cout<<"Using Brute Force Algorithm, Based on PermLab's"<<endl;
+  stat4 = 0;
+  if (VERBOSE && USEBITHACK) cout<<"Using Brute Force Algorithm, Based on PermLab's"<<endl;
+  if (VERBOSE && !USEBITHACK) cout<<"Using naive brute force algorithm"<<endl;
   if (!justcount) avoidervector.resize(maxsize + 1);
-   else numavoiders.resize(maxsize + 1);
+  else numavoiders.resize(maxsize + 1);
   
   hashdb prefixmap(1<<3);
   addprefixes(patternset, prefixmap); // defined in perm.cpp
@@ -172,21 +173,14 @@ void buildavoiders_brute(const hashdb &patternset, int maxavoidsize, int maxsize
     prefixes[i].resize(length + 1);
     uint64_t entry = 0;
     uint64_t inverse = getinverse(perm, length);
-    uint32_t seenpos = 0; // bit map of which letters we've seen so far
+    uint32_t seenpos = 0; // bit map of which positions we've seen so far
     for (int j = 0; j < length; j++) {
       extendnormalizetop(perm, inverse, length, j, entry, seenpos); // defined in perm.cpp
       prefixes[i][j + 1] = entry;
-      //displayperm(entry);
     }
   }
 
   buildavoiders_brute_helper(0L, 0L, 0, 1, prefixmap, prefixes, maxavoidsize, maxsize, avoidervector, numavoiders, justcount);
-  if (GETSTAT && VERBOSE) cout<<stat1<<" is stat1"<<endl;
-  if (GETSTAT && VERBOSE) cout<<stat2<<" is stat2"<<endl;
-  if (GETSTAT && VERBOSE) cout<<stat3<<" is stat3"<<endl;
-  if (GETSTAT && VERBOSE) cout<<"ratio of stat1 to stat2: "<<(double)stat2 / (double)stat1<<endl;
-  if (GETSTAT && VERBOSE) cout<<"stat2 divided by stat3: "<<stat2 / stat3<<endl;
-  //assert(stat2 % stat3 == 0);
 }
 
 
