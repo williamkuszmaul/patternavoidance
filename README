@@ -27,9 +27,10 @@ patterns need not be the same length. Could easily be modified to
 build S \cap S_n(Pi) for a down-closed set of permutation S. Note,
 cannot handle a permutation having more than 63504 patterns, because
 we currently store the number of patterns in a short. Could easily be
-changed, at cost of constant-factor of space efficiency. Are there
-interesting sets \Pi such that there are more than 63504 \Pi-hits in
-some single permutation in S_16?
+changed, at cost of constant-factor of space efficiency. However, this
+is fine at least for n \le 16, because there are only 63504 possible
+subsequences, including the empty subsequences and subsequences of
+size 1.
 
 buildinput.cpp/.h: Writes to a file either (a) all pattern sets with
 patterns of size k up to trivial wilf-equivalence, or (b) all pattern
