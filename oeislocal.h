@@ -34,6 +34,7 @@ public:
   vector <long long> data;
   Sequence(int size);
   Sequence(vector <long long> vec);
+
   bool operator==(const Sequence &other) const
   {
     return (data == other.data);
@@ -65,6 +66,7 @@ public:
   int sequencesize; // sequence size
   int maxshift; // consider subsequences starting in positions 1, 2, ..., maxshift
   unordered_map<Sequence, int> sequencemap; // stores pairs (sequence, OEIS number) // Note, only one OEIS number is stored per sequence -- ends up being smallest-valued oeis
+  vector <string> oeisnames;
   Oeis(string filename, int sequencesize, int maxshift);
   // Given a string containing a sequence separated by spaces of
   // length at least inputshift + sequencesize, extracts the sequence

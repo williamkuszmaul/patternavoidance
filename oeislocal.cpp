@@ -71,6 +71,7 @@ unsigned long long singlehash (unsigned long long key)
 Oeis ::  Oeis(string filename, int sequencesize, int maxshift)
   : sequencesize(sequencesize)
   , maxshift(maxshift)
+
 {
   
   //cout<<"Building local version of OEIS..."<<endl;
@@ -115,6 +116,16 @@ Oeis ::  Oeis(string filename, int sequencesize, int maxshift)
       }
       // since earlier oeis sequence tend to be more relevent, better to use them
       if (sequencemap.find(tempsequence) == sequencemap.end()) sequencemap[tempsequence] = i + 1; // to get oeis number
+    }
+    
+    // finally build nametable
+    string namefilename = "names";
+    ifstream namefile(filename);
+    string nameline;
+    oeisnames.push_back("No first sequence");
+    for (int i = 0; i < 4; i++) getline(namefile, nameline);
+    while (getline(namefile, nameline)) {
+      oeisnames.push_back(nameline);
     }
   }
 }
@@ -216,10 +227,7 @@ struct oeishitinfo {
 // (2) if l does not start with #, checks if l corresponds with an oeis sequence and if so writes the OEIS sequence (as next line)
 // If ignoreboring, however, then (2) is NOT printed if the sequence represented by l is detected to be "boring" by allowsequence
 void analyzesequencefile(ifstream &inputsequences, ofstream &output, int inputshift, Oeis &OEIS, bool ignoreboring, bool verbose) {
-  if (verbose) cout<<"Analyzing sequences..."<<endl;
-  vector <string> oeisnames;
-  buildoeisnames(oeisnames); 
-  
+  if (verbose) cout<<"Analyzing sequences..."<<endl;  
 
 
   map<int, oeishitinfo> seensequences;
@@ -268,7 +276,7 @@ void analyzesequencefile(ifstream &inputsequences, ofstream &output, int inputsh
 	 ++iter ) {
       cout<<"-----------"<<endl;
       cout<<"Number and number of hits: "<<iter->first<<" "<<iter->second.numhits<<endl; // print out sequences detected in order of oeis number, as well as number of times sequence appears
-      cout<<oeisnames[iter->first]<<endl;
+      cout<<OEIS.oeisnames[iter->first]<<endl;
       cout<<iter->second.additionalinfo<<endl;
       tempmap[(((uint64_t)(iter->second.numhits))<<22) + marker] = iter->second; // this is a silly hack so that we can in a minute get sequences in order of number of times they appear
       marker++;
@@ -282,7 +290,7 @@ void analyzesequencefile(ifstream &inputsequences, ofstream &output, int inputsh
 	 ++iter ) {
       cout<<"-----------"<<endl;
       cout<<"Number and number of hits: "<<iter->second.oeisnum<<" "<<((iter->first)>>22)<<endl; // print out sequences detected in order of number of times sequence appears
-      cout<<oeisnames[iter->second.oeisnum]<<endl;
+      cout<<OEIS.oeisnames[iter->second.oeisnum]<<endl;
       cout<<"Example set: "<<iter->second.additionalinfo<<endl;
     }
   }
