@@ -28,7 +28,6 @@ using namespace std;
 #define USEPREFIXMAP 1 // for non-brute-force version, you get to choose whether to use the prefix hack to speed things up
 #define USEBRUTE 0 // whether to use brute force algorithm
 
-
 unsigned long long factorial(long long num) {
   int answer = 1;
   while (num > 1) {
@@ -137,8 +136,9 @@ void buildpermutations_brute_usingbothaddfactors(uint64_t perm, uint64_t inverse
   }
 }
 
-void start_brute(int maxpatternsize, int maxpermsize, hashdb &patternset, vector < vector < int > > &tally, vector < vector < int > > &completelist, bool justcount) {
-  cout<<"Using Brute Force Algorithm"<<endl;
+void start_brute(int maxpatternsize, int maxpermsize, hashdb &patternset, vector < vector < int > > &tally, vector < vector < int > > &completelist, bool verbose, bool justcount) {
+  if (verbose && !USESECONDADDFACTOR) cout<<"Using Brute Force Algorithm"<<endl;
+  if (verbose && USESECONDADDFACTOR) cout<<"Using Hybrid Algorithm"<<endl;
 
   hashdb prefixmap(1<<3);
   addprefixes(patternset, prefixmap);
@@ -153,7 +153,7 @@ void start_brute(int maxpatternsize, int maxpermsize, hashdb &patternset, vector
   //   patterncomplements.add(getcomplement(perm, length));
   // }
   timestamp_t start_time = get_timestamp();
-  cout<<"max size: "<<maxpermsize<<endl;
+  if (verbose) cout<<"max size: "<<maxpermsize<<endl;
   if (!USESECONDADDFACTOR) {
     buildpermutations_brute(0L, 0L, 1, maxpermsize, maxpatternsize, prefixmap, tally, completelist, 0, justcount);
   } else {
@@ -161,7 +161,7 @@ void start_brute(int maxpatternsize, int maxpermsize, hashdb &patternset, vector
     buildpermutations_brute_usingbothaddfactors(0L, 0L, 1, maxpermsize, maxpatternsize, prefixmap, tally, completelist, 0, temparray, justcount);
   }
   timestamp_t current_time = get_timestamp();
-  cout<< "Time elapsed to build perms of size "<<maxpermsize<<" in seconds: "<<(current_time - start_time)/1000000.0L<<endl;
+  if (verbose) cout<< "Time elapsed to build perms of size "<<maxpermsize<<" in seconds: "<<(current_time - start_time)/1000000.0L<<endl;
 }
 
 // We store P_0(perm), ..., P_{maxpatternsize}(perm) in a hash table containing arrays of shorts of size maxpatternsize + 1
@@ -319,7 +319,7 @@ double run_interior_experiment2(string patternlist, int maxpermsize) {
   for (int i = 1; i <= maxpermsize - 1; i++) reservedspace += factorial(i);
   hashmap Phashmap(reservedspace * 3, sizeof(short)*(maxpatternsize + 1)); // initialize hash table of Pvals
   timestamp_t current_time = get_timestamp();
-  if (USEBRUTE)  start_brute(maxpatternsize, maxpermsize, patternset, tally, completelist, true);
+  if (USEBRUTE)  start_brute(maxpatternsize, maxpermsize, patternset, tally, completelist, verbose, true);
   else createPmap(maxpermsize, patternset, maxpatternsize, current_time, Phashmap, tally, completelist, verbose, true);  
   timestamp_t end_time = get_timestamp();
   return (end_time - start_time)/1000000.0L;
@@ -363,24 +363,9 @@ void countpatterns(string patternlist, int maxpermsize, vector < vector <int> > 
     }
   }
 
-  if (USEBRUTE)  start_brute(maxpatternsize, maxpermsize, patternset, tally, completelist, justcount);
+  if (USEBRUTE)  start_brute(maxpatternsize, maxpermsize, patternset, tally, completelist, verbose, justcount);
   else createPmap(maxpermsize, patternset, maxpatternsize, current_time, Phashmap, tally, completelist, verbose, justcount);
   timestamp_t end_time = get_timestamp();
   if (verbose) cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
   return;
 }
-
-// Example usage:
-// int main() {
-//   vector < vector < int > > tally;
-//   vector < vector < int > > completelist;
-//   countpatterns("1234 123", 8, tally, completelist);
-//   for (int i = 1; i <= 8; i ++) cout<<completelist[i][0]<<endl;
-//   cout<<"-----------------"<<endl;
-//   for (int i = 8; i <= 8; i++) {
-//     for (int j = 0; j < tally[i].size(); j++) {
-//       cout<<j<<" "<<tally[i][j]<<endl;
-//     }
-//   }
-//   return 0;
-// }

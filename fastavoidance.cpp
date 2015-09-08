@@ -21,16 +21,16 @@ using namespace std;
 #define USEBITHACK 1 // 1 to use a bithack inspired by permlab; implemented both for brute force and non-brute force algs.
 #define USEPREFIXMAP 1 // only has meaning in non-brute force algorithm. 1 to use the trick which checks for each i-prefix of w whether it is order-isomorphic to an i-prefix of some \pi \in \Pi
 #define SINGLEPATTERNOPT 0 // 1 if you want brute-force algorithm to test for each pattern separately rather than use hash table of pattern prefixes to check for all patterns at once whether a subsequence is order isomorphic to any pattern prefixes. Gets some speedup for single-pattern case.
-#define USEBRUTE 0 // whether to use brute-force algorithm
+#define USEBRUTE 1 // whether to use brute-force algorithm
 #define VERBOSE 0 // whether to be verbose. normally should be false
-#define GETSTAT 1 // whether or not to collect statistics -- slows things down a bit. Only used in function run_interior_experiment, and is optionally used for countavoidersfromfile when verbose argument is given to function. Is not implemented for SINGLEPATTERNOPT
+#define GETSTAT 0 // whether or not to collect statistics -- slows things down a bit. Only used in function run_interior_experiment, and is optionally used for countavoidersfromfile when verbose argument is given to function. Is not implemented for SINGLEPATTERNOPT
 
 // IN CASE OF GETSTAT:
 // For brute force variants:
-// stat1 counts over all permutations in S_n how many subsequences of length at least three we look at in the course of the algorithm -- unless we are using USEBITHACK, in which case stat1 = stat4
+// stat1 counts over all permutations in S_n how many subsequences of length at least two we look at in the course of the algorithm
 // stat2 is the number of times stat1 is incremented for permutations that end up being avoiders
 // stat3 counts total number of avoiders in S_n
-// stat4 counts how many times checkpatterns is called in total
+// stat4 counts how many subsequences of length at least two we look at over the course of the algorithm for ALL permutations
 // For non-brute-force variants:
 // stat1 is total calls to isavoider
 // stat2 is number of i-prefixes we look at in total in isavoider calls. if USEBITHACK, excludes 1- and 2-prefixes.
@@ -71,8 +71,8 @@ inline uint64_t insertbit(uint64_t word, uint64_t pos, uint64_t val) { // val is
 // Note that prefixmap contains complements of normalized prefixes of patterns 
 // Returns true if permutation subsequence cannot be completed to get a pattern, false otherwise
 static bool checkpatterns(uint64_t perm, uint64_t inverse, uint64_t currentpatterncomplement, int currentpatternlength, int largestletterused, int numlettersleft, uint32_t seenpos, const hashdb &prefixmap, const vector < uint64_t > & prefixes) {
-  if (GETSTAT) stat4++;
-  if (GETSTAT && (currentpatternlength >= 3 || !USEBITHACK) && countstat1) stat1++;
+  if (GETSTAT && currentpatternlength > 1) stat4++;
+  if (GETSTAT && currentpatternlength > 1 && countstat1) stat1++;
   if (!SINGLEPATTERNOPT && currentpatternlength > 1 && !prefixmap.contains(currentpatterncomplement)) return true; 
   if (numlettersleft == 0) return false; // At this point, we have found a pattern
   for (int i = largestletterused - 1; i >= numlettersleft - 1; i--) { // looking at candidates to add to current permutation subsequence
@@ -326,17 +326,21 @@ void buildavoidersfrompatternlist(string patternlist, int maxpermsize, vector < 
   else buildavoiders(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, false, (1L << 10)); // for large cases, make last argument much larger
 }
 
-// just for use when GETSTATIS TRUE
+// just for use when GETSTAT IS TRUE
 uint64_t getstat1() {
+  if (!GETSTAT)  return 1;
   return stat1;
 }
 uint64_t getstat2() {
+  if (!GETSTAT)  return 1;
   return stat2;
 }
 uint64_t getstat3() {
+  if (!GETSTAT)  return 1;
   return stat3;
 }
 uint64_t getstat4() {
+  if (!GETSTAT)  return 1;
   return stat4;
 }
 
