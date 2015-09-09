@@ -28,10 +28,12 @@ using namespace std;
 // Given a number, formats it as an OEIS sequence number
 string numtooeis(int num);
 
+
 // Sequence class -------------------------------------------------
 class Sequence {
 public:
   vector <long long> data;
+  Sequence();
   Sequence(int size);
   Sequence(vector <long long> vec);
 
@@ -60,6 +62,19 @@ namespace std {
   };
 }
 
+struct patternsetinfo {
+  patternsetinfo();
+  string patternset;
+  string sequencestring;
+  Sequence sequence;
+  int oeisnum;
+};
+
+// i-th-derivative of sequence
+Sequence ithderivative(Sequence sequence, int i);
+bool iszeroby(Sequence sequence, int i);
+
+
 // OEIS class ---------------------------------------------------------------------
 class Oeis {
 public:
@@ -85,5 +100,7 @@ bool allowsequence(Sequence &testsequence);
 // (2) if l does not start with #, checks if l corresponds with an oeis sequence and if so writes the OEIS sequence (as next line)
 // If ignoreboring, however, then (2) is NOT printed if the sequence represented by l is detected to be "boring" by allowsequence
 void analyzesequencefile(ifstream &inputsequences, ofstream &output, int inputshift, Oeis &OEIS, bool ignoreboring, bool verbose);
+
+void fillpatternsetinfo(ifstream &inputsequences, Oeis &OEIS, int inputshift, vector<patternsetinfo> &matches);
 
 #endif 

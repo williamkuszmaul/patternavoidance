@@ -161,6 +161,44 @@ int Oeis :: getoeisnum(Sequence &sequence) {
   return elt->second;
 }
 
+// i-th-derivative of sequence
+Sequence ithderivative(Sequence sequence, int i) {
+  if (i == 0) return sequence;
+  Sequence answer = sequence; 
+  for (int i = sequence.data.size() - 1; i > 0; i--) {
+    answer.data[i] = sequence.data[i] + sequence.data[i - 1]; 
+  }
+  if (i == 1) return answer;
+  return ithderivative(answer, i - 1);
+}
+
+bool iszeroby(Sequence sequence, int i) {
+  for (int j = i; j < sequence.data.size(); j++) {
+    if (sequence.data[j] != 0) return false;
+  }
+  return true;
+}
+
+Sequence::Sequence() {
+}
+patternsetinfo::patternsetinfo() {
+}
+
+void fillpatternsetinfo(ifstream &inputsequences, Oeis &OEIS, int inputshift, vector<patternsetinfo> &matches) {
+  patternsetinfo newset;
+  string line;
+  while (getline(inputsequences, line)) {
+    if (line[0] == '#') {
+      newset.patternset = line.substr(1); // everything but the hashtag at the beginning
+    } else {
+      newset.sequence = OEIS.extractusersequence(line, inputshift);
+      newset.oeisnum = OEIS.getoeisnum(newset.sequence); // -1 if not found
+      if (newset.oeisnum != -1) matches.push_back(newset);
+    }
+  }
+}
+
+
 // returns false if sequence is detected to start growing as a constant, linear, or quadratic
 bool allowsequence(Sequence &testsequence) {
   uint64_t sequencesize = testsequence.data.size();
@@ -195,16 +233,7 @@ bool allowsequence(Sequence &testsequence) {
   return true;
 }
 
-void buildoeisnames(vector <string> & oeisnames) {
-  string filename = "names";
-  ifstream file(filename);
-  string line;
-  oeisnames.push_back("No first sequence");
-  for (int i = 0; i < 4; i++) getline(file, line);
-  while (getline(file, line)) {
-    oeisnames.push_back(line);
-  }
-}
+
 
 struct oeishitinfo {
   int numhits;
