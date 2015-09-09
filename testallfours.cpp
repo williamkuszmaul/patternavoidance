@@ -44,6 +44,7 @@ int main() {
 
   cout<<"Building local version of OEIS..."<<endl;
   Oeis OEIS("stripped", maxpermsize - minpermsize + 1, 15); // Note: we allow sequences to start in any of positions 1, 2, ..., 15
+  cout<<"Continuing analysis"<<endl;
   ifstream sequencesfilein;
   sequencesfilein.open(sequencesfilename);
   ofstream oeismatchesfile;

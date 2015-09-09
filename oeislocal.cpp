@@ -68,7 +68,7 @@ unsigned long long singlehash (unsigned long long key)
 
 // OEIS class ---------------------------------------------------------------------
 
-Oeis ::  Oeis(string filename, int sequencesize, int maxshift)
+Oeis ::  Oeis(string filename, string namefilename, int sequencesize, int maxshift)
   : sequencesize(sequencesize)
   , maxshift(maxshift)
 
@@ -119,8 +119,7 @@ Oeis ::  Oeis(string filename, int sequencesize, int maxshift)
     }
     
     // finally build nametable
-    string namefilename = "names";
-    ifstream namefile(filename);
+    ifstream namefile(namefilename);
     string nameline;
     oeisnames.push_back("No first sequence");
     for (int i = 0; i < 4; i++) getline(namefile, nameline);
@@ -184,13 +183,15 @@ Sequence::Sequence() {
 patternsetinfo::patternsetinfo() {
 }
 
-void fillpatternsetinfo(ifstream &inputsequences, Oeis &OEIS, int inputshift, vector<patternsetinfo> &matches) {
+void fillpatternsetinfo(ifstream &inputsequences, Oeis &OEIS, int inputshift, vector<patternsetinfo> &matches, int &numattempts) {
+  numattempts = 0;
   patternsetinfo newset;
   string line;
   while (getline(inputsequences, line)) {
     if (line[0] == '#') {
       newset.patternset = line.substr(1); // everything but the hashtag at the beginning
     } else {
+      numattempts++;
       newset.sequence = OEIS.extractusersequence(line, inputshift);
       newset.oeisnum = OEIS.getoeisnum(newset.sequence); // -1 if not found
       if (newset.oeisnum != -1) matches.push_back(newset);

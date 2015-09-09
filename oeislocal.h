@@ -82,7 +82,8 @@ public:
   int maxshift; // consider subsequences starting in positions 1, 2, ..., maxshift
   unordered_map<Sequence, int> sequencemap; // stores pairs (sequence, OEIS number) // Note, only one OEIS number is stored per sequence -- ends up being smallest-valued oeis
   vector <string> oeisnames;
-  Oeis(string filename, int sequencesize, int maxshift);
+  Oeis(string filename, string namefilename, int sequencesize, int maxshift);
+
   // Given a string containing a sequence separated by spaces of
   // length at least inputshift + sequencesize, extracts the sequence
   // starting with the (inputshift)-th number of line. Indexed so that
@@ -101,6 +102,6 @@ bool allowsequence(Sequence &testsequence);
 // If ignoreboring, however, then (2) is NOT printed if the sequence represented by l is detected to be "boring" by allowsequence
 void analyzesequencefile(ifstream &inputsequences, ofstream &output, int inputshift, Oeis &OEIS, bool ignoreboring, bool verbose);
 
-void fillpatternsetinfo(ifstream &inputsequences, Oeis &OEIS, int inputshift, vector<patternsetinfo> &matches);
+void fillpatternsetinfo(ifstream &inputsequences, Oeis &OEIS, int inputshift, vector<patternsetinfo> &matches, int &numattempts);
 
 #endif 
