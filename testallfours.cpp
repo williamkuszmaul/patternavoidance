@@ -23,11 +23,11 @@ int main() {
   // For each one, computes |S_1(Pi)|, ..., |S_maxpermsize(Pi)| and writes to sequencesfilename
   // For each sequence in sequencesfilename, looks up S_minpermsize(Pi), ..., S_maxpermsize(Pi) in OEIS and writes found oeis sequences to oeismatchesfilename
   
-  int maxpermsize = 12; //
-  int minpermsize = 4; // HAVE TO SUBTRACT ONE FROM BOTH FOR NOW BECAUSE USING OLD OUTPUT FORMAT
+  int maxpermsize = 13; //
+  int minpermsize = 5; // HAVE TO SUBTRACT ONE FROM BOTH FOR NOW BECAUSE USING OLD OUTPUT FORMAT
   //  string setsfilename = "testallfours.txt";
-  string sequencesfilename = "out-allfoursupto13temp";
-  string oeismatchesfilename = "out-out-allfoursupto13temp";
+  string sequencesfilename = "testallfours-out13";
+  string oeismatchesfilename = "currenttemp";
   
   // ofstream setsfile;
   // setsfile.open(setsfilename, std::ofstream::trunc);
@@ -43,7 +43,7 @@ int main() {
   // sequencesfile.close();
 
   cout<<"Building local version of OEIS..."<<endl;
-  Oeis OEIS("stripped", maxpermsize - minpermsize + 1, 15); // Note: we allow sequences to start in any of positions 1, 2, ..., 15
+  Oeis OEIS("/data/williamkuszmaul/stripped", "/data/williamkuszmaul/names", maxpermsize - minpermsize + 1, 15); // Note: we allow sequences to start in any of positions 1, 2, ..., 15
   cout<<"Continuing analysis"<<endl;
   ifstream sequencesfilein;
   sequencesfilein.open(sequencesfilename);

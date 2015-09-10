@@ -37,7 +37,6 @@ void buildwilfeqsets(string setsfilename, int patternsize) {
 }
 
 void analyzefirstsequenceset(Oeis &OEIS, string sequencesfilename, string setsfilename2, int minpermsize, int minrevisedsetsize, unordered_map<int, string> &oeismatchesbynum) {
-  int firstzeropos = 4, secondzeropos = 3, thirdzeropos = 4;
   ifstream sequencesfilein;
   sequencesfilein.open(sequencesfilename);
   ofstream nextlevelsets;
@@ -46,51 +45,38 @@ void analyzefirstsequenceset(Oeis &OEIS, string sequencesfilename, string setsfi
   int numattempts = 0;
   fillpatternsetinfo(sequencesfilein, OEIS, minpermsize - 1, matches, numattempts); // start with the minpermsize-th entry
   sequencesfilein.close();
-  int constmatches = 0;
-  int linmatches = 0;
-  int quadmatches = 0;
-  unordered_set<int> consthits;
-  unordered_set<int> linhits;
-  unordered_set<int> quadhits;
+  vector <int> numhitswithdeg(4);
+  unordered_set<int> hitswithdeg[4];
   for (int i = 0; i < matches.size(); i++) {
     patternsetinfo set = matches[i];
-    if (iszeroby(ithderivative(set.sequence, 1), firstzeropos)) { // look at first derivative starting in 4-th position of sequence (since some sequence become constant late
-      consthits.insert(set.oeisnum);
-      constmatches++;
+    bool cont = true;
+    int degree = 4;
+    if (iszeroby(ithderivative(set.sequence, 4), 5)) degree = 3;
+    if (iszeroby(ithderivative(set.sequence, 3), 5)) degree = 2;
+    if (iszeroby(ithderivative(set.sequence, 2), 5)) degree = 1;
+    if (iszeroby(ithderivative(set.sequence, 1), 5)) degree = 0;
+    if (degree < 4) {
+      numhitswithdeg[degree]++;
+      hitswithdeg[degree].insert(set.oeisnum);
     } else {
-      if (iszeroby(ithderivative(set.sequence, 2), secondzeropos)) { // look at second derivative starting with 3rd term
-	linmatches++;
-	linhits.insert(set.oeisnum);
+      if (oeismatchesbynum.find(set.oeisnum) == oeismatchesbynum.end()) {
+	oeismatchesbynum[set.oeisnum] = set.patternset;
       } else {
-	if (iszeroby(ithderivative(set.sequence, 3), thirdzeropos)) { // look at third derivative starting with 4th term
-	  quadmatches ++;
-	  quadhits.insert(set.oeisnum);
-	} else {
-	  //	  cout<<"entry "<<set.oeisnum<<" "<<set.patternset<<endl;
-	  if (oeismatchesbynum.find(set.oeisnum) == oeismatchesbynum.end()) {
-	    oeismatchesbynum[set.oeisnum] = set.patternset;
-	  }
-	  else {
-	    oeismatchesbynum[set.oeisnum] = oeismatchesbynum[set.oeisnum] + "\n" + set.patternset;
-	  }
-	  if (std::count(set.patternset.begin(), set.patternset.end(), ' ') >= minrevisedsetsize) nextlevelsets<<set.patternset<<endl;
-	}
+	oeismatchesbynum[set.oeisnum] = oeismatchesbynum[set.oeisnum] + "\n" + set.patternset;
       }
+      if (std::count(set.patternset.begin(), set.patternset.end(), ' ') >= minrevisedsetsize)  nextlevelsets<<set.patternset<<endl;
     }
   }
   cout<<"Total of "<<matches.size()<<" matches out of "<<numattempts<<" attempts"<<endl;
-  cout<<constmatches<<" matches constant by first derivative position "<<firstzeropos<<endl;
-  cout<<linmatches<<" of remaining matches linear by second derivative position "<<secondzeropos<<endl;
-  cout<<quadmatches<<" of remaining matches quadratic by third derivative  position "<<secondzeropos<<endl;
-  cout<<"Number distinct distinct oeis sequences matching to constant sequences: "<<consthits.size()<<endl;
-  cout<<"Number distinct distinct oeis sequences matching to left-over linear sequences: "<<linhits.size()<<endl;
-  cout<<"Number distinct distinct oeis sequences matching to left-over quadratic sequences: "<<quadhits.size()<<endl;
+  cout<<numhitswithdeg[0]<<" matches constant by first derivative position 5"<<endl;
+  cout<<numhitswithdeg[1]<<" of remaining matches linear by second derivative position 5"<<endl;
+  cout<<numhitswithdeg[2]<<" of remaining matches quadratic by second derivative position 5"<<endl;
+  cout<<numhitswithdeg[3]<<" of remaining matches cubic by second derivative position 5"<<endl;
+  cout<<"Number distinct distinct oeis sequences matching to constant sequences: "<<hitswithdeg[0].size()<<endl;
+  cout<<"Number distinct distinct oeis sequences matching to left-over linear sequences: "<<hitswithdeg[1].size()<<endl;
+  cout<<"Number distinct distinct oeis sequences matching to left-over quadratic sequences: "<<hitswithdeg[2].size()<<endl;
+  cout<<"Number distinct distinct oeis sequences matching to left-over cubic sequences: "<<hitswithdeg[3].size()<<endl;
   cout<<"Number distinct oeis sequences for remaining: "<<oeismatchesbynum.size()<<endl;
-  // for (std::unordered_map<int, string>::iterator iter = oeismatchesbynum.begin();
-  //      iter != oeismatchesbynum.end();
-  //      ++iter) {
-  //   //cout<<"second type of entry"<<iter->first<<" "<<iter->second<<endl;
-  // }
   nextlevelsets.close();
 }
 
@@ -114,36 +100,81 @@ void analyzesecondsequenceset(Oeis &OEIS, string sequencesfilename, int minperms
   cout<<"Total of "<<oeismatchesbynum.size()<<" distinct oeis matches for filtered sequences"<<endl;
 }
 
+void  compareoeismatches( unordered_map<int, string> &oeismatchesbynum,  unordered_map<int, string> &oeismatchesbynum2) {
+  cout<<"Elements appearing only in first analysis of revised data set: "<<endl;
+  for (std::unordered_map<int, string>::iterator iter = oeismatchesbynum.begin();
+       iter != oeismatchesbynum.end();
+       ++iter) {
+    int numhits = std::count(iter->second.begin(), iter->second.end(), '\n') + 1;
+    if (oeismatchesbynum2.find(iter->first) == oeismatchesbynum2.end() || oeismatchesbynum2[iter->first] != oeismatchesbynum[iter->first]) {
+      cout<<numtooeis(iter->first)<<endl<<numhits<<endl;
+      //cout<<iter->second<<endl;
+    }
+  }
+  cout<<"Elements appearing only in second analysis of revised data set: "<<endl;
+  for (std::unordered_map<int, string>::iterator iter = oeismatchesbynum2.begin();
+       iter != oeismatchesbynum2.end();
+       ++iter) {
+    int numhits = std::count(iter->second.begin(), iter->second.end(), '\n') + 1;
+    if (oeismatchesbynum.find(iter->first) == oeismatchesbynum.end() || oeismatchesbynum[iter->first] != oeismatchesbynum2[iter->first]) {
+      cout<<numtooeis(iter->first)<<endl<<numhits<<endl;
+      //cout<<iter->second<<endl;
+    }
+  }
+}
+
+void  displaymatches(Oeis &OEIS, unordered_map<int, string> &oeismatchesbynum3, string revisedall, bool verbose) {
+  ofstream output;
+  output.open(revisedall, std::ofstream::trunc);
+   for (std::unordered_map<int, string>::iterator iter = oeismatchesbynum3.begin();
+       iter != oeismatchesbynum3.end();
+       ++iter) {
+     int numhits = std::count(iter->second.begin(), iter->second.end(), '\n') + 1;
+     output<<OEIS.oeisnames[iter->first]<<endl;
+     output<<numhits<<" times"<<endl;
+     if (verbose) output<<iter->second<<endl;
+   }
+
+}
+
 int main() {
-  // Writes all pattern sets of S_4 up to trivial wilf-equivalence to setsfilename
-  // For each one, computes |S_1(Pi)|, ..., |S_maxpermsize(Pi)| and writes to sequencesfilename
-  // For each sequence in sequencesfilename, looks up S_minpermsize(Pi), ..., S_maxpermsize(Pi) in OEIS and writes found oeis sequences to oeismatchesfilename
-  
-  int maxpermsize = 13; //
+  bool data_built = true; // To just run OEIS analysis since sequence files prebuilt
+  int maxpermsize = 13; 
   int minpermsize = 5;
-  int patternsize = 3;
+  int patternsize = 4;
   int revisedmaxpermsize = 15;
-  int minrevisedsetsize = 2;
+  int minrevisedsetsize = 5;
   string setsfilename = "testallfours-sets.txt";
   string sequencesfilename = "testallfours-out13";
   string setsfilename2 = "testallfours-revisedsets";
   string sequencesfilename2 = "testallfours-revisedout15.txt";
+  string revisedall = "testallfours-revised15final.txt";
+  string revisedbrief = "testallfours-revised15final-brief.txt";
 
-  buildwilfeqsets(setsfilename, patternsize);
-  cout<<"Building sequences up to "<<maxpermsize<<endl;
-  setstosequences(setsfilename, sequencesfilename, maxpermsize);
-  
+  if (!data_built) buildwilfeqsets(setsfilename, patternsize);
+  cout<<"Building sequences up to "<<maxpermsize<<"..."<<endl;
+  if (!data_built) setstosequences(setsfilename, sequencesfilename, maxpermsize);
   cout<<"Building local version of OEIS..."<<endl;
-  Oeis OEIS("/data/williamkuszmaul/stripped", "/data/williamkuszmaul/names", maxpermsize - minpermsize + 1, 15); // Note: we allow sequences to start in any of positions 1, 2, ..., 15
-  cout<<"Continuing analysis"<<endl;
+  Oeis OEIS("/data/williamkuszmaul/stripped", "/data/williamkuszmaul/names", maxpermsize - minpermsize + 1, 15); //Note: we allow sequences to start in any of positions 1, 2, ..., 15
+  cout<<"Continuing analysis..."<<endl;
 
   unordered_map<int, string> oeismatchesbynum;
+  cout<<"Analyzing first batch for n up to "<<maxpermsize<<"..."<<endl;
   analyzefirstsequenceset(OEIS, sequencesfilename, setsfilename2, minpermsize, minrevisedsetsize, oeismatchesbynum);
-  cout<<"Building sequences for filtered sets up to "<<revisedmaxpermsize<<endl;
-  setstosequences(setsfilename2, sequencesfilename2, revisedmaxpermsize);
+  cout<<"Building sequences for filtered sets up to "<<revisedmaxpermsize<<"..."<<endl;
+  if (!data_built) setstosequences(setsfilename2, sequencesfilename2, revisedmaxpermsize);
   unordered_map<int, string> oeismatchesbynum2;
   cout<<"Analyzing filtered sequences"<<endl;
+  cout<<"Analyzing second batch for n up to "<<maxpermsize<<"..."<<endl;
   analyzesecondsequenceset(OEIS, sequencesfilename2, minpermsize, oeismatchesbynum2);
-  
+  cout<<"Rebuilding OEIS for new-sized sequences..."<<endl;
+  Oeis OEIS2("/data/williamkuszmaul/stripped", "/data/williamkuszmaul/names", revisedmaxpermsize - minpermsize + 1, 15); // Note: we allow sequences to start in any of positions 1, 2, ..., 15
+  cout<<"Analyzing second batch for n up to "<<revisedmaxpermsize<<"..."<<endl;
+  unordered_map<int, string> oeismatchesbynum3;
+  analyzesecondsequenceset(OEIS2, sequencesfilename2, minpermsize, oeismatchesbynum3);
+  compareoeismatches(oeismatchesbynum2, oeismatchesbynum3);
+  cout<<"Writing to output files..."<<endl;
+  displaymatches(OEIS2, oeismatchesbynum3, revisedall, true);
+  displaymatches(OEIS2, oeismatchesbynum3, revisedbrief, false);
   return 0;  
 }

@@ -71,7 +71,7 @@ struct patternsetinfo {
 };
 
 // i-th-derivative of sequence
-Sequence ithderivative(Sequence sequence, int i);
+Sequence ithderivative(Sequence sequence, int pow);
 bool iszeroby(Sequence sequence, int i);
 
 

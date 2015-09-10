@@ -73,10 +73,16 @@ Oeis ::  Oeis(string filename, string namefilename, int sequencesize, int maxshi
   , maxshift(maxshift)
 
 {
+  // start by building nametable
+  ifstream namefile(namefilename);
+  string nameline;
+  oeisnames.push_back("No first sequence");
+  for (int i = 0; i < 4; i++) getline(namefile, nameline);
+  while (getline(namefile, nameline)) {
+    oeisnames.push_back(nameline);  
+  }
   
-  //cout<<"Building local version of OEIS..."<<endl;
-  
-  // start by making list of OEIS sequences
+  // continue by making list of OEIS sequences
   vector < vector < long long > > sequences;
   int maxsequencelength = maxshift + sequencesize - 1; // maximum length of oeis sequence we need to look at
   ifstream input;
@@ -117,15 +123,6 @@ Oeis ::  Oeis(string filename, string namefilename, int sequencesize, int maxshi
       // since earlier oeis sequence tend to be more relevent, better to use them
       if (sequencemap.find(tempsequence) == sequencemap.end()) sequencemap[tempsequence] = i + 1; // to get oeis number
     }
-    
-    // finally build nametable
-    ifstream namefile(namefilename);
-    string nameline;
-    oeisnames.push_back("No first sequence");
-    for (int i = 0; i < 4; i++) getline(namefile, nameline);
-    while (getline(namefile, nameline)) {
-      oeisnames.push_back(nameline);
-    }
   }
 }
 
@@ -161,14 +158,15 @@ int Oeis :: getoeisnum(Sequence &sequence) {
 }
 
 // i-th-derivative of sequence
-Sequence ithderivative(Sequence sequence, int i) {
-  if (i == 0) return sequence;
+Sequence ithderivative(Sequence sequence, int pow) {
+  if (pow == 0) return sequence;
   Sequence answer = sequence; 
-  for (int i = sequence.data.size() - 1; i > 0; i--) {
-    answer.data[i] = sequence.data[i] + sequence.data[i - 1]; 
+  for (int i = 1; i < sequence.data.size(); i++) {
+    answer.data[i] = sequence.data[i] - sequence.data[i - 1]; 
   }
-  if (i == 1) return answer;
-  return ithderivative(answer, i - 1);
+  answer.data[0] = 0;
+  if (pow == 1) return answer;
+  return ithderivative(answer, pow - 1);
 }
 
 bool iszeroby(Sequence sequence, int i) {
@@ -199,40 +197,48 @@ void fillpatternsetinfo(ifstream &inputsequences, Oeis &OEIS, int inputshift, ve
   }
 }
 
-
-// returns false if sequence is detected to start growing as a constant, linear, or quadratic
 bool allowsequence(Sequence &testsequence) {
-  uint64_t sequencesize = testsequence.data.size();
-  Sequence deriv1(sequencesize);
-  Sequence deriv2(sequencesize);
-  Sequence deriv3(sequencesize);
-  for (int i = 1; i < sequencesize; i++) {
-    deriv1.data[i] = testsequence.data[i] - testsequence.data[i - 1];
-  }
-  for (int i = 2; i < sequencesize; i++) {
-    deriv2.data[i] = deriv1.data[i] - deriv1.data[i - 1];
-  }
-  for (int i = 3; i < sequencesize; i++) {
-    deriv3.data[i] = deriv2.data[i] - deriv2.data[i - 1];
-  }
-  
-  bool cont = false;
-  for (int i = 4; i < sequencesize - 1; i++) { // could start i as low as 1, which would allow more sequences to slip through
-    if (deriv1.data[i] != deriv1.data[i+1]) cont = true;
-  }
-  if (!cont) return false;
-  cont = false;
-  for (int i = 3; i < sequencesize - 1; i++) { // could start i as low as 2
-    if (deriv2.data[i] != deriv2.data[i+1]) cont = true;
-  }
-  if (!cont) return false;
-  cont = false;
-  for (int i = 4; i < sequencesize - 1; i++) { // could start i as low as 3
-    if (deriv3.data[i] != deriv3.data[i+1]) cont = true;
-  }
-  if (!cont) return false;
+  if (iszeroby(ithderivative(testsequence, 1), 5)) return false;
+  if (iszeroby(ithderivative(testsequence, 2), 5)) return false;
+  if (iszeroby(ithderivative(testsequence, 3), 5)) return false;
+  if (iszeroby(ithderivative(testsequence, 4), 5)) return false;
   return true;
 }
+
+// // returns false if sequence is detected to start growing as a constant, linear, or quadratic
+// bool allowsequence(Sequence &testsequence) {
+//   return allowsequence2(testsequence);
+//   uint64_t sequencesize = testsequence.data.size();
+//  Sequence deriv1(sequencesize);
+//   Sequence deriv2(sequencesize);
+//   Sequence deriv3(sequencesize);
+//   for (int i = 1; i < sequencesize; i++) {
+//     deriv1.data[i] = testsequence.data[i] - testsequence.data[i - 1];
+//   }
+//   for (int i = 2; i < sequencesize; i++) {
+//     deriv2.data[i] = deriv1.data[i] - deriv1.data[i - 1];
+//   }
+//   for (int i = 3; i < sequencesize; i++) {
+//     deriv3.data[i] = deriv2.data[i] - deriv2.data[i - 1];
+//   }
+  
+//   bool cont = false;
+//   for (int i = 4; i < sequencesize - 1; i++) { // could start i as low as 1, which would allow more sequences to slip through
+//     if (deriv1.data[i] != deriv1.data[i+1]) cont = true;
+//   }
+//   if (!cont) return false;
+//   cont = false;
+//   for (int i = 3; i < sequencesize - 1; i++) { // could start i as low as 2
+//     if (deriv2.data[i] != deriv2.data[i+1]) cont = true;
+//   }
+//   if (!cont) return false;
+//   cont = false;
+//   for (int i = 4; i < sequencesize - 1; i++) { // could start i as low as 3
+//     if (deriv3.data[i] != deriv3.data[i+1]) cont = true;
+//   }
+//   if (!cont) return false;
+//   return true;
+// }
 
 
 
@@ -304,10 +310,10 @@ void analyzesequencefile(ifstream &inputsequences, ofstream &output, int inputsh
     for( std::map<int, oeishitinfo>::iterator iter = seensequences.begin();
 	 iter != seensequences.end();
 	 ++iter ) {
-      cout<<"-----------"<<endl;
-      cout<<"Number and number of hits: "<<iter->first<<" "<<iter->second.numhits<<endl; // print out sequences detected in order of oeis number, as well as number of times sequence appears
-      cout<<OEIS.oeisnames[iter->first]<<endl;
-      cout<<iter->second.additionalinfo<<endl;
+      //      cout<<"-----------"<<endl;
+      //      cout<<"Number and number of hits: "<<iter->first<<" "<<iter->second.numhits<<endl; // print out sequences detected in order of oeis number, as well as number of times sequence appears
+      //      cout<<OEIS.oeisnames[iter->first]<<endl;
+      //      cout<<iter->second.additionalinfo<<endl;
       tempmap[(((uint64_t)(iter->second.numhits))<<22) + marker] = iter->second; // this is a silly hack so that we can in a minute get sequences in order of number of times they appear
       marker++;
     }
@@ -318,10 +324,10 @@ void analyzesequencefile(ifstream &inputsequences, ofstream &output, int inputsh
     for( std::map<uint64_t, oeishitinfo>::iterator iter = tempmap.begin();
 	 iter != tempmap.end();
 	 ++iter ) {
-      cout<<"-----------"<<endl;
-      cout<<"Number and number of hits: "<<iter->second.oeisnum<<" "<<((iter->first)>>22)<<endl; // print out sequences detected in order of number of times sequence appears
-      cout<<OEIS.oeisnames[iter->second.oeisnum]<<endl;
-      cout<<"Example set: "<<iter->second.additionalinfo<<endl;
+      //cout<<"-----------"<<endl;
+      // cout<<"Number and number of hits: "<<iter->second.oeisnum<<" "<<((iter->first)>>22)<<endl; // print out sequences detected in order of number of times sequence appears
+      //cout<<OEIS.oeisnames[iter->second.oeisnum]<<endl;
+      //cout<<"Example set: "<<iter->second.additionalinfo<<endl;
     }
   }
 }
