@@ -20,13 +20,13 @@ using namespace std;
 // Conventions for comments: We use all the conventions from our paper in our comments. Thus the comments disagree with the code in that they do not zero-index the values or positions of a permutation
 
 // Turn these on to turn brute force algorithm into a memory efficient hybrid between the brute-force algorithm and the asymptotically good algorithm
-#define USEADDFACTOR 1
-#define USESECONDADDFACTOR 1 // forces useaddfactor on
+#define USEADDFACTOR 0
+#define USESECONDADDFACTOR 0 // forces useaddfactor on
 
 #define USEOLDP0 1 // whether non-brute-force should use cached P_0(w\downarrow_1) // will lead to constant speedup 
 #define USEOLDP1 1 // whether non-brute-force should use cached P_1(w\downarrow_2) // will lead to constant speedup
 #define USEPREFIXMAP 1 // for non-brute-force version, you get to choose whether to use the prefix hack to speed things up
-#define USEBRUTE 0 // whether to use brute force algorithm
+#define USEBRUTE 1 // whether to use brute force algorithm
 
 unsigned long long factorial(long long num) {
   int answer = 1;
