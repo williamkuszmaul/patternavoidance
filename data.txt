@@ -1,3 +1,8 @@
+Time for our code to do up to 16 for all sets of size > 4
+22410.01user 46184.75system 54:07.50elapsed 2112%CPU (0avgtext+0avgdata 26276420maxresident)
+
+
+
 -------------------------------------------- computations for 231-extended avoiders
 
 ------------ PermLab implementation (our good version):

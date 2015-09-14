@@ -22,7 +22,7 @@ using namespace std;
 #define USEBITHACK 1 // 1 to use a bithack inspired by permlab; implemented both for brute force and non-brute force algs.
 #define USEPREFIXMAP 1 // only has meaning in non-brute force algorithm. 1 to use the trick which checks for each i-prefix of w whether it is order-isomorphic to an i-prefix of some \pi \in \Pi
 #define SINGLEPATTERNOPT 0 // 1 if you want brute-force algorithm to test for each pattern separately rather than use hash table of pattern prefixes to check for all patterns at once whether a subsequence is order isomorphic to any pattern prefixes. Gets some speedup for single-pattern case.
-#define USEBRUTE 0 // whether to use brute-force algorithm
+#define USEBRUTE 1 // whether to use brute-force algorithm
 #define VERBOSE 0 // whether to be verbose. normally should be false
 #define GETSTAT 0 // whether or not to collect statistics -- slows things down a bit. Only used in function run_interior_experiment, and is optionally used for countavoidersfromfile when verbose argument is given to function. Is not implemented for SINGLEPATTERNOPT
 
@@ -417,25 +417,42 @@ void countavoidersfromfile(ifstream &infile, ofstream &outfile, int maxpermsize,
 
 
 void countavoidersfromfile_parallel(ifstream &infile, ofstream &outfile, int maxpermsize) {
+  struct timespec start_p,end_p;
+  clock_gettime(CLOCK_MONOTONIC, &start_p);
+
   string line;
   vector <string> input;
   while (getline(infile, line)) {
     input.push_back(line);
   }
   uint64_t vecsize = input.size();
-  vector < vector <uint64_t> > output(vecsize, vector <uint64_t> (maxpermsize + 1));
-  cilk_for (uint64_t i = 0; i < vecsize; i++) {
-    vector < uint64_t > numavoiders;
+  vector < vector <uint64_t> > output(vecsize, vector <uint64_t> (0));
+  vector < long long > tdiffs(vecsize);
+#pragma cilk grainsize = 1
+  cilk_for (uint64_t ii = vecsize; ii > 0; ii--) {
+    uint64_t i = ii-1;
+  //cilk_for (uint64_t i = 0; i < vecsize; i++) {
+    struct timespec start,end;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    vector < uint64_t > numavoiders(maxpermsize + 1);
     countavoidersfrompatternlist(input[i], maxpermsize, numavoiders);
-    assert(numavoiders.size() == maxpermsize + 1);
-    for (int j = 0; j < numavoiders.size(); j++) {
-      output[i][j] = numavoiders[j];
-    }
+    std::swap(output[i], numavoiders);
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    tdiffs[i] = (end.tv_sec - start.tv_sec)*1000000000 + (end.tv_nsec - start.tv_nsec);
+  }
+  long long maxv = 0, sumv = 0;
+  for (auto v : tdiffs) {
+    maxv = max(maxv, v);
+    sumv += v;
   }
   for (uint64_t i = 0; i < vecsize; i++) {
     outfile<<"#"<<input[i]<<endl;
     for (int j = 1; j <= maxpermsize; j++) outfile<<output[i][j]<<" ";
     outfile<<endl;
   }
+  clock_gettime(CLOCK_MONOTONIC, &end_p);
+  long long total_t = (end_p.tv_sec - start_p.tv_sec)*1000000000 + (end_p.tv_nsec - start_p.tv_nsec);
+  printf("For total_t=%.6fs maxv=%.6fs sumv=%.6fs parallelism=%f\n", total_t*1e-9, maxv*1e-9, sumv*1e-9, (double)sumv/(double)maxv);
+
   return;
 }
