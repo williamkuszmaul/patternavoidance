@@ -181,8 +181,9 @@ Sequence::Sequence() {
 patternsetinfo::patternsetinfo() {
 }
 
-void fillpatternsetinfo(ifstream &inputsequences, Oeis &OEIS, int inputshift, vector<patternsetinfo> &matches, int &numattempts) {
+void fillpatternsetinfo(ifstream &inputsequences, Oeis &OEIS, int inputshift, vector<patternsetinfo> &matches, int &numattempts, int &numdistinctattempts) {
   numattempts = 0;
+  unordered_set<Sequence> sequences;
   patternsetinfo newset;
   string line;
   while (getline(inputsequences, line)) {
@@ -191,10 +192,12 @@ void fillpatternsetinfo(ifstream &inputsequences, Oeis &OEIS, int inputshift, ve
     } else {
       numattempts++;
       newset.sequence = OEIS.extractusersequence(line, inputshift);
+      sequences.insert(newset.sequence);
       newset.oeisnum = OEIS.getoeisnum(newset.sequence); // -1 if not found
       if (newset.oeisnum != -1) matches.push_back(newset);
     }
   }
+  numdistinctattempts = sequences.size();
 }
 
 bool allowsequence(Sequence &testsequence) {

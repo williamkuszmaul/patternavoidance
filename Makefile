@@ -6,7 +6,7 @@
 #
 # for C++ define  CC = g++
 CXX = g++
-CXXFLAGS  = -O3 -std=c++11 -march=native -g
+CXXFLAGS  = -O3 -std=c++11 -march=native -flto -g -fcilkplus 
 
 # typing 'make' will invoke the first target entry in the file 
 # (in this case the default target entry)	

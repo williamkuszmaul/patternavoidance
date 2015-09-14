@@ -23,7 +23,7 @@ void setstosequences(string inputfile, string outputfile, int maxpermsize) {
   setsfilein.open(inputfile);
   ofstream sequencesfile;
   sequencesfile.open(outputfile, std::ofstream::trunc);
-  countavoidersfromfile(setsfilein, sequencesfile, maxpermsize, false);
+  countavoidersfromfile_parallel(setsfilein, sequencesfile, maxpermsize);
   setsfilein.close();
   sequencesfile.close();
 }
@@ -42,8 +42,8 @@ void analyzefirstsequenceset(Oeis &OEIS, string sequencesfilename, string setsfi
   ofstream nextlevelsets;
   nextlevelsets.open(setsfilename2, std::ofstream::trunc);
   vector <patternsetinfo> matches;
-  int numattempts = 0;
-  fillpatternsetinfo(sequencesfilein, OEIS, minpermsize - 1, matches, numattempts); // start with the minpermsize-th entry
+  int numattempts = 0, numdistinctattempts = 0;
+  fillpatternsetinfo(sequencesfilein, OEIS, minpermsize - 1, matches, numattempts, numdistinctattempts); // start with the minpermsize-th entry
   sequencesfilein.close();
   vector <int> numhitswithdeg(4);
   unordered_set<int> hitswithdeg[4];
@@ -67,7 +67,7 @@ void analyzefirstsequenceset(Oeis &OEIS, string sequencesfilename, string setsfi
       if (std::count(set.patternset.begin(), set.patternset.end(), ' ') >= minrevisedsetsize)  nextlevelsets<<set.patternset<<endl;
     }
   }
-  cout<<"Total of "<<matches.size()<<" matches out of "<<numattempts<<" attempts"<<endl;
+  cout<<"Total of "<<matches.size()<<" matches out of "<<numattempts<<" attempts, with what appears to be "<<numdistinctattempts<<" total Wilf-classes"<<endl;
   cout<<numhitswithdeg[0]<<" matches constant by first derivative position 5"<<endl;
   cout<<numhitswithdeg[1]<<" of remaining matches linear by second derivative position 5"<<endl;
   cout<<numhitswithdeg[2]<<" of remaining matches quadratic by second derivative position 5"<<endl;
@@ -84,8 +84,8 @@ void analyzesecondsequenceset(Oeis &OEIS, string sequencesfilename, int minperms
   ifstream sequencesfilein;
   sequencesfilein.open(sequencesfilename);
   vector <patternsetinfo> matches;
-  int numattempts = 0;
-  fillpatternsetinfo(sequencesfilein, OEIS, minpermsize - 1, matches, numattempts); // start with the minpermsize-th entry
+  int numattempts = 0, numdistinctattempts = 0;
+  fillpatternsetinfo(sequencesfilein, OEIS, minpermsize - 1, matches, numattempts, numdistinctattempts); // start with the minpermsize-th entry
   sequencesfilein.close();
   for (int i = 0; i < matches.size(); i++) {
     patternsetinfo set = matches[i];
@@ -145,7 +145,7 @@ int main() {
   int revisedmaxpermsize = 15;
   int minrevisedsetsize = 5;
   string setsfilename = "testallfours-sets.txt";
-  string sequencesfilename = "testallfours-out13";
+  string sequencesfilename = "testallfours-out13TEMP";
   string setsfilename2 = "testallfours-revisedsets";
   string sequencesfilename2 = "testallfours-revisedout15.txt";
   string revisedall = "testallfours-revised15final.txt";
@@ -153,7 +153,7 @@ int main() {
 
   if (!data_built) buildwilfeqsets(setsfilename, patternsize);
   cout<<"Building sequences up to "<<maxpermsize<<"..."<<endl;
-  if (!data_built) setstosequences(setsfilename, sequencesfilename, maxpermsize);
+  if (!data_built) setstosequences(setsfilename, sequencesfilename, maxpermsize); // this computation takes around 20 minutes with our code, about 2 hours 20 minutes with permlab. Haven't had chance to run the second computation with permlab. Our algorithm would have do even better (relative to permlab) for larger sets of larger patterns, or larger n.
   cout<<"Building local version of OEIS..."<<endl;
   Oeis OEIS("/data/williamkuszmaul/stripped", "/data/williamkuszmaul/names", maxpermsize - minpermsize + 1, 15); //Note: we allow sequences to start in any of positions 1, 2, ..., 15
   cout<<"Continuing analysis..."<<endl;

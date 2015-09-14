@@ -93,7 +93,7 @@ void test231extensions_avoid(bool getstats) {
     int startk = 3; // just start index. will actually start in first element of bitsets
     int endk = 6; 
     int startn = 8;
-    int endn = 16;
+    int endn = 13;
     vector < vector < double  > > runtimes (endk + 1, vector < double > (endn + 1, 0));
     vector < vector < uint64_t  > > stat1 (endk + 1, vector < uint64_t > (endn + 1));
     vector < vector < uint64_t  > > stat2 (endk + 1, vector < uint64_t > (endn + 1));
@@ -138,7 +138,7 @@ void testsinglepatterns_avoid(bool getstats) {
     int startk = 3; // just start index. will actually start in first element of sets
     int endk = 6;
     int startn = 8;
-    int endn = 12;
+    int endn = 13;
     vector < vector < double  > > runtimes (endk + 1, vector < double > (endn + 1, 0));
     vector < vector < uint64_t  > > stat1 (endk + 1, vector < uint64_t > (endn + 1));
     vector < vector < uint64_t  > > stat2 (endk + 1, vector < uint64_t > (endn + 1));
@@ -183,7 +183,7 @@ void testsinglepatterns_count() {
   int startk = 3; // just the start index. will actually start in first element of set
   int endk = 6; 
   int startn = 8;
-  int endn = 11;
+  int endn = 12;
   vector < vector < double  > > runtimes (endk + 1, vector < double > (endn + 1, 0));
   for (int n = startn; n <= endn; n++) {
     for (int k = startk; k <= endk; k++) {
@@ -199,7 +199,7 @@ void testmultiplepatterns_count() {
   int startk = 3; // just the start index. will actually start in first element of bigsets
   int endk = 5; 
   int startn = 8;
-  int endn = 11;
+  int endn = 12;
   vector < vector < double  > > runtimes (endk + 1, vector < double > (endn + 1, 0));
   for (int n = startn; n <= endn; n++) {
     for (int k = startk; k <= endk; k++) {
@@ -213,9 +213,9 @@ void testmultiplepatterns_count() {
 
 int main() {
   // Only use true argument for variants of brute force; will give you stats.
-  //  testsinglepatterns_avoid(false);
-  //  test231extensions_avoid(false);
-  testsinglepatterns_count();
-  testmultiplepatterns_count();
+  testsinglepatterns_avoid(false);
+  test231extensions_avoid(false);
+  //testsinglepatterns_count();
+  //testmultiplepatterns_count();
   return 0;
 }
