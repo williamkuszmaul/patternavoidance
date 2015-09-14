@@ -93,7 +93,7 @@ void test231extensions_avoid(bool getstats) {
     int startk = 3; // just start index. will actually start in first element of bitsets
     int endk = 6; 
     int startn = 8;
-    int endn = 16;
+    int endn = 13;
     vector < vector < double  > > runtimes (endk + 1, vector < double > (endn + 1, 0));
     vector < vector < uint64_t  > > stat1 (endk + 1, vector < uint64_t > (endn + 1));
     vector < vector < uint64_t  > > stat2 (endk + 1, vector < uint64_t > (endn + 1));
@@ -215,7 +215,7 @@ int main() {
   // Only use true argument for variants of brute force; will give you stats.
   testsinglepatterns_avoid(false);
   test231extensions_avoid(false);
-  testsinglepatterns_count();
-  testmultiplepatterns_count();
+  //testsinglepatterns_count();
+  //testmultiplepatterns_count();
   return 0;
 }
