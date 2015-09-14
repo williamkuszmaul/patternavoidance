@@ -8,6 +8,7 @@
 #include <ctime> 
 #include <iostream>
 #include <fstream>
+#include <cilk/cilk.h>
 #include <queue>
 #include <sys/time.h>
 #include <vector>
@@ -409,6 +410,32 @@ void countavoidersfromfile(ifstream &infile, ofstream &outfile, int maxpermsize,
     stat3 = numavoiders[maxpermsize];
     if (verbose && GETSTAT && !USEBRUTE) cout<<(double)stat2/(double)stat1<<" prefixes looked at on average per call to isavoider"<<endl;
     if (verbose && GETSTAT && !USEBRUTE) cout<<(double)stat2/(double)stat3<<" prefixes looked at on average per actual avoider"<<endl;
+  }
+  return;
+}
+
+
+
+void countavoidersfromfile_parallel(ifstream &infile, ofstream &outfile, int maxpermsize) {
+  string line;
+  vector <string> input;
+  while (getline(infile, line)) {
+    input.push_back(line);
+  }
+  uint64_t vecsize = input.size();
+  vector < vector <uint64_t> > output(vecsize, vector <uint64_t> (maxpermsize + 1));
+  cilk_for (uint64_t i = 0; i < vecsize; i++) {
+    vector < uint64_t > numavoiders;
+    countavoidersfrompatternlist(input[i], maxpermsize, numavoiders);
+    assert(numavoiders.size() == maxpermsize + 1);
+    for (int j = 0; j < numavoiders.size(); j++) {
+      output[i][j] = numavoiders[j];
+    }
+  }
+  for (uint64_t i = 0; i < vecsize; i++) {
+    outfile<<"#"<<input[i]<<endl;
+    for (int j = 1; j <= maxpermsize; j++) outfile<<output[i][j]<<" ";
+    outfile<<endl;
   }
   return;
 }

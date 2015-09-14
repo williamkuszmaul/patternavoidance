@@ -23,7 +23,7 @@ void setstosequences(string inputfile, string outputfile, int maxpermsize) {
   setsfilein.open(inputfile);
   ofstream sequencesfile;
   sequencesfile.open(outputfile, std::ofstream::trunc);
-  countavoidersfromfile(setsfilein, sequencesfile, maxpermsize, false);
+  countavoidersfromfile_parallel(setsfilein, sequencesfile, maxpermsize);
   setsfilein.close();
   sequencesfile.close();
 }
