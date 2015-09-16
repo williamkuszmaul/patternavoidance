@@ -112,3 +112,5 @@ data.txt: Contains outputs for table_drawer.cpp. (most of which are
 presented in paper.pdf)
 
 datafolder.tar.gz: Contains compressed output of masstest.cpp.
+
+hashmaptest.cpp: Does a simple test to see if hashmap is working.
