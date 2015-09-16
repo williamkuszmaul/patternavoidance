@@ -100,6 +100,7 @@ bool allowsequence(Sequence &testsequence);
 // (1) l (as one line)
 // (2) if l does not start with #, checks if l corresponds with an oeis sequence and if so writes the OEIS sequence (as next line)
 // If ignoreboring, however, then (2) is NOT printed if the sequence represented by l is detected to be "boring" by allowsequence
+// Note, if verbose, lists OEIS sequences which appear, both in order of OEIS number, and in order of number of matches.
 void analyzesequencefile(ifstream &inputsequences, ofstream &output, int inputshift, Oeis &OEIS, bool ignoreboring, bool verbose);
 
 void fillpatternsetinfo(ifstream &inputsequences, Oeis &OEIS, int inputshift, vector<patternsetinfo> &matches, int &numattempts, int &numdistinctattempts);

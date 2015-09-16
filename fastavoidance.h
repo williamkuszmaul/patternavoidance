@@ -61,7 +61,7 @@ void countavoidersfrompatternlist(string patternlist, int maxpermsize, vector < 
 // 0 2 4 8 16 32 64 128 256 512
 void countavoidersfromfile(ifstream &infile, ofstream &outfile, int maxpermsize, bool verbose);
 
-void countavoidersfromfile_parallel(ifstream &infile, ofstream &outfile, int maxpermsize);
+void countavoidersfromfile_parallel(ifstream &infile, ofstream &outfile, int maxpermsize, bool verbose);
 
 // used for table building software
 double run_interior_experiment(string patternlist, int maxpermsize);

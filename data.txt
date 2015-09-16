@@ -1,11 +1,60 @@
-Time for our code to do up to 16 for all sets of size > 4
-22410.01user 46184.75system 54:07.50elapsed 2112%CPU (0avgtext+0avgdata 26276420maxresident)
+All data in this file is correct as of commit version 22597bbaa6a3e4f9ac3049e8bf095514daa50e1
 
+This file contains most of the data gathered with table_drawer.cpp as well as some data gathered for PermLab and PiDD based algorithms. It is not very organized (since it is mostly just here for use by author). For discussion and organized tables of tests, see paper.pdf.
 
+------------ PermLab V2 statistics for pattern avoidance (gathered using table_drawer.cpp):
+Computations for single patterns:
+Runtimes: 
+\begin{tabular}{l | l  l  l  l }
+ & 3 & 4 & 5 & 6 \\ \hline
+8 & 0.000656 & 0.006205 & 0.010145 & 0.009259 \\
+9 & 0.001829 & 0.029887 & 0.057764 & 0.052581 \\
+10 & 0.003301 & 0.100797 & 0.343424 & 0.463953 \\
+11 & 0.010008 & 0.665186 & 3.4393 & 5.71891 \\
+12 & 0.036802 & 4.65574 & 35.8472 & 74.1423 \\
+13 & 0.135257 & 33.1262 & 383.444 & 1012.44 \\
+\end{tabular}
+Percent of sequence checks in S_n spent on avoiders: 
+\begin{tabular}{l | l  l  l  l }
+ & 3 & 4 & 5 & 6 \\ \hline
+8 & 0.777778 & 0.857213 & 0.925368 & 0.980736 \\
+9 & 0.787879 & 0.860912 & 0.91466 & 0.972256 \\
+10 & 0.797468 & 0.866612 & 0.906992 & 0.964164 \\
+11 & 0.806452 & 0.873288 & 0.901671 & 0.956756 \\
+12 & 0.814815 & 0.880335 & 0.898128 & 0.950145 \\
+13 & 0.822581 & 0.887396 & 0.895914 & 0.944346 \\
+\end{tabular}
+Average number of sequence checks per avoider in S_n:
+\begin{tabular}{l | l  l  l  l }
+ & 3 & 4 & 5 & 6 \\ \hline
+8 & 2.8 & 4.71824 & 4.84897 & 3.92819 \\
+9 & 3.05882 & 5.69099 & 6.25422 & 5.49029 \\
+10 & 3.31579 & 6.75214 & 7.83893 & 7.38624 \\
+11 & 3.57143 & 7.90524 & 9.60832 & 9.63789 \\
+12 & 3.82609 & 9.15319 & 11.5681 & 12.2675 \\
+13 & 4.08 & 10.4985 & 13.724 & 15.2981 \\
+\end{tabular}
+Average number of seconds per sequence check (for all permutations):
+\begin{tabular}{l | l  l  l  l }
+ & 3 & 4 & 5 & 6 \\ \hline
+8 & 9.21866e-08 & 6.23198e-08 & 5.23095e-08 & 5.36148e-08 \\
+9 & 7.03678e-08 & 4.25296e-08 & 2.92752e-08 & 2.48132e-08 \\
+10 & 3.44471e-08 & 2.00307e-08 & 1.66247e-08 & 1.69972e-08 \\
+11 & 2.80993e-08 & 1.82295e-08 & 1.5519e-08 & 1.55914e-08 \\
+12 & 2.76101e-08 & 1.74069e-08 & 1.47652e-08 & 1.45036e-08 \\
+13 & 2.6956e-08 & 1.67418e-08 & 1.41599e-08 & 1.3771e-08 \\
+\end{tabular}
+Ratio of number of checks per avoider in S_n to number expected: 
+\begin{tabular}{l | l  l  l  l }
+ & 3 & 4 & 5 & 6 \\ \hline
+8 & 0.7 & 0.786374 & 0.881631 & 0.971924 \\
+9 & 0.679739 & 0.758798 & 0.838555 & 0.947963 \\
+10 & 0.663158 & 0.736597 & 0.79718 & 0.918496 \\
+11 & 0.649351 & 0.718658 & 0.758551 & 0.885564 \\
+12 & 0.637681 & 0.704092 & 0.723007 & 0.850925 \\
+13 & 0.627692 & 0.692207 & 0.690518 & 0.815897 \\
+\end{tabular}
 
--------------------------------------------- computations for 231-extended avoiders
-
------------- PermLab implementation (our good version):
 Computations for all patterns of size k containing a 231 pattern: 
 Runtimes: 
 \begin{tabular}{l | l  l  l  l }
@@ -73,6 +122,7 @@ Ratio of number of checks per avoider in S_n to number expected:
 16 & 0.604839 & 0.862635 & 0.953281 & 0.98367 \\
 \end{tabular}
 
+---------------------------------------------------------
 table_drawer output for raw brute-force:
 Computations for single patterns:
 Runtimes: 
@@ -120,8 +170,8 @@ Runtimes:
 12 & 704.189 & 2646.83 & 5746.63 \\
 \end{tabular}
 
-
-For hybrids:
+----------------------------------------------------
+For hybrids (including V2):
 Computations for single patterns:
 Runtimes: 
 \begin{tabular}{l | l  l  l  l }
@@ -215,6 +265,7 @@ Runtimes:
 12 & 42.8428 & 74.7179 & 110.991 \\
 \end{tabular}
 
+----------------------------------------------------
 V1 tests:
 Computations for single patterns:
 Runtimes: 
@@ -239,7 +290,7 @@ Runtimes:
 13 & 0.101041 & 0.586564 & 5.93899 & 44.7564 \\
 \end{tabular}
 
-
+----------------------------------------------------
 Permlab (actual)
 
 [williamkuszmaul@ip-172-31-14-15 ~]$ jdk1.8.0_60/bin/java -cp .:PermLab.jar permlabsetstosequences foo 13
@@ -292,6 +343,7 @@ up to 13 took: 9.473075079s
 
 Note that our V1 continues to have the win over PermLab for large sets (where sequence checking dominates costs), with similar ratio as for single patterns, indicating that V1's sequence detection is competative with PermLab's. Either way, the pop-count hack is much faster in V2 than PermLab or V1 for large sets of patterns.
 
+----------------------------------------------------
 Computations for PiDD-based software:
 
 pattern avoidance single patterns
@@ -319,7 +371,7 @@ Tests for singles using PiDD alg for pattern counting in S_n:
 12 & 105.241 & 532.328 & 249.606 & 58.2368 \\
 \end{tabular}
 
-Tests for 231-extensions
+Tests for 231-extensions (counting)
 \begin{tabular}{l | l  l }
  & 3 & 4 \\ \hline
 8 & 0.095182 & 0.137889 \\

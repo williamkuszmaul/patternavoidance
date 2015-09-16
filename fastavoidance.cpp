@@ -416,7 +416,7 @@ void countavoidersfromfile(ifstream &infile, ofstream &outfile, int maxpermsize,
 
 
 
-void countavoidersfromfile_parallel(ifstream &infile, ofstream &outfile, int maxpermsize) {
+void countavoidersfromfile_parallel(ifstream &infile, ofstream &outfile, int maxpermsize, bool verbose) {
   struct timespec start_p,end_p;
   clock_gettime(CLOCK_MONOTONIC, &start_p);
 
@@ -452,7 +452,7 @@ void countavoidersfromfile_parallel(ifstream &infile, ofstream &outfile, int max
   }
   clock_gettime(CLOCK_MONOTONIC, &end_p);
   long long total_t = (end_p.tv_sec - start_p.tv_sec)*1000000000 + (end_p.tv_nsec - start_p.tv_nsec);
-  printf("For total_t=%.6fs maxv=%.6fs sumv=%.6fs parallelism=%f\n", total_t*1e-9, maxv*1e-9, sumv*1e-9, (double)sumv/(double)maxv);
+  if (verbose) printf("For total_t=%.6fs maxv=%.6fs sumv=%.6fs parallelism=%f\n", total_t*1e-9, maxv*1e-9, sumv*1e-9, (double)sumv/(double)maxv);
 
   return;
 }
