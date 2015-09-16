@@ -23,30 +23,30 @@ void setstosequences(string inputfile, string outputfile, int maxpermsize) {
   setsfilein.open(inputfile);
   ofstream sequencesfile;
   sequencesfile.open(outputfile, std::ofstream::trunc);
-  countavoidersfromfile_parallel(setsfilein, sequencesfile, maxpermsize);
+  countavoidersfromfile_parallel(setsfilein, sequencesfile, maxpermsize, false);
   setsfilein.close();
   sequencesfile.close();
 }
 
-void buildwilfeqsets(string setsfilename, int patternsize) {
+void buildwilfeqsets(string setsfilename, int patternsize, int maxsetsize, int minsetsize) {
   cout<<"Building sets of "<<patternsize<<"-patterns up to trivial Wilf equivalence..."<<endl;
   ofstream setsfile;
   setsfile.open(setsfilename, std::ofstream::trunc);
-  writepatternsetstofile(setsfile, patternsize, false);
+  for (int setsize = minsetsize; setsize <= maxsetsize; setsize++) {
+    writepatternsetstofile(setsfile, setsize, patternsize, false);
+  }
   setsfile.close();
 }
 
-void analyzefirstsequenceset(Oeis &OEIS, string sequencesfilename, string setsfilename2, int minpermsize, int minrevisedsetsize, unordered_map<int, string> &oeismatchesbynum) {
+void analyzefirstsequenceset(Oeis &OEIS, string sequencesfilename, int minpermsize, int minrevisedsetsize, unordered_map<int, string> &oeismatchesbynum) {
   ifstream sequencesfilein;
   sequencesfilein.open(sequencesfilename);
-  ofstream nextlevelsets;
-  nextlevelsets.open(setsfilename2, std::ofstream::trunc);
   vector <patternsetinfo> matches;
   int numattempts = 0, numdistinctattempts = 0;
   fillpatternsetinfo(sequencesfilein, OEIS, minpermsize - 1, matches, numattempts, numdistinctattempts); // start with the minpermsize-th entry
   sequencesfilein.close();
-  vector <int> numhitswithdeg(4);
-  unordered_set<int> hitswithdeg[4];
+  vector <int> numhitswithdeg(5);
+  unordered_set<int> hitswithdeg[5];
   for (int i = 0; i < matches.size(); i++) {
     patternsetinfo set = matches[i];
     bool cont = true;
@@ -55,8 +55,8 @@ void analyzefirstsequenceset(Oeis &OEIS, string sequencesfilename, string setsfi
     if (iszeroby(ithderivative(set.sequence, 3), 5)) degree = 2;
     if (iszeroby(ithderivative(set.sequence, 2), 5)) degree = 1;
     if (iszeroby(ithderivative(set.sequence, 1), 5)) degree = 0;
+    numhitswithdeg[degree]++;
     if (degree < 4) {
-      numhitswithdeg[degree]++;
       hitswithdeg[degree].insert(set.oeisnum);
     } else {
       if (oeismatchesbynum.find(set.oeisnum) == oeismatchesbynum.end()) {
@@ -64,10 +64,10 @@ void analyzefirstsequenceset(Oeis &OEIS, string sequencesfilename, string setsfi
       } else {
 	oeismatchesbynum[set.oeisnum] = oeismatchesbynum[set.oeisnum] + "\n" + set.patternset;
       }
-      if (std::count(set.patternset.begin(), set.patternset.end(), ' ') >= minrevisedsetsize)  nextlevelsets<<set.patternset<<endl;
     }
   }
   cout<<"Total of "<<matches.size()<<" matches out of "<<numattempts<<" attempts, with what appears to be "<<numdistinctattempts<<" total Wilf-classes"<<endl;
+  cout<<"A total of "<<hitswithdeg[0].size() + hitswithdeg[1].size() + hitswithdeg[2].size() + hitswithdeg[3].size() + hitswithdeg[4].size()<<" distinct OEIS sequences appear"<<endl;
   cout<<numhitswithdeg[0]<<" matches constant by first derivative position 5"<<endl;
   cout<<numhitswithdeg[1]<<" of remaining matches linear by second derivative position 5"<<endl;
   cout<<numhitswithdeg[2]<<" of remaining matches quadratic by second derivative position 5"<<endl;
@@ -76,28 +76,7 @@ void analyzefirstsequenceset(Oeis &OEIS, string sequencesfilename, string setsfi
   cout<<"Number distinct distinct oeis sequences matching to left-over linear sequences: "<<hitswithdeg[1].size()<<endl;
   cout<<"Number distinct distinct oeis sequences matching to left-over quadratic sequences: "<<hitswithdeg[2].size()<<endl;
   cout<<"Number distinct distinct oeis sequences matching to left-over cubic sequences: "<<hitswithdeg[3].size()<<endl;
-  cout<<"Number distinct oeis sequences for remaining: "<<oeismatchesbynum.size()<<endl;
-  nextlevelsets.close();
-}
-
-void analyzesecondsequenceset(Oeis &OEIS, string sequencesfilename, int minpermsize, unordered_map<int, string> &oeismatchesbynum) {
-  ifstream sequencesfilein;
-  sequencesfilein.open(sequencesfilename);
-  vector <patternsetinfo> matches;
-  int numattempts = 0, numdistinctattempts = 0;
-  fillpatternsetinfo(sequencesfilein, OEIS, minpermsize - 1, matches, numattempts, numdistinctattempts); // start with the minpermsize-th entry
-  sequencesfilein.close();
-  for (int i = 0; i < matches.size(); i++) {
-    patternsetinfo set = matches[i];
-    if (oeismatchesbynum.find(set.oeisnum) == oeismatchesbynum.end()) {
-      oeismatchesbynum[set.oeisnum] = set.patternset;
-    }
-    else {
-      oeismatchesbynum[set.oeisnum] = oeismatchesbynum[set.oeisnum] + "\n" + set.patternset;
-    }
-  }
-  cout<<"Total of "<<matches.size()<<" oeis matches for filtered sequences"<<endl;
-  cout<<"Total of "<<oeismatchesbynum.size()<<" distinct oeis matches for filtered sequences"<<endl;
+  cout<<"Number distinct oeis sequences for remaining: "<<oeismatchesbynum.size()<<" accounting for "<<numhitswithdeg[4]<<" sequences."<<endl;
 }
 
 void  compareoeismatches( unordered_map<int, string> &oeismatchesbynum,  unordered_map<int, string> &oeismatchesbynum2) {
@@ -137,44 +116,45 @@ void  displaymatches(Oeis &OEIS, unordered_map<int, string> &oeismatchesbynum3, 
 
 }
 
+uint64_t factorial(int n) {
+  double answer = 1;
+  for (int i = 1; i <= n; i++) answer *= i;
+  return answer;
+}
+
+
 int main() {
+  
   bool data_built = true; // To just run OEIS analysis since sequence files prebuilt
-  int maxpermsize = 13; 
   int minpermsize = 5;
   int patternsize = 4;
-  int revisedmaxpermsize = 15;
-  int minrevisedsetsize = 5;
-  string setsfilename = "testallfours-sets.txt";
-  string sequencesfilename = "testallfours-out13TEMP";
-  string setsfilename2 = "testallfours-revisedsets";
-  string sequencesfilename2 = "testallfours-revisedout15.txt";
-  string revisedall = "testallfours-revised15final.txt";
-  string revisedbrief = "testallfours-revised15final-brief.txt";
-
-  if (!data_built) buildwilfeqsets(setsfilename, patternsize);
+  int maxpermsize = 16;
+  int comparepermsize = 13;
+  int minsetsize = 5;
+  string setsfilename = "testallfours-sets";
+  string sequencesfilename = "testallfours-sequences";
+  string revisedall = "testallfours-matches";
+  string revisedbrief = "testallfours-matches-brief";
+  cout<<"Building sets up to trivial Wilf-equivalence..."<<endl;
+  if (!data_built) buildwilfeqsets(setsfilename, patternsize, factorial(patternsize), minsetsize);
   cout<<"Building sequences up to "<<maxpermsize<<"..."<<endl;
-  if (!data_built) setstosequences(setsfilename, sequencesfilename, maxpermsize); // this computation takes around 20 minutes with our code, about 2 hours 20 minutes with permlab. Haven't had chance to run the second computation with permlab. Our algorithm would have do even better (relative to permlab) for larger sets of larger patterns, or larger n.
+  if (!data_built) setstosequences(setsfilename, sequencesfilename, maxpermsize);
   cout<<"Building local version of OEIS..."<<endl;
-  Oeis OEIS("/data/williamkuszmaul/stripped", "/data/williamkuszmaul/names", maxpermsize - minpermsize + 1, 15); //Note: we allow sequences to start in any of positions 1, 2, ..., 15
+  // ON OTHER COMPUTERS, STRIPPED AND NAMES FILES WILL HAVE TO BE CORRECTLY REFERRED TO
+  Oeis OEIS("stripped", "names", maxpermsize - minpermsize + 1, 15); //Note: we allow sequences to start in any of positions 1, 2, ..., 15
   cout<<"Continuing analysis..."<<endl;
-
   unordered_map<int, string> oeismatchesbynum;
   cout<<"Analyzing first batch for n up to "<<maxpermsize<<"..."<<endl;
-  analyzefirstsequenceset(OEIS, sequencesfilename, setsfilename2, minpermsize, minrevisedsetsize, oeismatchesbynum);
-  cout<<"Building sequences for filtered sets up to "<<revisedmaxpermsize<<"..."<<endl;
-  if (!data_built) setstosequences(setsfilename2, sequencesfilename2, revisedmaxpermsize);
+  analyzefirstsequenceset(OEIS, sequencesfilename, minpermsize, minsetsize, oeismatchesbynum);
+  cout<<"Building extended local version of OEIS..."<<endl;
+  Oeis OEIS2("stripped", "names", comparepermsize - minpermsize + 1, 15); //Note: we allow sequences to start in any of positions 1, 2, ..., 15
+  cout<<"Continuing analysis..."<<endl;
   unordered_map<int, string> oeismatchesbynum2;
-  cout<<"Analyzing filtered sequences"<<endl;
-  cout<<"Analyzing second batch for n up to "<<maxpermsize<<"..."<<endl;
-  analyzesecondsequenceset(OEIS, sequencesfilename2, minpermsize, oeismatchesbynum2);
-  cout<<"Rebuilding OEIS for new-sized sequences..."<<endl;
-  Oeis OEIS2("/data/williamkuszmaul/stripped", "/data/williamkuszmaul/names", revisedmaxpermsize - minpermsize + 1, 15); // Note: we allow sequences to start in any of positions 1, 2, ..., 15
-  cout<<"Analyzing second batch for n up to "<<revisedmaxpermsize<<"..."<<endl;
-  unordered_map<int, string> oeismatchesbynum3;
-  analyzesecondsequenceset(OEIS2, sequencesfilename2, minpermsize, oeismatchesbynum3);
-  compareoeismatches(oeismatchesbynum2, oeismatchesbynum3);
+  cout<<"Analyzing first batch for n up to "<<comparepermsize<<"..."<<endl;
+  analyzefirstsequenceset(OEIS2, sequencesfilename, minpermsize, minsetsize, oeismatchesbynum2);
+  compareoeismatches(oeismatchesbynum, oeismatchesbynum2);
   cout<<"Writing to output files..."<<endl;
-  displaymatches(OEIS2, oeismatchesbynum3, revisedall, true);
-  displaymatches(OEIS2, oeismatchesbynum3, revisedbrief, false);
+  displaymatches(OEIS2, oeismatchesbynum, revisedall, true);
+  displaymatches(OEIS2, oeismatchesbynum, revisedbrief, false);
   return 0;  
 }

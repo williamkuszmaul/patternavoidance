@@ -1,11 +1,26 @@
+This software is released under the MIT License. See file LICENSE.
 Author: William Kuszmaul
 Contact: william.kuszmaul@gmail.com
-Citation information:
-??
 The algorithms and engineering techniques for this software is discussed in the paper.pdf.
-
+Citation information bibtex entry:
+@misc{kuszmaul15,
+  title = {Fast Algorithms for Finding Pattern Avoiders and Counting Pattern Occurrences in Permutations},
+  author = {William Kuszmaul},
+  year = {2015},
+  howpublished = {\url{github.com/williamkuszmaul/patternavoidance}}
+}
+	
+Note: If, for some reason your computer cannot run CILK (which is
+built into G++), replace the code in function
+countavoidersfromfile_parallel in fastavoidance.cpp with a call to
+countavoidersfromfile, remove the header #include <cilk/cilk.h> from
+fastavoidance.cpp and masstest.cpp, and remove the -fcilkplus argument
+from the Makefile. However, this will prevent use of parallelism in
+masstest.cpp.
 
                           Core files
+
+LICENSE: Copyright information.
 
 Makefile: Simple makefile.
 
