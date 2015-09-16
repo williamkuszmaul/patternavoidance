@@ -49,7 +49,7 @@ int main() {
   patternlist = "123 213";
   vector < vector <int> > tally;
   vector < vector <int> > completelist;
-  countpatterns(patternlist, 10, tally, completelist, false, falsex);
+  countpatterns(patternlist, 10, tally, completelist, false, false);
   string permtocheck = "21345";
   cout<<"Using pattern set "<<patternlist<<endl;
   cout<<"Number of pattern-occurrances in "<<permtocheck<<" is "<<completelist[permtocheck.size()][permtonum(stringtoperm(permtocheck), permtocheck.size())]<<endl;
