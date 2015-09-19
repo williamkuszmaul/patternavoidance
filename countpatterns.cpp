@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <bitset>
 #include <vector>
+#include <cilk/cilk.h>
 #include <stdint.h>
 #include <unordered_map>
 #include <queue>
@@ -23,8 +24,8 @@ using namespace std;
 #define USEADDFACTOR 1
 #define USESECONDADDFACTOR 1 // forces useaddfactor on
 
-#define USEOLDP0 1 // whether non-brute-force should use cached P_0(w\downarrow_1) // will lead to constant speedup 
-#define USEOLDP1 1 // whether non-brute-force should use cached P_1(w\downarrow_2) // will lead to constant speedup
+#define USEOLDP0 0 // whether non-brute-force should use cached P_0(w\downarrow_1) // will lead to constant speedup 
+#define USEOLDP1 0 // whether non-brute-force should use cached P_1(w\downarrow_2) // will lead to constant speedup
 #define USEPREFIXMAP 1 // for non-brute-force version, you get to choose whether to use the prefix hack to speed things up
 #define USEBRUTE 0 // whether to use brute force algorithm
 
@@ -171,7 +172,11 @@ inline void setPvals(unsigned long long perm, unsigned short* payload, hashmap &
 
 // Returns P_i(perm)
 inline unsigned short getPval(unsigned long long perm, int i, hashmap &Phashmap) {
-  //assert(Phashmap.getpayload(perm) != NULL);
+  if (Phashmap.getpayload(perm) == NULL) { // !!
+    cout<<"perm read failed: "<<endl;
+    displayperm(perm);
+  }
+  assert(Phashmap.getpayload(perm) != NULL); // !!
   return ((unsigned short*)Phashmap.getpayload(perm))[i];
 }
 
@@ -215,6 +220,7 @@ static void Pcount(uint64_t perm, int length, int maxpatternsize, int maxpermsiz
 	oldPvals[1] = prevP1;
       } else {
 	oldPvals[oldPvalpos] = getPval(currentperm, length - 1 - i, Phashmap);
+	
       }
     }
     oldPvalpos++;
@@ -294,6 +300,153 @@ void createPmap(uint64_t finalsize, hashdb &patternset, int maxpatternsize, time
   return;
 }
 
+static void Pcount_tight(uint64_t perm, int length, int maxpatternsize, int maxpermsize, const hashdb &patternset, const hashdb &prefixmap, hashmap &Phashmap_read, hashmap &Phashmap_write, uint64_t prevP0, uint64_t prevP1,  vector < vector < int > > &tally, vector < vector < int > > &completelist, bool justcount) {
+  uint64_t inverse = getinverse(perm, length);
+  unsigned short Pvals[maxpatternsize + 2]; // indices range from [0...maxpatternsize+1]. Assumes no Pvals as short as large as 63504. Will not work, for example, for counting id_10 patterns in id_20.
+  int Pvalpos = maxpatternsize + 1;
+
+  // Don't have to worry about Pvalpos[i] if i > length
+  Pvalpos = min(Pvalpos,  length);
+  Pvals[Pvalpos] = 0;
+  if (Pvalpos == length) {
+    if (patternset.contains(perm)) Pvals[Pvalpos] = 1;
+  }
+  Pvalpos--;
+
+  // Now Pvalpos < length and <= maxpatternsize. So the recurrence starts to apply
+  unsigned short oldPvals[Pvalpos + 1]; // will store P_i(perm\downarrow_i). We will then use these values for recurrence
+  int oldPvalpos = 0;
+  uint64_t currentperm = perm; // will be updated to be each perm \downarrow_i
+  assert(length > 1); // don't want to deal with length 1 case
+  uint32_t seenpos = 0;
+  uint64_t prefixentry = 0;
+
+  for (int i = length - 1; i >= 0 && i >= length - maxpatternsize - 1; i--) {
+    if (i < length - 1) { // add back in digit we deleted a moment ago, but with value one smaller
+      currentperm = addpos(currentperm, getdigit(inverse, i + 1));
+      currentperm = setdigit(currentperm, getdigit(inverse, i + 1), i);
+    }
+    currentperm = killpos(currentperm, getdigit(inverse, i)); // now currentperm is perm, except with i removed and the resulting permutation normalized to be on values 0, ..., length - 1
+    if (USEOLDP0 && oldPvalpos == 0) {
+      oldPvals[0] = prevP0;
+    } else {
+      if (USEOLDP1 && oldPvalpos == 1) {
+	oldPvals[1] = prevP1;
+      } else {
+	//cout<<Phashmap_read.getsize()<<" "<<length<<endl;
+	oldPvals[oldPvalpos] = getPval(currentperm, length - 1 - i, Phashmap_read);
+	
+      }
+    }
+    oldPvalpos++;
+    if (USEPREFIXMAP) {
+      extendnormalizetop(perm, inverse, length, length - 1 - i, prefixentry, seenpos); // build the complement fo the normalized (length - i)-prefix of the permutation.
+      if (!prefixmap.contains(prefixentry)) { // If this prefix is not a valid pattern prefix
+	Pvalpos = oldPvalpos - 1; 
+	Pvals[oldPvalpos] = 0; // we know that Pvals[oldPvalpos] is 0
+	// We do not have to both filling in Pvals[i] for i > oldPvalpos, because there will never be a permutation $w$ such that $w \downarrow_i = perm$, i > oldPvalpos, and the (i-1)-prefix o $w$ forms a valid pattern prefix.
+	// for (int j = oldPvalpos; j <= Pvalpos; j++) { // This is what we would have done instead of previous two lines if we did want to fill in all the Pvals
+	//   oldPvals[j] = 0; 
+	// }
+	break;
+      }
+    }
+  }
+
+  // Now we start the recursion, starting with P_{Pvalpos})(perm)
+  while (Pvalpos >= 0) {
+    Pvals[Pvalpos] = Pvals[Pvalpos + 1] + oldPvals[Pvalpos]; // use recurrence to get actual Pvals
+    Pvalpos--;
+  }
+  if (length != maxpermsize) {
+    setPvals(perm, Pvals, Phashmap_write);
+  }
+  if (!justcount) {
+    int index = permtonum(perm, length); // Note: permtonum is O(n) time
+    completelist[length][index] = Pvals[0];
+  }
+  increasetally(tally[length], Pvals[0]);
+}
+
+
+void buildpermutations_tight_helper(uint64_t perm, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patternset, hashdb &prefixmap, hashmap &Phashmap_read, hashmap &Phashmap_write, vector < vector < int > > &tally, vector < vector < int > > &completelist, uint64_t *cachedP1s, bool justcount) {
+  if (USEOLDP1 && currentsize == finalsize - 2) {
+    for (int i = 0; i < currentsize + 1; i++) {
+      uint64_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
+      cachedP1s[i] = getPval(extendedperm, 1, Phashmap_read); // store these Pvals now, and they will be used many times two levels down from now
+    }
+  }
+  bool nseen = false; // whether or not we've seen currentsize in perm yet
+  uint64_t currentP0 = 0; // only will be filled in if currentsize == finalsize - 1
+  if (currentsize == finalsize - 1) currentP0 = getPval(perm, 0, Phashmap_read);
+  for (int i = 0; i < currentsize + 1; i++) {
+    if (i > 0 && getdigit(perm, i - 1) == currentsize - 1) nseen = true;
+    uint64_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
+    if (currentsize < finalsize - 1) {
+      buildpermutations_tight_helper(extendedperm, currentsize + 1, finalsize, maxpatternsize,  maxpermsize, patternset, prefixmap, Phashmap_read, Phashmap_write, tally, completelist, cachedP1s, justcount);
+    } else {
+      uint64_t prevP1 = cachedP1s[i];
+      if (nseen) prevP1 = cachedP1s[i - 1];
+      Pcount_tight(extendedperm, currentsize + 1, maxpatternsize, maxpermsize, patternset, prefixmap, Phashmap_read, Phashmap_write, currentP0, prevP1, tally, completelist, justcount);
+    }
+  }
+}
+
+ 
+
+// NOTE: TO USE P1, REQUIRES PATTERNS AT LEAST SIZE 3 (I think)
+void buildpermutations_tight(uint64_t perm, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patternset, hashdb &prefixmap, hashmap &Phashmap_read, vector < vector < int > > &tally, vector < vector < int > > &completelist, bool justcount) {
+  for (int i = 0; i < currentsize + 1; i++) {
+    uint64_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
+    if (currentsize <= finalsize  - 1 - maxpatternsize) {
+      
+      uint64_t cachedP1s[finalsize];
+      uint64_t newmapsize = 1;
+      int numnewlevels = maxpatternsize + 1;
+      for (uint64_t i = currentsize + 1; i <= currentsize + numnewlevels; i++) newmapsize *= i;
+      hashmap Phashmap_write(newmapsize * 3, sizeof(short)*(maxpatternsize + 1));
+      buildpermutations_tight_helper(extendedperm, currentsize + 1, currentsize + numnewlevels, maxpatternsize, maxpermsize, patternset, prefixmap, Phashmap_read, Phashmap_write, tally, completelist, cachedP1s, justcount);
+       buildpermutations_tight(extendedperm, currentsize + 1, finalsize, maxpatternsize, maxpermsize, patternset, prefixmap, Phashmap_write, tally, completelist, justcount);
+      ;
+    }
+  }
+}
+
+// Fills in tally, complete list, and Pvals for all permutation in S_{<= finalsize} (unles justcount, inwhich case does not fill in completelist)
+// Note: patterns in patternset required to be in S_{>1}
+void createtally_tight(uint64_t finalsize, hashdb &patternset, int maxpatternsize, timestamp_t start_time, vector < vector < int > > &tally, vector < vector < int > > &completelist, bool verbose, bool justcount) {
+  uint64_t currentsize = 1;
+  int numnewlevels = maxpatternsize + 1;
+  unsigned long long reservedspace = 0;
+  for (int i = 1; i <= 1 + numnewlevels; i++) reservedspace += factorial(i);
+  hashmap Phashmap(reservedspace * 3, sizeof(short)*(maxpatternsize + 1)); // initialize hash table of Pvals // should be automatically optimized out in brute-force version 
+  if (finalsize <= 1 + numnewlevels) {
+    createPmap(finalsize, patternset, maxpatternsize, start_time, Phashmap, tally, completelist, verbose, justcount);
+    return;
+  }
+
+  unsigned short temp[maxpatternsize + 1];
+  for (int i = 0; i < maxpatternsize + 1; i++) temp[i] = 0;
+  setPvals(0L, temp, Phashmap); // fill in Pvals to be 0 for id in S_1
+
+  hashdb prefixmap(1<<3);
+  addprefixes(patternset, prefixmap);
+  // !! cheating here. should be 1 + numnewlevels for createPmap, but doing 2 so that it will actually filling the Phashmap.
+  // !! just count is true here, but that menas we are not correctly counting for small sizes if just count is inputted as false!
+  createPmap(1+ 1 + numnewlevels, patternset, maxpatternsize , start_time, Phashmap, tally, completelist, verbose, true);
+  cout<<"Ended initialization"<<endl;
+   buildpermutations_tight(1L, 2, finalsize, maxpatternsize, finalsize, patternset, prefixmap, Phashmap, tally, completelist, justcount);
+  ;
+   buildpermutations_tight(16L, 2, finalsize, maxpatternsize, finalsize, patternset, prefixmap, Phashmap, tally, completelist, justcount);
+  ;
+  timestamp_t current_time = get_timestamp();
+  if (verbose) cout<< "Time elapsed to build perms of size "<<finalsize<<" in seconds: "<<(current_time - start_time)/1000000.0L<<endl;
+  return;
+}
+
+
+
+
 
 double run_interior_experiment2(string patternlist, int maxpermsize) {
   timestamp_t start_time = get_timestamp();
@@ -354,7 +507,6 @@ void countpatterns(string patternlist, int maxpermsize, vector < vector <int> > 
   makepatterns(patternlist, patternset, maxpatternsize); // build pattern set
   unsigned long long reservedspace = 0;
   for (int i = 1; i <= maxpermsize - 1; i++) reservedspace += factorial(i);
-  hashmap Phashmap(reservedspace * 3, sizeof(short)*(maxpatternsize + 1)); // initialize hash table of Pvals // should be automatically optimized out in brute-force version
   timestamp_t current_time = get_timestamp();
   if (!justcount) {
     completelist.resize(maxpermsize + 1);
@@ -364,7 +516,12 @@ void countpatterns(string patternlist, int maxpermsize, vector < vector <int> > 
   }
 
   if (USEBRUTE)  start_brute(maxpatternsize, maxpermsize, patternset, tally, completelist, verbose, justcount);
-  else createPmap(maxpermsize, patternset, maxpatternsize, current_time, Phashmap, tally, completelist, verbose, justcount);
+  else {
+    cout<<"Creating tally..."<<endl;
+    hashmap Phashmap(reservedspace * 3, sizeof(short)*(maxpatternsize + 1)); // initialize hash table of Pvals // should be automatically optimized out in brute-force version
+    createPmap(maxpermsize, patternset, maxpatternsize, current_time, Phashmap, tally, completelist, verbose, justcount);
+    //createtally_tight(maxpermsize, patternset, maxpatternsize, current_time, tally, completelist, verbose, justcount);
+  }
   timestamp_t end_time = get_timestamp();
   if (verbose) cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
   return;
