@@ -490,8 +490,8 @@ void countavoidersfrompatternlist(string patternlist, int maxpermsize, vector < 
   if (VERBOSE) cout<<"Effective pattern size "<<maxpatternsize<<endl;
   if (USEBRUTE) buildavoiders_brute(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true, (1L << 10));
   else {
-    //buildavoiders(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true, (1L << 10)); // for large cases, make last argument much larger
-    buildavoiders_tight(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true); // for large cases, make last argument much larger
+    buildavoiders(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true, (1L << 10)); // for large cases, make last argument much larger
+    //buildavoiders_tight(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true); // for large cases, make last argument much larger
   }
 }
 
