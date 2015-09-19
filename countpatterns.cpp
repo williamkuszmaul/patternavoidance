@@ -396,18 +396,16 @@ void buildpermutations_tight_helper(uint64_t perm, int currentsize, int finalsiz
 
 // NOTE: TO USE P1, REQUIRES PATTERNS AT LEAST SIZE 3 (I think)
 void buildpermutations_tight(uint64_t perm, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patternset, hashdb &prefixmap, hashmap &Phashmap_read, vector < vector < int > > &tally, vector < vector < int > > &completelist, bool justcount) {
+    int numnewlevels = maxpatternsize; // is correct
+  uint64_t newmapsize = 1;
+  uint64_t cachedP1s[finalsize]; // Why is this final size sized?
+  for (uint64_t j = currentsize + 1; j <= currentsize + numnewlevels; j++) newmapsize *= j;
+  hashmap Phashmap_write(newmapsize * 3, sizeof(short)*(maxpatternsize + 1));
+  buildpermutations_tight_helper(perm, currentsize, currentsize + numnewlevels, maxpatternsize, maxpermsize, patternset, prefixmap, Phashmap_read, Phashmap_write, tally, completelist, cachedP1s, justcount);
   for (int i = 0; i < currentsize + 1; i++) {
     uint64_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
     if (currentsize <= finalsize  - 1 - maxpatternsize) {
-      
-      uint64_t cachedP1s[finalsize];
-      uint64_t newmapsize = 1;
-      int numnewlevels = maxpatternsize + 1;
-      for (uint64_t i = currentsize + 1; i <= currentsize + numnewlevels; i++) newmapsize *= i;
-      hashmap Phashmap_write(newmapsize * 3, sizeof(short)*(maxpatternsize + 1));
-      buildpermutations_tight_helper(extendedperm, currentsize + 1, currentsize + numnewlevels, maxpatternsize, maxpermsize, patternset, prefixmap, Phashmap_read, Phashmap_write, tally, completelist, cachedP1s, justcount);
-       buildpermutations_tight(extendedperm, currentsize + 1, finalsize, maxpatternsize, maxpermsize, patternset, prefixmap, Phashmap_write, tally, completelist, justcount);
-      ;
+      buildpermutations_tight(extendedperm, currentsize + 1, finalsize, maxpatternsize, maxpermsize, patternset, prefixmap, Phashmap_write, tally, completelist, justcount);
     }
   }
 }
@@ -518,9 +516,9 @@ void countpatterns(string patternlist, int maxpermsize, vector < vector <int> > 
   if (USEBRUTE)  start_brute(maxpatternsize, maxpermsize, patternset, tally, completelist, verbose, justcount);
   else {
     cout<<"Creating tally..."<<endl;
-    hashmap Phashmap(reservedspace * 3, sizeof(short)*(maxpatternsize + 1)); // initialize hash table of Pvals // should be automatically optimized out in brute-force version
-    createPmap(maxpermsize, patternset, maxpatternsize, current_time, Phashmap, tally, completelist, verbose, justcount);
-    //createtally_tight(maxpermsize, patternset, maxpatternsize, current_time, tally, completelist, verbose, justcount);
+    //hashmap Phashmap(reservedspace * 3, sizeof(short)*(maxpatternsize + 1)); // initialize hash table of Pvals // should be automatically optimized out in brute-force version
+    //createPmap(maxpermsize, patternset, maxpatternsize, current_time, Phashmap, tally, completelist, verbose, justcount);
+    createtally_tight(maxpermsize, patternset, maxpatternsize, current_time, tally, completelist, verbose, justcount);
   }
   timestamp_t end_time = get_timestamp();
   if (verbose) cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
