@@ -413,6 +413,10 @@ void buildpermutations_tight(uint64_t perm, int currentsize, int finalsize, int 
 // Fills in tally, complete list, and Pvals for all permutation in S_{<= finalsize} (unles justcount, inwhich case does not fill in completelist)
 // Note: patterns in patternset required to be in S_{>1}
 void createtally_tight(uint64_t finalsize, hashdb &patternset, int maxpatternsize, timestamp_t start_time, vector < vector < int > > &tally, vector < vector < int > > &completelist, bool verbose, bool justcount) {
+
+  // TODO: NEED TO CLEAN UP WHAT'S GOING ON FOR SMALL PERMUTATIONS
+  // TODO: NEED TO CHECK THAT VARIOUS STATISTICS ARE GETTING UPDATED CORERCTLY FOR ALL SIZES
+  // TODO: NEED TO DOCUMENT THAT CREATEPMAP DOES NTO CREATE FOR FINAL N THE PMAPS.
   uint64_t currentsize = 1;
   int numnewlevels = maxpatternsize + 1;
   unsigned long long reservedspace = 0;
