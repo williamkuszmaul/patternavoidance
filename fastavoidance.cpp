@@ -19,7 +19,7 @@ using namespace std;
 
 // Conventions for comments: We use all the conventions from our paper in our comments. Thus the comments disagree with the code in that they do not zero-ind ex the values or positions of a permutation
 
-#define USEBITHACK 0 // 1 to use a bithack inspired by permlab; implemented both for brute force and non-brute force algs.
+#define USEBITHACK 1 // 1 to use a bithack inspired by permlab; implemented both for brute force and non-brute force algs.
 #define USEPREFIXMAP 1 // only has meaning in non-brute force algorithm. 1 to use the trick which checks for each i-prefix of w whether it is order-isomorphic to an i-prefix of some \pi \in \Pi
 #define SINGLEPATTERNOPT 1 // 1 if you want brute-force algorithm to test for each pattern separately rather than use hash table of pattern prefixes to check for all patterns at once whether a subsequence is order isomorphic to any pattern prefixes. Gets some speedup for single-pattern case.
 #define USEBRUTE 0 // whether to use brute-force algorithm
@@ -327,6 +327,7 @@ void buildavoiders_tight_helper(uint64_t perm, uint64_t inverse, uint64_t length
     // cout<<candidates.size()<<endl;
     uint64_t candidate_inverse = getinverse(candidate, candidate_length);
     uint32_t bitmap = prevbitmaps[pos];
+    //cout<<bitmap + 1<<" "<<prevbitmaps[0]<<endl;
     uint64_t newinverse = setdigit(candidate_inverse, candidate_length, candidate_length); // inverse of the extended permutation
     for (int i = candidate_length; i >= 0; i--) {
       // need to increment newinverse[candidate[i]], decrement newinverse[currentlength]
@@ -405,7 +406,7 @@ void buildavoiders_tight(const hashdb &patternset, int maxavoidsize, int maxsize
   
 
   vector < vector < uint64_t > > kmin1perms(maxavoidsize);
-  vector < uint32_t > bitmaps(maxavoidsize);
+  vector < uint32_t > bitmaps;
   hashdb currentavoiders(1<<10);
   kmin1perms[0].push_back(0);
   for (int i = 1; i < maxavoidsize; i++) {
@@ -416,13 +417,12 @@ void buildavoiders_tight(const hashdb &patternset, int maxavoidsize, int maxsize
 	kmin1perms[i].push_back(extendedperm);
 	if (i == maxavoidsize - 1) {
 	  currentavoiders.add(extendedperm);
-	  bitmaps.push_back((1L << (maxavoidsize - 1)) - 1);
-	  //displayperm(extendedperm);
+	  bitmaps.push_back((1 << (maxavoidsize )) - 1);
+ 	  //displayperm(extendedperm);
 	}
       }
     }
   }
-
   buildavoiders_tight_helper(0L, 0L, 0L, patternset, prefixmap, maxavoidsize, maxsize, avoidervector, numavoiders, justcount, kmin1perms[maxavoidsize - 1], 0, kmin1perms[maxavoidsize - 1].size() - 1, currentavoiders, bitmaps);
 }
 
