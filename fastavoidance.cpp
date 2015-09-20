@@ -320,6 +320,7 @@ void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vec
 
 
 // length is length of perm, which is k-1 shorter than each of the candidates
+// NOTE: IF JUST COUTN FALSE, THEN AVOIDERVECTOR UPDATE IS NOT THREAD SAFE YET. CAN USE THE LIST REDUCER
 void buildavoiders_tight_helper(uint64_t perm, uint64_t inverse, uint64_t length, const hashdb &patternset, const hashdb &prefixmap, int maxavoidsize, int maxsize,  vector < vector < uint64_t > > &avoidervector, vector <  cilk::reducer< cilk::op_add<uint64_t> > > &numavoiders, bool justcount, vector <uint64_t> candidates, int64_t candidate_start_pos, int64_t candidate_end_pos, hashdb &avoiderset_read, vector <uint32_t> &prevbitmaps) {
   hashdb avoiderset_write(1 << 10);
   vector <uint64_t> next_candidates;
