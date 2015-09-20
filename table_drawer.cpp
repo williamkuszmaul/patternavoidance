@@ -13,8 +13,14 @@
 #include "countpatterns.h"
 using namespace std;
 
-// Does not compile because of a icpc bug: /usr/include/c++/5.1.1/bits/stl_iterator_base_types.h(155): error: name followed by "::" must be a class or namespace name
-// Also, weirdly, the bug report is by Bradley Kuszmaul! 
+// To deal with a bug in icpc compiler (/usr/include/c++/5.1.1/bits/stl_iterator_base_types.h(155): error: name followed by "::" must be a class or namespace name)
+template<class T>
+std::vector<T> make_vector(int n, T v) {
+  std::vector<T> result(n);
+  std::fill(result.begin(), result.end(), v);
+  return result;
+}
+
 
 string bigsets[] = {"231",
 		    "3421 2314 4231 2431 3241 3412 3142 1342 2413 2341 ",
@@ -97,16 +103,16 @@ void test231extensions_avoid(bool getstats) {
   int endk = 6;
   int startn = 8;
   int endn = 13;
-  vector < vector < double  > > runtimes (endk + 1, vector < double > (endn + 1, 0));
-  vector < vector < uint64_t  > > stat1 (endk + 1, vector < uint64_t > (endn + 1));
-  vector < vector < uint64_t  > > stat2 (endk + 1, vector < uint64_t > (endn + 1));
-  vector < vector < uint64_t  > > stat3 (endk + 1, vector < uint64_t > (endn + 1));
-  vector < vector < uint64_t  > > stat4 (endk + 1, vector < uint64_t > (endn + 1));
+  vector < vector < double  > > runtimes = make_vector < vector < double > > (endk + 1, make_vector < double > (endn + 1, 0));
+  vector < vector < uint64_t  > > stat1 = make_vector < vector < uint64_t  > > (endk + 1, make_vector < uint64_t > (endn + 1, 0));
+  vector < vector < uint64_t  > > stat2 =  make_vector < vector < uint64_t  > >  (endk + 1, make_vector < uint64_t > (endn + 1, 0));
+  vector < vector < uint64_t  > > stat3 =  make_vector < vector < uint64_t  > >  (endk + 1, make_vector < uint64_t > (endn + 1, 0));
+  vector < vector < uint64_t  > > stat4 =  make_vector < vector < uint64_t  > >  (endk + 1, make_vector < uint64_t > (endn + 1, 0));
 
-  vector < vector < double > > workperavoider  (endk + 1, vector < double > (endn + 1));
-  vector < vector < double > > fractiononavoiders  (endk + 1, vector < double > (endn + 1));
-  vector < vector < double > > specialratio  (endk + 1, vector < double > (endn + 1));
-  vector < vector < double > > secspercheck  (endk + 1, vector < double > (endn + 1));
+  vector < vector < double > > workperavoider = make_vector < vector < double > >  (endk + 1, make_vector < double > (endn + 1, 0));
+  vector < vector < double > > fractiononavoiders  =  make_vector < vector < double > >  (endk + 1, make_vector < double > (endn + 1, 0));
+  vector < vector < double > > specialratio =  make_vector < vector < double > >  (endk + 1, make_vector < double > (endn + 1, 0));
+  vector < vector < double > > secspercheck =  make_vector < vector < double > >  (endk + 1, make_vector < double > (endn + 1, 0));
 
   for (int n = startn; n <= endn; n++) {
     for (int k = startk; k <= endk; k++) {
@@ -142,16 +148,16 @@ void testsinglepatterns_avoid(bool getstats) {
   int endk = 6;
   int startn = 8;
   int endn = 13;
-  vector < vector < double  > > runtimes (endk + 1, vector < double > (endn + 1, 0));
-  vector < vector < uint64_t  > > stat1 (endk + 1, vector < uint64_t > (endn + 1));
-  vector < vector < uint64_t  > > stat2 (endk + 1, vector < uint64_t > (endn + 1));
-  vector < vector < uint64_t  > > stat3 (endk + 1, vector < uint64_t > (endn + 1));
-  vector < vector < uint64_t  > > stat4 (endk + 1, vector < uint64_t > (endn + 1));
+    vector < vector < double  > > runtimes = make_vector < vector < double > > (endk + 1, make_vector < double > (endn + 1, 0));
+  vector < vector < uint64_t  > > stat1 = make_vector < vector < uint64_t  > > (endk + 1, make_vector < uint64_t > (endn + 1, 0));
+  vector < vector < uint64_t  > > stat2 =  make_vector < vector < uint64_t  > >  (endk + 1, make_vector < uint64_t > (endn + 1, 0));
+  vector < vector < uint64_t  > > stat3 =  make_vector < vector < uint64_t  > >  (endk + 1, make_vector < uint64_t > (endn + 1, 0));
+  vector < vector < uint64_t  > > stat4 =  make_vector < vector < uint64_t  > >  (endk + 1, make_vector < uint64_t > (endn + 1, 0));
 
-  vector < vector < double > > workperavoider  (endk + 1, vector < double > (endn + 1));
-  vector < vector < double > > fractiononavoiders  (endk + 1, vector < double > (endn + 1));
-  vector < vector < double > > specialratio  (endk + 1, vector < double > (endn + 1));
-  vector < vector < double > > secspercheck  (endk + 1, vector < double > (endn + 1));
+  vector < vector < double > > workperavoider = make_vector < vector < double > >  (endk + 1, make_vector < double > (endn + 1, 0));
+  vector < vector < double > > fractiononavoiders  =  make_vector < vector < double > >  (endk + 1, make_vector < double > (endn + 1, 0));
+  vector < vector < double > > specialratio =  make_vector < vector < double > >  (endk + 1, make_vector < double > (endn + 1, 0));
+  vector < vector < double > > secspercheck =  make_vector < vector < double > >  (endk + 1, make_vector < double > (endn + 1, 0));
 
   for (int n = startn; n <= endn; n++) {
     for (int k = startk; k <= endk; k++) {
@@ -187,7 +193,7 @@ void testsinglepatterns_count() {
   int endk = 6;
   int startn = 8;
   int endn = 12;
-  vector < vector < double  > > runtimes (endk + 1, vector < double > (endn + 1, 0));
+  vector < vector < double  > > runtimes = make_vector < vector < double > > (endk + 1, make_vector < double > (endn + 1, 0));
   for (int n = startn; n <= endn; n++) {
     for (int k = startk; k <= endk; k++) {
       runtimes[k][n] = run_interior_experiment2(sets[k - startk], n);
@@ -203,7 +209,7 @@ void testmultiplepatterns_count() {
   int endk = 5;
   int startn = 8;
   int endn = 12;
-  vector < vector < double  > > runtimes (endk + 1, vector < double > (endn + 1, 0));
+    vector < vector < double  > > runtimes = make_vector < vector < double > > (endk + 1, make_vector < double > (endn + 1, 0));
   for (int n = startn; n <= endn; n++) {
     for (int k = startk; k <= endk; k++) {
       runtimes[k][n] = run_interior_experiment2(bigsets[k - startk], n);

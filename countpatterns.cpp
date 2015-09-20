@@ -494,7 +494,6 @@ double run_interior_experiment2(string patternlist, int maxpermsize) {
   makepatterns(patternlist, patternset, maxpatternsize); // build pattern set
   unsigned long long reservedspace = 0;
   for (int i = 1; i <= maxpermsize - 1; i++) reservedspace += factorial(i);
-  hashmap Phashmap(reservedspace * 3, sizeof(short)*(maxpatternsize + 1)); // initialize hash table of Pvals
   timestamp_t current_time = get_timestamp();
   uint64_t maxtally = choose(maxpermsize, maxpatternsize) * patternset.getsize();
     cilk::reducer< cilk::op_add<uint64_t> >  *tallytemp[maxpermsize + 1];
@@ -502,7 +501,11 @@ double run_interior_experiment2(string patternlist, int maxpermsize) {
     tallytemp[i] = new cilk::reducer< cilk::op_add<uint64_t> >[maxtally + 1];
   }
   if (USEBRUTE)  start_brute(maxpatternsize, maxpermsize, patternset, tallytemp, completelist, verbose, true);
-  else createPmap(maxpermsize, patternset, maxpatternsize, current_time, Phashmap, tallytemp, completelist, verbose, true);
+  else {
+    //hashmap Phashmap(reservedspace * 3, sizeof(short)*(maxpatternsize + 1)); // initialize hash table of Pvals
+    //createPmap(maxpermsize, patternset, maxpatternsize, current_time, Phashmap, tallytemp, completelist, verbose, true);
+    createtally_tight(maxpermsize, patternset, maxpatternsize, current_time, tallytemp, completelist, verbose, true);
+  }
   for (int j = 0; j <= maxpermsize; j++) {
     int largestval = 0;
     for (int i = 0; i < maxpermsize + 1; i++) {
