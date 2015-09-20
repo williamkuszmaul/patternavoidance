@@ -10,7 +10,7 @@
 
 # or
 CXX = icpc
-CXXFLAGS  = -O3 -std=c++11 -Wshadow -Wall -W -Werror -march=native -ipo -g
+CXXFLAGS  = -O3 -std=c++11 -Wall -W -Werror -march=native -ipo -g
 
 
 # typing 'make' will invoke the first target entry in the file 

@@ -72,7 +72,7 @@ public:
     return (char*)array + stepsize * index + sizeof(unsigned long long);
   }
   
-  inline void*  setval(unsigned int index, void *value) const {
+  inline void  setval(unsigned int index, void *value) const {
     memcpy((char*)array + stepsize * index + sizeof(unsigned long long), value, payloadsize);
   }
   
