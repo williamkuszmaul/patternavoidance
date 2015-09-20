@@ -14,7 +14,7 @@
 using namespace std;
 
 // Does not compile because of a icpc bug: /usr/include/c++/5.1.1/bits/stl_iterator_base_types.h(155): error: name followed by "::" must be a class or namespace name
-// Also, weirdly, the bug report is by Bradley Kuszmaul!
+// Also, weirdly, the bug report is by Bradley Kuszmaul! 
 
 string bigsets[] = {"231",
 		    "3421 2314 4231 2431 3241 3412 3142 1342 2413 2341 ",
