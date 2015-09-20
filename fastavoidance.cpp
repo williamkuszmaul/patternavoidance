@@ -24,11 +24,11 @@ using namespace std;
 #define USEBITHACK 1 // 1 to use a bithack inspired by permlab; implemented both for brute force and non-brute force algs.
 #define USEPREFIXMAP 1 // only has meaning in non-brute force algorithm. 1 to use the trick which checks for each i-prefix of w whether it is order-isomorphic to an i-prefix of some \pi \in \Pi
 #define SINGLEPATTERNOPT 1 // 1 if you want brute-force algorithm to test for each pattern separately rather than use hash table of pattern prefixes to check for all patterns at once whether a subsequence is order isomorphic to any pattern prefixes. Gets some speedup for single-pattern case.
-#define USEBRUTE 0 // whether to use brute-force algorithm
+#define USEBRUTE 1 // whether to use brute-force algorithm
 #define VERBOSE 0 // whether to be verbose. normally should be false
 #define GETSTAT 0 // whether or not to collect statistics -- slows things down a bit. Only used in function run_interior_experiment, and is optionally used for countavoidersfromfile when verbose argument is given to function. Is not implemented for SINGLEPATTERNOPT
 
-// IN CASE OF GETSTAT:
+// IN CASE OF GETSTAT (in serial only):
 // For brute force variants:
 // stat1 counts over all permutations in S_n how many subsequences of length at least two we look at in the course of the algorithm
 // stat2 is the number of times stat1 is incremented for permutations that end up being avoiders
@@ -116,7 +116,7 @@ static bool isavoider_brute(uint64_t perm, uint64_t inverse, int maxavoidsize, i
   }
 }
 
-void buildavoiders_brute_helper(uint64_t perm, uint64_t inverse, uint64_t length, uint32_t bitmap, const hashdb &prefixmap, const vector < vector < uint64_t > > & prefixes, vector  < uint64_t > patternlengths, int maxavoidsize, int maxsize,  vector < vector < uint64_t > > &avoidervector, vector < uint64_t > &numavoiders, bool justcount) {
+void buildavoiders_brute_helper(uint64_t perm, uint64_t inverse, uint64_t length, uint32_t bitmap, const hashdb &prefixmap, const vector < vector < uint64_t > > & prefixes, vector  < uint64_t > patternlengths, int maxavoidsize, int maxsize,  vector < vector < uint64_t > > &avoidervector, vector <   cilk::reducer< cilk::op_add<uint64_t> >  > &numavoiders, bool justcount) {
   uint64_t newinverse = setdigit(inverse, length, length); // inverse of the extended permutation
   uint64_t newinverses[length+1]; // inverses of each of the extended perms
   uint64_t newperms[length+1]; // each of the extended perms
@@ -131,7 +131,7 @@ void buildavoiders_brute_helper(uint64_t perm, uint64_t inverse, uint64_t length
       if (GETSTAT && maxsize == length + 1) countstat1 = true;
       if (isavoider_brute(extendedperm, newinverse, maxavoidsize, length + 1, prefixmap, prefixes, patternlengths)) { // if extended permutation is avoider
 	if (!justcount) avoidervector[length + 1].push_back(extendedperm);
-	else numavoiders[length + 1]++;
+	else *(numavoiders[length + 1]) += 1;
       } else {
 	newperms[i] = -1; // signifies that we should NOT go further down recursion, for when not using bithack
 	if (USEBITHACK) bitmap = setbit(bitmap, i, 0); // keep track of which insertion positions resulted in an avoider 
@@ -143,10 +143,11 @@ void buildavoiders_brute_helper(uint64_t perm, uint64_t inverse, uint64_t length
     for (int i = length; i >= 0; i--) {
       if (!USEBITHACK || getbit(bitmap, i) == 1) {
 	if (USEBITHACK) newmap = insertbit(bitmap, i + 1, 1);
-	if (USEBITHACK || newperms[i] != -1) buildavoiders_brute_helper(newperms[i], newinverses[i], length + 1, newmap, prefixmap, prefixes, patternlengths, maxavoidsize, maxsize,  avoidervector, numavoiders, justcount);
+	if (USEBITHACK || newperms[i] != -1) cilk_spawn buildavoiders_brute_helper(newperms[i], newinverses[i], length + 1, newmap, prefixmap, prefixes, patternlengths, maxavoidsize, maxsize,  avoidervector, numavoiders, justcount);
 	//bitmaps.push(insertbit(bitmap, i + 1, 1)); // using which insertion positions resulted in an avoider, build bitmap for each new avoider
       }
     }
+    cilk_sync;
   }
 }
 
@@ -185,8 +186,11 @@ void buildavoiders_brute(const hashdb &patternset, int maxavoidsize, int maxsize
       prefixes[i][j + 1] = entry;
     }
   }
-
-  buildavoiders_brute_helper(0L, 0L, 0, 1, prefixmap, prefixes, patternlengths, maxavoidsize, maxsize, avoidervector, numavoiders, justcount);
+  vector < cilk::reducer< cilk::op_add<uint64_t> > > numavoiderstemp(maxsize + 1);
+  buildavoiders_brute_helper(0L, 0L, 0, 1, prefixmap, prefixes, patternlengths, maxavoidsize, maxsize, avoidervector, numavoiderstemp, justcount);
+  for (int i = 0; i < maxsize + 1; i++) {
+    numavoiders[i] = numavoiderstemp[i].get_value();
+  }
 }
 
 
