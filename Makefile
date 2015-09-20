@@ -9,7 +9,7 @@
 # CXXFLAGS  = -O3 -std=c++11 -march=native -flto -g -fcilkplus 
 
 # or
-CXX = icc
+CXX = icpc
 CXXFLAGS  = -O3 -std=c++11 -march=native -ipo -g
 
 
