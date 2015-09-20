@@ -5,8 +5,13 @@
 #  -Wall turns on most, but not all, compiler warnings
 #
 # for C++ define  CC = g++
-CXX = g++
-CXXFLAGS  = -O3 -std=c++11 -march=native -flto -g -fcilkplus 
+# CXX = g++
+# CXXFLAGS  = -O3 -std=c++11 -march=native -flto -g -fcilkplus 
+
+# or
+CXX = icc
+CXXFLAGS  = -O3 -std=c++11 -march=native -ipo -g
+
 
 # typing 'make' will invoke the first target entry in the file 
 # (in this case the default target entry)	

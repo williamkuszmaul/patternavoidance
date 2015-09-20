@@ -9,6 +9,8 @@
 #include <iostream>
 #include <fstream>
 #include <cilk/cilk.h>
+#include <cilk/reducer_opadd.h>
+
 #include <queue>
 #include <sys/time.h>
 #include <vector>
@@ -312,8 +314,9 @@ void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vec
   }
 }
 
+
 // length is length of perm, which is k-1 shorter than each of the candidates
-void buildavoiders_tight_helper(uint64_t perm, uint64_t inverse, uint64_t length, const hashdb &patternset, const hashdb &prefixmap, int maxavoidsize, int maxsize,  vector < vector < uint64_t > > &avoidervector, vector < uint64_t > &numavoiders, bool justcount, vector <uint64_t> candidates, int64_t candidate_start_pos, int64_t candidate_end_pos, hashdb &avoiderset_read, vector <uint32_t> prevbitmaps) {
+void buildavoiders_tight_helper(uint64_t perm, uint64_t inverse, uint64_t length, const hashdb &patternset, const hashdb &prefixmap, int maxavoidsize, int maxsize,  vector < vector < uint64_t > > &avoidervector, vector <  cilk::reducer< cilk::op_add<uint64_t> > > &numavoiders, bool justcount, vector <uint64_t> candidates, int64_t candidate_start_pos, int64_t candidate_end_pos, hashdb &avoiderset_read, vector <uint32_t> &prevbitmaps) {
   hashdb avoiderset_write(1 << 10);
   vector <uint64_t> next_candidates;
   vector <uint32_t> bitmaps;
@@ -341,8 +344,8 @@ void buildavoiders_tight_helper(uint64_t perm, uint64_t inverse, uint64_t length
 	//cout<<avoiderset_read.getsize()<<endl;
 	if (isavoider(extendedperm, newinverse, maxavoidsize, candidate_length + 1, avoiderset_read, patternset, prefixmap)) { // if extended permutation is avoider
 	  if (GETSTAT) stat4 += stat2 - tempstat2;
-	  if (!justcount) avoidervector[candidate_length + 1].push_back(extendedperm);
-	  else numavoiders[candidate_length + 1]++;
+	  if (!justcount && false) avoidervector[candidate_length + 1].push_back(extendedperm); // Not implementing this for now
+	  else *numavoiders[candidate_length + 1] += 1;
 	  //cout<<"got here..."<<endl;
 	  if (candidate_length + 1 < maxsize) {
 	    //  displayperm(extendedperm);
@@ -386,11 +389,14 @@ void buildavoiders_tight_helper(uint64_t perm, uint64_t inverse, uint64_t length
 	candidates_end_pos = cand_pos;
       }
       // cout<<candidates_prev_end_pos + 1<<" "<<candidates_end_pos<<" "<<next_candidates.size()<<" "<<length<<endl;
-      buildavoiders_tight_helper(extendedperm, nextinverse, length + 1, patternset, prefixmap,maxavoidsize, maxsize,  avoidervector, numavoiders, justcount, next_candidates, candidates_prev_end_pos + 1, candidates_end_pos, avoiderset_write, bitmaps);
+      cilk_spawn buildavoiders_tight_helper(extendedperm, nextinverse, length + 1, patternset, prefixmap,maxavoidsize, maxsize,  avoidervector, numavoiders, justcount, next_candidates, candidates_prev_end_pos + 1, candidates_end_pos, avoiderset_write, bitmaps);
       candidates_prev_end_pos = candidates_end_pos;
     }
   }
+  cilk_sync;
 }
+
+
 
 void buildavoiders_tight(const hashdb &patternset, int maxavoidsize, int maxsize,  vector < vector < uint64_t > > &avoidervector, vector < uint64_t > &numavoiders, bool justcount) {
   // TODO: STILL HAVE TO FIX THINGS FOR N < K
@@ -423,7 +429,12 @@ void buildavoiders_tight(const hashdb &patternset, int maxavoidsize, int maxsize
       }
     }
   }
-  buildavoiders_tight_helper(0L, 0L, 0L, patternset, prefixmap, maxavoidsize, maxsize, avoidervector, numavoiders, justcount, kmin1perms[maxavoidsize - 1], 0, kmin1perms[maxavoidsize - 1].size() - 1, currentavoiders, bitmaps);
+
+  vector < cilk::reducer< cilk::op_add<uint64_t> > > numavoiderstemp(maxsize + 1);
+  buildavoiders_tight_helper(0L, 0L, 0L, patternset, prefixmap, maxavoidsize, maxsize, avoidervector, numavoiderstemp, justcount, kmin1perms[maxavoidsize - 1], 0, kmin1perms[maxavoidsize - 1].size() - 1, currentavoiders, bitmaps);
+  for (int i = 1; i < maxsize + 1; i++) {
+    numavoiders[i] = (uint64_t) numavoiderstemp[i].get_value();
+  }
 }
 
 
@@ -489,9 +500,10 @@ void countavoidersfrompatternlist(string patternlist, int maxpermsize, vector < 
   vector < vector < uint64_t > > avoidervector;
   if (VERBOSE) cout<<"Effective pattern size "<<maxpatternsize<<endl;
   if (USEBRUTE) buildavoiders_brute(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true, (1L << 10));
+  
   else {
-    buildavoiders(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true, (1L << 10)); // for large cases, make last argument much larger
-    //buildavoiders_tight(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true); // for large cases, make last argument much larger
+    //buildavoiders(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true, (1L << 10)); // for large cases, make last argument much larger
+    buildavoiders_tight(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true); // for large cases, make last argument much larger
   }
 }
 
