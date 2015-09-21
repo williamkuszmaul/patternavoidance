@@ -362,7 +362,7 @@ void buildavoiders_tight_helper(uint64_t perm, uint64_t inverse, uint64_t length
 	//cout<<avoiderset_read.getsize()<<endl;
 	if (isavoider(extendedperm, newinverse, maxavoidsize, candidate_length + 1, avoiderset_read, patternset, prefixmap)) { // if extended permutation is avoider
 	  if (GETSTAT) stat4 += stat2 - tempstat2;
-	  if (!justcount && false) (*avoidervector[candidate_length + 1]).push_back(extendedperm); // Not implementing this for now
+	  if (!justcount) (*avoidervector[candidate_length + 1]).push_back(extendedperm); // Not implementing this for now
 	  else *(numavoiders[candidate_length + 1]) += 1;
 	  //cout<<"got here..."<<endl;
 	  if (candidate_length + 1 < maxsize) {
@@ -433,26 +433,39 @@ void buildavoiders_tight(const hashdb &patternset, int maxavoidsize, int maxsize
   vector < uint32_t > bitmaps;
   hashdb currentavoiders(1<<10);
   kmin1perms[0].push_back(0);
+  vector < list < uint64_t > > avoidervector2(maxavoidsize);
+  buildavoiders(patternset, maxavoidsize, maxavoidsize - 1, avoidervector2, numavoiders, false, (1L << 10));
   for (int i = 1; i < maxavoidsize; i++) {
-    for (int x = 0; x < kmin1perms[i - 1].size(); x++) {
-      for (int j = i - 1; j >= 0; j--) {
-	uint64_t perm = kmin1perms[i-1][x];
-	uint64_t extendedperm = setdigit(addpos(perm, j), j, i - 1);
-	kmin1perms[i].push_back(extendedperm);
-	if (i == maxavoidsize - 1) {
-	  currentavoiders.add(extendedperm);
-	  bitmaps.push_back((1 << (maxavoidsize )) - 1);
- 	  //displayperm(extendedperm);
-	}
+    if (justcount) numavoiders[i] = avoidervector2[i].size();
+    if (!justcount) avoidervector[i] = avoidervector2[i];
+    for (std::list<uint64_t>::iterator it = avoidervector2[i].begin(); it != avoidervector2[i].end(); ++it) {
+      kmin1perms[i].push_back(*it);
+      if (i == maxavoidsize - 1) {
+	bitmaps.push_back((1 << (maxavoidsize )) - 1);
+	currentavoiders.add(*it);
       }
     }
   }
+  // for (int i = 1; i < maxavoidsize; i++) {
+  //   for (int x = 0; x < kmin1perms[i - 1].size(); x++) {
+  //     for (int j = i - 1; j >= 0; j--) {
+  // 	uint64_t perm = kmin1perms[i-1][x];
+  // 	uint64_t extendedperm = setdigit(addpos(perm, j), j, i - 1);
+  // 	kmin1perms[i].push_back(extendedperm);
+  // 	if (i == maxavoidsize - 1) {
+  // 	  currentavoiders.add(extendedperm);
+  // 	  bitmaps.push_back((1 << (maxavoidsize )) - 1);
+  // 	  //displayperm(extendederm);
+  // 	}
+  //     }
+  //   }
+  // }
   vector < cilk::reducer< cilk::op_list_append<uint64_t> > > avoidervectortemp(maxsize + 1);
   cilk::reducer< cilk::op_add<uint64_t> > numavoiderstemp[maxsize + 1];
   buildavoiders_tight_helper(0L, 0L, 0L, patternset, prefixmap, maxavoidsize, maxsize, avoidervectortemp, numavoiderstemp, justcount, kmin1perms[maxavoidsize - 1], 0, kmin1perms[maxavoidsize - 1].size() - 1, currentavoiders, bitmaps);
-  for (int i = 1; i < maxsize + 1; i++) {
+  for (int i = maxavoidsize; i < maxsize + 1; i++) {
     if (!justcount) avoidervector[i] = avoidervectortemp[i].get_value();
-    numavoiders[i] = (uint64_t) numavoiderstemp[i].get_value();
+    else numavoiders[i] = (uint64_t) numavoiderstemp[i].get_value();
   }
 }
 
@@ -467,7 +480,7 @@ void buildavoidersfrompatternlist(string patternlist, int maxpermsize, vector < 
   makepatterns(patternlist, patternset, maxpatternsize);
   vector < uint64_t > numavoiders;
   if (USEBRUTE) buildavoiders_brute(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, false, (1L << 10));
-  else buildavoiders(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, false, (1L << 10)); // for large cases, make last argument much larger
+  else buildavoiders_tight(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, false); // for large cases, make last argument much larger
 }
 
 // just for use when GETSTAT IS TRUE

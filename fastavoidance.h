@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <bitset>
 #include <vector>
+#include <list>
 #include <stdint.h>
 // #include <unordered_set>
 #include <queue>
@@ -39,7 +40,7 @@ void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vec
 // string patternlist = "1234 3214"; // space separated list of patterns; need not be same sizes; must be in S_{<10}
 // vector < vector < uint64_t > > avoidervector;
 // buildavoidersfrompatternlist(patternlist, 10, avoidervector); // now avoidervector contains S_n(patternlist) stored in avoidervector[n] for 0 < n < 11
-void buildavoidersfrompatternlist(string patternlist, int maxpermsize, vector < vector < uint64_t > > &avoidervector);
+void buildavoidersfrompatternlist(string patternlist, int maxpermsize, vector < list < uint64_t > > &avoidervector);
 
 // Example:
 // string patternlist = "1234 3214"; // space separated list of patterns; need not be same sizes; must be in S_{<10}
