@@ -188,13 +188,13 @@ inline unsigned short getPval(unsigned long long perm, int i, hashmap &Phashmap)
   return ((unsigned short*)Phashmap.getpayload(perm))[i];
 }
 
-// NOTE: COULD HAVE BETTER USER INTERFACE WITH LAST ARGUMENT
+
 // Inputs perm \in S_length, set of pattern patternset with longest pattern of size maxpatternsize, tally, completelist.
 // Computes P_i(perm) for i from 0 , ... , maxpatternsize + 1; and if length < maxpermsize. stores all but final one
 // Updates tally and completelist using P_0(perm). Only updates completelist of justcount is false
 // Phashmap contains all Pvals previously computed (must include everything for S_{length - 1}.
 // patternset contains the complements of the normalizations of the prefixes of patterns
-static void Pcount_tight(uint64_t perm, int length, int maxpatternsize, int maxpermsize, const hashdb &patternset, const hashdb &prefixmap, hashmap &Phashmap_read, hashmap &Phashmap_write, uint64_t prevP0, uint64_t prevP1, cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, bool justcount, bool recordallPvals) {
+static void Pcount(uint64_t perm, int length, int maxpatternsize, const hashdb &patternset, const hashdb &prefixmap, hashmap &Phashmap_read, hashmap &Phashmap_write, uint64_t prevP0, uint64_t prevP1, cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, bool justcount, bool recordPval) {
   uint64_t inverse = getinverse(perm, length);
   unsigned short Pvals[maxpatternsize + 2]; // indices range from [0...maxpatternsize+1]. Assumes no Pvals as short as large as 63504. Will not work, for example, for counting id_10 patterns in id_20.
   int Pvalpos = maxpatternsize + 1;
@@ -252,7 +252,7 @@ static void Pcount_tight(uint64_t perm, int length, int maxpatternsize, int maxp
     Pvals[Pvalpos] = Pvals[Pvalpos + 1] + oldPvals[Pvalpos]; // use recurrence to get actual Pvals
     Pvalpos--;
   }
-  if (length != maxpermsize || recordallPvals) {
+  if (recordPval) {
     setPvals(perm, Pvals, Phashmap_write);
   }
   if (!justcount) {
@@ -283,7 +283,7 @@ void buildpermutations(uint64_t perm, int currentsize, int finalsize, int maxpat
     } else {
       uint64_t prevP1 = cachedP1s[i];
       if (nseen) prevP1 = cachedP1s[i - 1];
-      Pcount_tight(extendedperm, currentsize + 1, maxpatternsize, maxpermsize, patternset, prefixmap, Phashmap, Phashmap, currentP0, prevP1, tally, completelist, justcount, recordallPvals);
+      Pcount(extendedperm, currentsize + 1, maxpatternsize, patternset, prefixmap, Phashmap, Phashmap, currentP0, prevP1, tally, completelist, justcount, (currentsize + 1 != maxpermsize) || recordallPvals);
     }
   }
 }
@@ -328,7 +328,7 @@ void buildpermutations_tight_helper(uint64_t perm, int currentsize, int finalsiz
     } else {
       uint64_t prevP1 = cachedP1s[i];
       if (nseen) prevP1 = cachedP1s[i - 1];
-      Pcount_tight(extendedperm, currentsize + 1, maxpatternsize, maxpermsize, patternset, prefixmap, Phashmap_read, Phashmap_write, currentP0, prevP1, tally, completelist, justcount, false);
+      Pcount(extendedperm, currentsize + 1, maxpatternsize, patternset, prefixmap, Phashmap_read, Phashmap_write, currentP0, prevP1, tally, completelist, justcount, (currentsize + 1 != maxpermsize));
     }
   }
 }
