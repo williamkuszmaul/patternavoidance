@@ -188,127 +188,13 @@ inline unsigned short getPval(unsigned long long perm, int i, hashmap &Phashmap)
   return ((unsigned short*)Phashmap.getpayload(perm))[i];
 }
 
-
+// NOTE: COULD HAVE BETTER USER INTERFACE WITH LAST ARGUMENT
 // Inputs perm \in S_length, set of pattern patternset with longest pattern of size maxpatternsize, tally, completelist.
 // Computes P_i(perm) for i from 0 , ... , maxpatternsize + 1; and if length < maxpermsize. stores all but final one
 // Updates tally and completelist using P_0(perm). Only updates completelist of justcount is false
 // Phashmap contains all Pvals previously computed (must include everything for S_{length - 1}.
 // patternset contains the complements of the normalizations of the prefixes of patterns
-static void Pcount(uint64_t perm, int length, int maxpatternsize, int maxpermsize, const hashdb &patternset, const hashdb &prefixmap, hashmap &Phashmap, uint64_t prevP0, uint64_t prevP1,   cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, bool justcount) {
-  uint64_t inverse = getinverse(perm, length);
-  unsigned short Pvals[maxpatternsize + 2]; // indices range from [0...maxpatternsize+1]. Assumes no Pvals as short as large as 63504. Will not work, for example, for counting id_10 patterns in id_20.
-  int Pvalpos = maxpatternsize + 1;
-
-  // Don't have to worry about Pvalpos[i] if i > length
-  Pvalpos = min(Pvalpos,  length);
-  Pvals[Pvalpos] = 0;
-  if (Pvalpos == length) {
-    if (patternset.contains(perm)) Pvals[Pvalpos] = 1;
-  }
-  Pvalpos--;
-
-  // Now Pvalpos < length and <= maxpatternsize. So the recurrence starts to apply
-  unsigned short oldPvals[Pvalpos + 1]; // will store P_i(perm\downarrow_i). We will then use these values for recurrence
-  int oldPvalpos = 0;
-  uint64_t currentperm = perm; // will be updated to be each perm \downarrow_i
-  assert(length > 1); // don't want to deal with length 1 case
-  uint32_t seenpos = 0;
-  uint64_t prefixentry = 0;
-
-  for (int i = length - 1; i >= 0 && i >= length - maxpatternsize - 1; i--) {
-    if (i < length - 1) { // add back in digit we deleted a moment ago, but with value one smaller
-      currentperm = addpos(currentperm, getdigit(inverse, i + 1));
-      currentperm = setdigit(currentperm, getdigit(inverse, i + 1), i);
-    }
-    currentperm = killpos(currentperm, getdigit(inverse, i)); // now currentperm is perm, except with i removed and the resulting permutation normalized to be on values 0, ..., length - 1
-    if (USEOLDP0 && oldPvalpos == 0) {
-      oldPvals[0] = prevP0;
-    } else {
-      if (USEOLDP1 && oldPvalpos == 1) {
-	oldPvals[1] = prevP1;
-      } else {
-	oldPvals[oldPvalpos] = getPval(currentperm, length - 1 - i, Phashmap);
-	
-      }
-    }
-    oldPvalpos++;
-    if (USEPREFIXMAP) {
-      extendnormalizetop(perm, inverse, length, length - 1 - i, prefixentry, seenpos); // build the complement fo the normalized (length - i)-prefix of the permutation.
-      if (!prefixmap.contains(prefixentry)) { // If this prefix is not a valid pattern prefix
-	Pvalpos = oldPvalpos - 1; 
-	Pvals[oldPvalpos] = 0; // we know that Pvals[oldPvalpos] is 0
-	// We do not have to both filling in Pvals[i] for i > oldPvalpos, because there will never be a permutation $w$ such that $w \downarrow_i = perm$, i > oldPvalpos, and the (i-1)-prefix o $w$ forms a valid pattern prefix.
-	// for (int j = oldPvalpos; j <= Pvalpos; j++) { // This is what we would have done instead of previous two lines if we did want to fill in all the Pvals
-	//   oldPvals[j] = 0; 
-	// }
-	break;
-      }
-    }
-  }
-
-  // Now we start the recursion, starting with P_{Pvalpos})(perm)
-  while (Pvalpos >= 0) {
-    Pvals[Pvalpos] = Pvals[Pvalpos + 1] + oldPvals[Pvalpos]; // use recurrence to get actual Pvals
-    Pvalpos--;
-  }
-  if (length != maxpermsize) {
-    setPvals(perm, Pvals, Phashmap);
-  }
-  if (!justcount) {
-    int index = permtonum(perm, length); // Note: permtonum is O(n) time
-    completelist[length][index] = Pvals[0];
-  }
-  increasetally(tally[length], Pvals[0]);
-}
-
-
-// constructs the permutations of size finalsize. Then passes on paramaters to Pcount, in order to find number of patterns appearing in each permutation
-// Requires that it has already been run for each smaller currentsize >= 1
-// Note first call to this function should be with currentsize = 1
-void buildpermutations(uint64_t perm, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patternset, hashdb &prefixmap, hashmap &Phashmap,  cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, uint64_t *cachedP1s, bool justcount) {
-  if (USEOLDP1 && currentsize == finalsize - 2) {
-    for (int i = 0; i < currentsize + 1; i++) {
-      uint64_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
-      cachedP1s[i] = getPval(extendedperm, 1, Phashmap); // store these Pvals now, and they will be used many times two levels down from now
-    }
-  }
-  bool nseen = false; // whether or not we've seen currentsize in perm yet
-  uint64_t currentP0 = 0; // only will be filled in if currentsize == finalsize - 1
-  if (currentsize == finalsize - 1) currentP0 = getPval(perm, 0, Phashmap);
-  for (int i = 0; i < currentsize + 1; i++) {
-    if (i > 0 && getdigit(perm, i - 1) == currentsize - 1) nseen = true;
-    uint64_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
-    if (currentsize < finalsize - 1) {
-      buildpermutations(extendedperm, currentsize + 1, finalsize, maxpatternsize,  maxpermsize, patternset, prefixmap, Phashmap, tally, completelist, cachedP1s, justcount);
-    } else {
-      uint64_t prevP1 = cachedP1s[i];
-      if (nseen) prevP1 = cachedP1s[i - 1];
-      Pcount(extendedperm, currentsize + 1, maxpatternsize, maxpermsize, patternset, prefixmap, Phashmap, currentP0, prevP1, tally, completelist, justcount);
-    }
-  }
-}
-
-// Fills in tally, complete list, and Pvals for all permutation in S_{<= finalsize} (unles justcount, inwhich case does not fill in completelist)
-// Note: patterns in patternset required to be in S_{>1}
-void createPmap(uint64_t finalsize, hashdb &patternset, int maxpatternsize, timestamp_t start_time, hashmap &Phashmap,  cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, bool verbose, bool justcount) {
-  unsigned short temp[maxpatternsize + 1];
-  for (int i = 0; i < maxpatternsize + 1; i++) temp[i] = 0;
-  setPvals(0L, temp, Phashmap); // fill in Pvals to be 0 for
-
-  hashdb prefixmap(1<<3);
-  addprefixes(patternset, prefixmap);
-
-  for (int i = 2; i <= finalsize; i++) {
-    uint64_t cachedP1s[finalsize];
-    for (int x = 0; x < finalsize; x++) cachedP1s[x] = 0; // initialize to zero used in first call to buildpermutations when i = 2
-    buildpermutations(0L, 1, i, maxpatternsize, finalsize, patternset, prefixmap, Phashmap, tally, completelist, cachedP1s, justcount);
-    timestamp_t current_time = get_timestamp();
-    if (verbose) cout<< "Time elapsed to build perms of size "<<i<<" in seconds: "<<(current_time - start_time)/1000000.0L<<endl;
-  }
-  return;
-}
-
-static void Pcount_tight(uint64_t perm, int length, int maxpatternsize, int maxpermsize, const hashdb &patternset, const hashdb &prefixmap, hashmap &Phashmap_read, hashmap &Phashmap_write, uint64_t prevP0, uint64_t prevP1, cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, bool justcount) {
+static void Pcount_tight(uint64_t perm, int length, int maxpatternsize, int maxpermsize, const hashdb &patternset, const hashdb &prefixmap, hashmap &Phashmap_read, hashmap &Phashmap_write, uint64_t prevP0, uint64_t prevP1, cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, bool justcount, bool recordallPvals) {
   uint64_t inverse = getinverse(perm, length);
   unsigned short Pvals[maxpatternsize + 2]; // indices range from [0...maxpatternsize+1]. Assumes no Pvals as short as large as 63504. Will not work, for example, for counting id_10 patterns in id_20.
   int Pvalpos = maxpatternsize + 1;
@@ -366,7 +252,7 @@ static void Pcount_tight(uint64_t perm, int length, int maxpatternsize, int maxp
     Pvals[Pvalpos] = Pvals[Pvalpos + 1] + oldPvals[Pvalpos]; // use recurrence to get actual Pvals
     Pvalpos--;
   }
-  if (length != maxpermsize) {
+  if (length != maxpermsize || recordallPvals) {
     setPvals(perm, Pvals, Phashmap_write);
   }
   if (!justcount) {
@@ -375,6 +261,53 @@ static void Pcount_tight(uint64_t perm, int length, int maxpatternsize, int maxp
   }
   increasetally(tally[length], Pvals[0]);
 }
+
+// constructs the permutations of size finalsize. Then passes on paramaters to Pcount, in order to find number of patterns appearing in each permutation
+// Requires that it has already been run for each smaller currentsize >= 1
+// Note first call to this function should be with currentsize = 1
+void buildpermutations(uint64_t perm, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patternset, hashdb &prefixmap, hashmap &Phashmap,  cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, uint64_t *cachedP1s, bool justcount, bool recordallPvals) {
+  if (USEOLDP1 && currentsize == finalsize - 2) {
+    for (int i = 0; i < currentsize + 1; i++) {
+      uint64_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
+      cachedP1s[i] = getPval(extendedperm, 1, Phashmap); // store these Pvals now, and they will be used many times two levels down from now
+    }
+  }
+  bool nseen = false; // whether or not we've seen currentsize in perm yet
+  uint64_t currentP0 = 0; // only will be filled in if currentsize == finalsize - 1
+  if (currentsize == finalsize - 1) currentP0 = getPval(perm, 0, Phashmap);
+  for (int i = 0; i < currentsize + 1; i++) {
+    if (i > 0 && getdigit(perm, i - 1) == currentsize - 1) nseen = true;
+    uint64_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
+    if (currentsize < finalsize - 1) {
+      buildpermutations(extendedperm, currentsize + 1, finalsize, maxpatternsize,  maxpermsize, patternset, prefixmap, Phashmap, tally, completelist, cachedP1s, justcount, recordallPvals);
+    } else {
+      uint64_t prevP1 = cachedP1s[i];
+      if (nseen) prevP1 = cachedP1s[i - 1];
+      Pcount_tight(extendedperm, currentsize + 1, maxpatternsize, maxpermsize, patternset, prefixmap, Phashmap, Phashmap, currentP0, prevP1, tally, completelist, justcount, recordallPvals);
+    }
+  }
+}
+
+// Fills in tally, complete list, and Pvals for all permutation in S_{<= finalsize} (unles justcount, inwhich case does not fill in completelist)
+// Note: patterns in patternset required to be in S_{>1}
+void createPmap(uint64_t finalsize, hashdb &patternset, int maxpatternsize, timestamp_t start_time, hashmap &Phashmap,  cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, bool verbose, bool justcount, bool recordallPvals) {
+  unsigned short temp[maxpatternsize + 1];
+  for (int i = 0; i < maxpatternsize + 1; i++) temp[i] = 0;
+  setPvals(0L, temp, Phashmap); // fill in Pvals to be 0 for
+
+  hashdb prefixmap(1<<3);
+  addprefixes(patternset, prefixmap);
+
+  for (int i = 2; i <= finalsize; i++) {
+    uint64_t cachedP1s[finalsize];
+    for (int x = 0; x < finalsize; x++) cachedP1s[x] = 0; // initialize to zero used in first call to buildpermutations when i = 2
+    buildpermutations(0L, 1, i, maxpatternsize, finalsize, patternset, prefixmap, Phashmap, tally, completelist, cachedP1s, justcount, recordallPvals);
+    timestamp_t current_time = get_timestamp();
+    if (verbose) cout<< "Time elapsed to build perms of size "<<i<<" in seconds: "<<(current_time - start_time)/1000000.0L<<endl;
+  }
+  return;
+}
+
 
 
 void buildpermutations_tight_helper(uint64_t perm, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patternset, hashdb &prefixmap, hashmap &Phashmap_read, hashmap &Phashmap_write,  cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, uint64_t *cachedP1s, bool justcount) {
@@ -395,7 +328,7 @@ void buildpermutations_tight_helper(uint64_t perm, int currentsize, int finalsiz
     } else {
       uint64_t prevP1 = cachedP1s[i];
       if (nseen) prevP1 = cachedP1s[i - 1];
-      Pcount_tight(extendedperm, currentsize + 1, maxpatternsize, maxpermsize, patternset, prefixmap, Phashmap_read, Phashmap_write, currentP0, prevP1, tally, completelist, justcount);
+      Pcount_tight(extendedperm, currentsize + 1, maxpatternsize, maxpermsize, patternset, prefixmap, Phashmap_read, Phashmap_write, currentP0, prevP1, tally, completelist, justcount, false);
     }
   }
 }
@@ -422,17 +355,13 @@ void buildpermutations_tight(uint64_t perm, int currentsize, int finalsize, int 
 // Fills in tally, complete list, and Pvals for all permutation in S_{<= finalsize} (unles justcount, inwhich case does not fill in completelist)
 // Note: patterns in patternset required to be in S_{>1}
 void createtally_tight(uint64_t finalsize, hashdb &patternset, int maxpatternsize, timestamp_t start_time,  cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, bool verbose, bool justcount) {
-
-  // TODO: NEED TO CLEAN UP WHAT'S GOING ON FOR SMALL PERMUTATIONS
-  // TODO: NEED TO CHECK THAT VARIOUS STATISTICS ARE GETTING UPDATED CORERCTLY FOR ALL SIZES
-  // TODO: NEED TO DOCUMENT THAT CREATEPMAP DOES NTO CREATE FOR FINAL N THE PMAPS.
   uint64_t currentsize = 1;
   int numnewlevels = maxpatternsize + 1;
   unsigned long long reservedspace = 0;
   for (int i = 1; i <= 1 + numnewlevels; i++) reservedspace += factorial(i);
   hashmap Phashmap(reservedspace * 3, sizeof(short)*(maxpatternsize + 1)); // initialize hash table of Pvals // should be automatically optimized out in brute-force version 
   if (finalsize <= 1 + numnewlevels) {
-    createPmap(finalsize, patternset, maxpatternsize, start_time, Phashmap, tally, completelist, verbose, justcount);
+    createPmap(finalsize, patternset, maxpatternsize, start_time, Phashmap, tally, completelist, verbose, justcount, false);
     return;
   }
 
@@ -442,9 +371,7 @@ void createtally_tight(uint64_t finalsize, hashdb &patternset, int maxpatternsiz
 
   hashdb prefixmap(1<<3);
   addprefixes(patternset, prefixmap);
-  // !! cheating here. should be 1 + numnewlevels for createPmap, but doing 2 so that it will actually filling the Phashmap.
-  // !! just count is true here, but that menas we are not correctly counting for small sizes if just count is inputted as false!
-  createPmap(1+ 1 + numnewlevels, patternset, maxpatternsize , start_time, Phashmap, tally, completelist, verbose, true);
+  createPmap(1 + numnewlevels, patternset, maxpatternsize , start_time, Phashmap, tally, completelist, verbose, true, true);
   cout<<"Ended initialization"<<endl;
   cilk_spawn buildpermutations_tight(1L, 2, finalsize, maxpatternsize, finalsize, patternset, prefixmap, Phashmap, tally, completelist, justcount);
   cilk_spawn buildpermutations_tight(16L, 2, finalsize, maxpatternsize, finalsize, patternset, prefixmap, Phashmap, tally, completelist, justcount);
