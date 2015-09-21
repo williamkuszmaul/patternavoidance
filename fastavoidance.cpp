@@ -116,7 +116,15 @@ static bool isavoider_brute(uint64_t perm, uint64_t inverse, int maxavoidsize, i
   }
 }
 
-void buildavoiders_brute_helper(uint64_t perm, uint64_t inverse, uint64_t length, uint32_t bitmap, const hashdb &prefixmap, const vector < vector < uint64_t > > & prefixes, vector  < uint64_t > patternlengths, int maxavoidsize, int maxsize,  vector < vector < uint64_t > > &avoidervector, vector <   cilk::reducer< cilk::op_add<uint64_t> >  > &numavoiders, bool justcount) {
+// void temp_buildavoiders_brute_helper(uint64_t perm, uint64_t inverse, uint64_t length, uint32_t bitmap, const hashdb &prefixmap, const vector < vector < uint64_t > > & prefixes, vector  < uint64_t > patternlengths) {
+//   for (int i = length; i >= 0; i--) {
+//     cilk_spawn temp_buildavoiders_brute_helper(1, 1, length + 1, bitmap, prefixmap, prefixes, patternlengths);
+//   }
+//   cilk_sync;
+// }
+
+
+void buildavoiders_brute_helper(uint64_t perm, uint64_t inverse, uint64_t length, uint32_t bitmap, const hashdb &prefixmap, const vector < vector < uint64_t > > & prefixes, vector  < uint64_t > & patternlengths, int maxavoidsize, int maxsize,  vector < vector < uint64_t > > &avoidervector, cilk::reducer< cilk::op_add<uint64_t> > *numavoiders, bool justcount) {
   uint64_t newinverse = setdigit(inverse, length, length); // inverse of the extended permutation
   uint64_t newinverses[length+1]; // inverses of each of the extended perms
   uint64_t newperms[length+1]; // each of the extended perms
@@ -143,7 +151,9 @@ void buildavoiders_brute_helper(uint64_t perm, uint64_t inverse, uint64_t length
     for (int i = length; i >= 0; i--) {
       if (!USEBITHACK || getbit(bitmap, i) == 1) {
 	if (USEBITHACK) newmap = insertbit(bitmap, i + 1, 1);
-	if (USEBITHACK || newperms[i] != -1) cilk_spawn buildavoiders_brute_helper(newperms[i], newinverses[i], length + 1, newmap, prefixmap, prefixes, patternlengths, maxavoidsize, maxsize,  avoidervector, numavoiders, justcount);
+	if (USEBITHACK || newperms[i] != -1) {
+	  cilk_spawn buildavoiders_brute_helper(newperms[i], newinverses[i], length + 1, newmap, prefixmap, prefixes, patternlengths, maxavoidsize, maxsize,  avoidervector, numavoiders, justcount);
+	}
 	//bitmaps.push(insertbit(bitmap, i + 1, 1)); // using which insertion positions resulted in an avoider, build bitmap for each new avoider
       }
     }
@@ -186,7 +196,7 @@ void buildavoiders_brute(const hashdb &patternset, int maxavoidsize, int maxsize
       prefixes[i][j + 1] = entry;
     }
   }
-  vector < cilk::reducer< cilk::op_add<uint64_t> > > numavoiderstemp(maxsize + 1);
+  cilk::reducer< cilk::op_add<uint64_t> > numavoiderstemp[maxsize + 1];
   buildavoiders_brute_helper(0L, 0L, 0, 1, prefixmap, prefixes, patternlengths, maxavoidsize, maxsize, avoidervector, numavoiderstemp, justcount);
   for (int i = 0; i < maxsize + 1; i++) {
     numavoiders[i] = numavoiderstemp[i].get_value();
@@ -321,7 +331,7 @@ void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vec
 
 // length is length of perm, which is k-1 shorter than each of the candidates
 // NOTE: IF JUST COUTN FALSE, THEN AVOIDERVECTOR UPDATE IS NOT THREAD SAFE YET. CAN USE THE LIST REDUCER
-void buildavoiders_tight_helper(uint64_t perm, uint64_t inverse, uint64_t length, const hashdb &patternset, const hashdb &prefixmap, int maxavoidsize, int maxsize,  vector < vector < uint64_t > > &avoidervector, vector <  cilk::reducer< cilk::op_add<uint64_t> > > &numavoiders, bool justcount, vector <uint64_t> candidates, int64_t candidate_start_pos, int64_t candidate_end_pos, hashdb &avoiderset_read, vector <uint32_t> &prevbitmaps) {
+void buildavoiders_tight_helper(uint64_t perm, uint64_t inverse, uint64_t length, const hashdb &patternset, const hashdb &prefixmap, int maxavoidsize, int maxsize,  vector < vector < uint64_t > > &avoidervector, cilk::reducer< cilk::op_add<uint64_t> > *numavoiders, bool justcount, vector <uint64_t> &candidates, int64_t candidate_start_pos, int64_t candidate_end_pos, hashdb &avoiderset_read, vector <uint32_t> &prevbitmaps) {
   hashdb avoiderset_write(1 << 10);
   vector <uint64_t> next_candidates;
   vector <uint32_t> bitmaps;
@@ -350,7 +360,7 @@ void buildavoiders_tight_helper(uint64_t perm, uint64_t inverse, uint64_t length
 	if (isavoider(extendedperm, newinverse, maxavoidsize, candidate_length + 1, avoiderset_read, patternset, prefixmap)) { // if extended permutation is avoider
 	  if (GETSTAT) stat4 += stat2 - tempstat2;
 	  if (!justcount && false) avoidervector[candidate_length + 1].push_back(extendedperm); // Not implementing this for now
-	  else *numavoiders[candidate_length + 1] += 1;
+	  else *(numavoiders[candidate_length + 1]) += 1;
 	  //cout<<"got here..."<<endl;
 	  if (candidate_length + 1 < maxsize) {
 	    //  displayperm(extendedperm);
@@ -435,7 +445,7 @@ void buildavoiders_tight(const hashdb &patternset, int maxavoidsize, int maxsize
     }
   }
 
-  vector < cilk::reducer< cilk::op_add<uint64_t> > > numavoiderstemp(maxsize + 1);
+  cilk::reducer< cilk::op_add<uint64_t> > numavoiderstemp[maxsize + 1];
   buildavoiders_tight_helper(0L, 0L, 0L, patternset, prefixmap, maxavoidsize, maxsize, avoidervector, numavoiderstemp, justcount, kmin1perms[maxavoidsize - 1], 0, kmin1perms[maxavoidsize - 1].size() - 1, currentavoiders, bitmaps);
   for (int i = 1; i < maxsize + 1; i++) {
     numavoiders[i] = (uint64_t) numavoiderstemp[i].get_value();
