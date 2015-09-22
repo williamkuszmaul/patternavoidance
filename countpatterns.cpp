@@ -295,6 +295,7 @@ void createPmap(uint64_t finalsize, hashdb &patternset, int maxpatternsize, time
   for (int i = 0; i < maxpatternsize + 1; i++) temp[i] = 0;
   setPvals(0L, temp, Phashmap); // fill in Pvals to be 0 for S_1
   *(tally[1][0]) += 1;
+  if (!justcount) completelist[1][0] = 0;
 
   hashdb prefixmap(1<<3);
   addprefixes(patternset, prefixmap);
