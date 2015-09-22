@@ -86,7 +86,9 @@ void addprefixeshelper(uint64_t perm, int length, hashdb &table) {
   uint32_t seenpos = 0; // bit map of which letters we've seen so far
   for (int i = 0; i < length; i++) {
     extendnormalizetop(perm, inverse, length, i, entry, seenpos);
-    if (!table.contains(entry)) table.add(entry);
+    if (!table.contains(entry)) {
+      table.add(entry);
+    }
   }
 }
 

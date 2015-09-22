@@ -216,7 +216,7 @@ void buildavoiders_brute(const hashdb &patternset, int maxavoidsize, int maxsize
 static bool isavoider(uint64_t perm, uint64_t inverse, int maxavoidsize, int length, const hashdb &avoidset, const hashdb &patternset, const hashdb &prefixmap) {
   if (GETSTAT) stat1++;
   if (length <= maxavoidsize && patternset.contains(perm)) { // if perm is an offending pattern
-      return false;
+    return false;
   }
   uint32_t seenpos = 0; // will be a bitmap used for prefix creation
   uint64_t prefixentry = 0; // will contains the coplement of the normalization of the prefix of perm we're currently looking at
@@ -236,11 +236,14 @@ static bool isavoider(uint64_t perm, uint64_t inverse, int maxavoidsize, int len
 
       if (USEPREFIXMAP) {
 	extendnormalizetop(perm, inverse, length, length - 1 - i, prefixentry, seenpos); // defined in perm.cpp
-	if (i < length - 1 && !prefixmap.contains(prefixentry)) return true; 
+	if (i < length - 1 && !prefixmap.contains(prefixentry)) {
+	  return true;
+	}
 	if (i == length - maxavoidsize) return false; // in this case, the prefix must actually be a pattern
       }
     }
   }
+  if (length == 4) displayperm(perm);
   return true;
 }
 

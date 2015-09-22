@@ -23,7 +23,7 @@
 using namespace std;
 
 int main() {
-  string patternlist = "123 213"; // write pattern set as list of strings
+  string patternlist = "123 4231"; // write pattern set as list of strings
 
   // example building S_n(Pi)
   vector < list < uint64_t > > avoiders; // avoiders[i] will store the avoiders appearing in S_i
@@ -38,7 +38,6 @@ int main() {
 
   cout<<"-------------------"<<endl;
   // example counting |S_n(Pi)| (slightly faster than building)
-  patternlist = "123 213"; // write pattern set as list of strings
   vector < uint64_t > numavoiders; // numavoiders[i] will store |S_i(Pi)|
   countavoidersfrompatternlist(patternlist, 10, numavoiders); 
   for (int i = 1; i <= 10; i++) {
@@ -47,14 +46,17 @@ int main() {
 
   // example using countpatterns
   cout<<"-------------------"<<endl;
-  patternlist = "123 213";
   vector < vector <int> > tally;
   vector < vector <int> > completelist;
-  countpatterns(patternlist, 10, tally, completelist, false, false);
-  string permtocheck = "21345";
+  countpatterns(patternlist, 11, tally, completelist, false, false);
   cout<<"Using pattern set "<<patternlist<<endl;
+  string permtocheck = "52341";
   cout<<"Number of pattern-occurrances in "<<permtocheck<<" is "<<completelist[permtocheck.size()][permtonum(stringtoperm(permtocheck), permtocheck.size())]<<endl;
-  cout<<"Number of permutations in S_10 with no patterns appearing is "<<tally[10][0]<<endl;
-  cout<<"Number of permutations in S_10 with 1 pattern appearing is "<<tally[10][1]<<endl;
+  permtocheck = "21345";
+  cout<<"Number of pattern-occurrances in "<<permtocheck<<" is "<<completelist[permtocheck.size()][permtonum(stringtoperm(permtocheck), permtocheck.size())]<<endl;
+  for (int i = 1; i <= 11; i++) {
+    cout<<"Number of permutations in S_"<<i<<" with no patterns appearing is "<<tally[i][0]<<endl;
+    cout<<"Number of permutations in S_"<<i<<" with 1 pattern appearing is "<<tally[i][1]<<endl;
+  }
   return 0;
 }

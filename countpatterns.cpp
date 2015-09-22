@@ -337,7 +337,7 @@ void buildpermutations_tight_helper(uint64_t perm, int currentsize, int finalsiz
 
 // NOTE: TO USE P1, REQUIRES PATTERNS AT LEAST SIZE 3 (I think)
 void buildpermutations_tight(uint64_t perm, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patternset, hashdb &prefixmap, hashmap &Phashmap_read,  cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, bool justcount) {
-    int numnewlevels = maxpatternsize; // is correct
+  int numnewlevels = maxpatternsize; // is correct
   uint64_t newmapsize = 1;
   uint64_t cachedP1s[finalsize]; // Why is this final size sized?
   for (uint64_t j = currentsize + 1; j <= currentsize + numnewlevels; j++) newmapsize *= j;
@@ -356,7 +356,7 @@ void buildpermutations_tight(uint64_t perm, int currentsize, int finalsize, int 
 // Note: patterns in patternset required to be in S_{>1}
 void createtally_tight(uint64_t finalsize, hashdb &patternset, int maxpatternsize, timestamp_t start_time,  cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, bool verbose, bool justcount) {
   uint64_t currentsize = 1;
-  int numnewlevels = maxpatternsize + 1;
+  int numnewlevels = maxpatternsize;
   unsigned long long reservedspace = 0;
   for (int i = 1; i <= 1 + numnewlevels; i++) reservedspace += factorial(i);
   hashmap Phashmap(reservedspace * 3, sizeof(short)*(maxpatternsize + 1)); // initialize hash table of Pvals // should be automatically optimized out in brute-force version 
@@ -371,11 +371,9 @@ void createtally_tight(uint64_t finalsize, hashdb &patternset, int maxpatternsiz
 
   hashdb prefixmap(1<<3);
   addprefixes(patternset, prefixmap);
-  createPmap(1 + numnewlevels, patternset, maxpatternsize , start_time, Phashmap, tally, completelist, verbose, true, true);
+  createPmap(numnewlevels, patternset, maxpatternsize , start_time, Phashmap, tally, completelist, verbose, justcount, true);
   cout<<"Ended initialization"<<endl;
-  cilk_spawn buildpermutations_tight(1L, 2, finalsize, maxpatternsize, finalsize, patternset, prefixmap, Phashmap, tally, completelist, justcount);
-  cilk_spawn buildpermutations_tight(16L, 2, finalsize, maxpatternsize, finalsize, patternset, prefixmap, Phashmap, tally, completelist, justcount);
-  cilk_sync;
+  buildpermutations_tight(0L, 1, finalsize, maxpatternsize, finalsize, patternset, prefixmap, Phashmap, tally, completelist, justcount);
   timestamp_t current_time = get_timestamp();
   if (verbose) cout<< "Time elapsed to build perms of size "<<finalsize<<" in seconds: "<<(current_time - start_time)/1000000.0L<<endl;
   return;
