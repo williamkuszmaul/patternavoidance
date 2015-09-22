@@ -293,7 +293,8 @@ void buildpermutations(uint64_t perm, int currentsize, int finalsize, int maxpat
 void createPmap(uint64_t finalsize, hashdb &patternset, int maxpatternsize, timestamp_t start_time, hashmap &Phashmap,  cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, bool verbose, bool justcount, bool recordallPvals) {
   unsigned short temp[maxpatternsize + 1];
   for (int i = 0; i < maxpatternsize + 1; i++) temp[i] = 0;
-  setPvals(0L, temp, Phashmap); // fill in Pvals to be 0 for
+  setPvals(0L, temp, Phashmap); // fill in Pvals to be 0 for S_1
+  *(tally[1][0]) += 1;
 
   hashdb prefixmap(1<<3);
   addprefixes(patternset, prefixmap);
@@ -367,7 +368,7 @@ void createtally_tight(uint64_t finalsize, hashdb &patternset, int maxpatternsiz
 
   unsigned short temp[maxpatternsize + 1];
   for (int i = 0; i < maxpatternsize + 1; i++) temp[i] = 0;
-  setPvals(0L, temp, Phashmap); // fill in Pvals to be 0 for id in S_1
+  
 
   hashdb prefixmap(1<<3);
   addprefixes(patternset, prefixmap);

@@ -257,9 +257,10 @@ static bool isavoider(uint64_t perm, uint64_t inverse, int maxavoidsize, int len
 // avoidervector[i] (for i > 0). plannedavoisetsize should be large if
 // we expect a major computation and small otherwise (dictates how
 // much memory is initially allocated to data structures at start of
-// algorithm.).
+// algorithm.).  If using bithack, fills in future_bitmaps to contain
+// the bitmaps for the avoiders of size maxsize.
 // Note: Patternset patterns required to be size >= 2
-void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vector < list <uint64_t> > &avoidervector, vector < uint64_t > &numavoiders, bool justcount, uint64_t plannedavoidsetsize) {
+void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vector < list <uint64_t> > &avoidervector, vector < uint32_t > &future_bitmaps, vector < uint64_t > &numavoiders, bool justcount, uint64_t plannedavoidsetsize) {
   if (!justcount) avoidervector.resize(maxsize + 1);
   else numavoiders.resize(maxsize + 1);
 
@@ -328,6 +329,13 @@ void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vec
       for (int i = currentlength; i >= 0; i--) {
 	if (getbit(bitmap, i) == 1) {
 	  bitmaps.push(insertbit(bitmap, i + 1, 1)); // using which insertion positions resulted in an avoider, build bitmap for each new avoider
+	}
+      }
+    }
+    if (USEBITHACK && currentlength + 1 == maxsize) {
+      for (int i = currentlength; i >= 0; i--) {
+	if (getbit(bitmap, i) == 1) {
+	  future_bitmaps.push_back(insertbit(bitmap, i + 1, 1)); 
 	}
       }
     }
@@ -437,14 +445,13 @@ void buildavoiders_tight(const hashdb &patternset, int maxavoidsize, int maxsize
   hashdb currentavoiders(1<<10);
   kmin1perms[0].push_back(0);
   vector < list < uint64_t > > avoidervector2(maxavoidsize);
-  buildavoiders(patternset, maxavoidsize, maxavoidsize - 1, avoidervector2, numavoiders, false, (1L << 10));
+  buildavoiders(patternset, maxavoidsize, maxavoidsize - 1, avoidervector2, bitmaps, numavoiders, false, (1L << 10));
   for (int i = 1; i < maxavoidsize; i++) {
     if (justcount) numavoiders[i] = avoidervector2[i].size();
     if (!justcount) avoidervector[i] = avoidervector2[i];
     for (std::list<uint64_t>::iterator it = avoidervector2[i].begin(); it != avoidervector2[i].end(); ++it) {
       kmin1perms[i].push_back(*it);
       if (i == maxavoidsize - 1) {
-	bitmaps.push_back((1 << (maxavoidsize )) - 1);
 	currentavoiders.add(*it);
       }
     }
