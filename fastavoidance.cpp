@@ -609,7 +609,7 @@ void countavoidersfromfile_parallel(ifstream &infile, ofstream &outfile, int max
     std::swap(output[i], numavoiders);
     clock_gettime(CLOCK_MONOTONIC, &end);
     tdiffs[i] = (end.tv_sec - start.tv_sec)*1000000000 + (end.tv_nsec - start.tv_nsec);
-    printf("Another finished \n");
+    //printf("Another finished \n");
   }
   long long maxv = 0, sumv = 0;
   for (auto v : tdiffs) {

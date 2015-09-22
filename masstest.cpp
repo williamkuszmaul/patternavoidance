@@ -15,6 +15,7 @@
 #include <sys/time.h>
 #include "fastavoidance.h"
 #include "buildinput.h"
+#include "perm.h"
 #include "oeislocal.h"
 using namespace std;
 
@@ -125,7 +126,7 @@ uint64_t factorial(int n) {
 
 int main() {
   
-  bool data_built = true; // To just run OEIS analysis since sequence files prebuilt
+  bool data_built = false; // To just run OEIS analysis since sequence files prebuilt
   int minpermsize = 5;
   int patternsize = 4;
   int maxpermsize = 16;
@@ -138,7 +139,10 @@ int main() {
   cout<<"Building sets up to trivial Wilf-equivalence..."<<endl;
   if (!data_built) buildwilfeqsets(setsfilename, patternsize, factorial(patternsize), minsetsize);
   cout<<"Building sequences up to "<<maxpermsize<<"..."<<endl;
+  timestamp_t start_time = get_timestamp();
   if (!data_built) setstosequences(setsfilename, sequencesfilename, maxpermsize);
+  timestamp_t end_time = get_timestamp();
+  if (!data_built) cout<<(start_time - end_time) / 1000000.0L<<" seconds for initial computation."<<endl;
   cout<<"Building local version of OEIS..."<<endl;
   // ON OTHER COMPUTERS, STRIPPED AND NAMES FILES WILL HAVE TO BE CORRECTLY REFERRED TO
   Oeis OEIS("stripped", "names", maxpermsize - minpermsize + 1, 15); //Note: we allow sequences to start in any of positions 1, 2, ..., 15
