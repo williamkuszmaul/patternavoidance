@@ -25,7 +25,7 @@ using namespace std;
 #define USEBITHACK 1 // 1 to use a bithack inspired by permlab; implemented both for brute force and non-brute force algs.
 #define USEPREFIXMAP 1 // only has meaning in non-brute force algorithm. 1 to use the trick which checks for each i-prefix of w whether it is order-isomorphic to an i-prefix of some \pi \in \Pi
 #define SINGLEPATTERNOPT 1 // 1 if you want brute-force algorithm to test for each pattern separately rather than use hash table of pattern prefixes to check for all patterns at once whether a subsequence is order isomorphic to any pattern prefixes. Gets some speedup for single-pattern case.
-#define USEBRUTE 0 // whether to use brute-force algorithm
+#define USEBRUTE 1 // whether to use brute-force algorithm
 #define VERBOSE 0 // whether to be verbose. normally should be false
 #define GETSTAT 0 // whether or not to collect statistics -- slows things down a bit. Only used in function run_interior_experiment, and is optionally used for countavoidersfromfile when verbose argument is given to function. Is not implemented for SINGLEPATTERNOPT
 
@@ -243,7 +243,7 @@ static bool isavoider(uint64_t perm, uint64_t inverse, int maxavoidsize, int len
       }
     }
   }
-  if (length == 4) displayperm(perm);
+  //if (length == 4) displayperm(perm);
   return true;
 }
 
@@ -405,6 +405,7 @@ void buildavoiders_tight_helper(uint64_t perm, uint64_t inverse, uint64_t length
       uint64_t extendedperm = setdigit(addpos(perm, i), i, length);
       
       for (uint64_t cand_pos = candidates_prev_end_pos + 1; cand_pos < next_candidates.size(); cand_pos++) {
+	//displayperm(next_candidates[cand_pos]);
 	uint64_t next_candidate = next_candidates[cand_pos]; 
 	int norm_counter = 0; // ends up being position of length + 1 relative to the first length letters of candidate.
 	for (int t = 0; t < candidate_length; t++) {
@@ -418,8 +419,10 @@ void buildavoiders_tight_helper(uint64_t perm, uint64_t inverse, uint64_t length
 	candidates_end_pos = cand_pos;
       }
       // cout<<candidates_prev_end_pos + 1<<" "<<candidates_end_pos<<" "<<next_candidates.size()<<" "<<length<<endl;
-      cilk_spawn buildavoiders_tight_helper(extendedperm, nextinverse, length + 1, patternset, prefixmap,maxavoidsize, maxsize,  avoidervector, numavoiders, justcount, next_candidates, candidates_prev_end_pos + 1, candidates_end_pos, avoiderset_write, bitmaps);
-      candidates_prev_end_pos = candidates_end_pos;
+      if (candidates_prev_end_pos + 1 <= candidates_end_pos) {
+	cilk_spawn 	buildavoiders_tight_helper(extendedperm, nextinverse, length + 1, patternset, prefixmap,maxavoidsize, maxsize,  avoidervector, numavoiders, justcount, next_candidates, candidates_prev_end_pos + 1, candidates_end_pos, avoiderset_write, bitmaps);
+	candidates_prev_end_pos = candidates_end_pos;
+      }
     }
   }
   cilk_sync;
