@@ -139,10 +139,12 @@ void extendnormalizetop(perm_t perm, perm_t inverse, int length, int index, perm
 
 // works if key is 64 bit integer
 // requires maxsize is a power of two. Returns a number from zero to maxsize - 1.
-inline unsigned long long hash_perm (perm_t key, uint64_t maxsize)
+inline unsigned long long hash_perm (perm_t key_in, uint64_t maxsize)
 {
-  if (numbits == 128) key = key + (key >> 61); // for 128 bit case
-  if (numbits == 256) key = key + (key >> 61) + (key >> 126) + (key >> 189); 
+  perm_t bits = ((perm_t) 1 << 64) - 1;
+  uint64_t key = (uint64_t)(key_in & bits);
+  if (numbits == 128) key = (uint64_t) (bits & (key_in + (key_in >> 61))); // for 128 bit case
+  if (numbits == 256) key = (uint64_t) (bits & (key_in + (key_in >> 61) + (key_in >> 126) + (key_in >> 189))); 
   key = (~key) + (key << 21); // key = (key << 21) - key - 1;
   key = key ^ (key >> 24);
   key = (key + (key << 3)) + (key << 8); // key * 265
