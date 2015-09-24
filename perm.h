@@ -27,7 +27,7 @@ using namespace std;
 #define LETTERSIZE 5
 typedef boost::multiprecision::uint128_t perm_t;
 #define LETTERFACE ((((perm_t) 1) << LETTERSIZE) - (perm_t)1)
-// NOTE: WE USE SIZEOF(PERM_T) IN WAYS THAT WILL NOT BE VALID IF THERE IS ANY EXTRA BAGGAGE ON PERM_T, BUT ONLY IN THIS FILE
+//  NOTE: WE USE SIZEOF(PERM_T) IN WAYS THAT WILL NOT BE VALID IF THERE IS ANY EXTRA BAGGAGE ON PERM_T, BUT ONLY IN THIS FILE
 typedef unsigned long long timestamp_t;
 
 
