@@ -17,15 +17,17 @@
 #include <iostream>
 #include <fstream>
 #include <queue>
+//#include <boost/multiprecision/cpp_int.hpp>
 #include "math.h"
 #include <sys/time.h>
 #include <vector>
-#include "hashdb.h"
 using namespace std;
 
 
-
+#define LETTERSIZE 4
+#define LETTERFACE ((1L << LETTERSIZE) - 1)
 typedef unsigned long long timestamp_t;
+typedef uint64_t perm_t;
 
 // copied from http://stackoverflow.com/questions/1861294/how-to-calculate-execution-time-of-a-code-snippet-in-c
 static timestamp_t
@@ -37,31 +39,31 @@ static timestamp_t
 }
 
 // indexing starts at 0 for both position and value in permutation
-inline uint64_t getdigit(uint64_t perm, int index) {
-  return (perm >> (index * 4))  & 15L; // grab digit
+inline uint64_t getdigit(perm_t perm, int index) {
+  return (perm >> (index * LETTERSIZE))  & LETTERFACE; // grab digit
 }
 
 // indexing starts at 0 for both position and value in permutation
-inline uint64_t setdigit(uint64_t perm, int index, uint64_t newdigit) {
-  return (perm & ~(15L << (index * 4))) |  (newdigit << (index * 4)); // clear digit and then rewrite its value
+inline perm_t setdigit(perm_t perm, int index, uint64_t newdigit) {
+  return (perm & ~(LETTERFACE << (index * LETTERSIZE))) |  (newdigit << (index * LETTERSIZE)); // clear digit and then rewrite its value
 }
 
-inline uint64_t incrementdigit(uint64_t perm, int index) {
-  return (perm + (1L << (4 * index)));
+inline perm_t incrementdigit(perm_t perm, int index) {
+  return (perm + (1L << (LETTERSIZE * index)));
 }
 
-inline uint64_t decrementdigit(uint64_t perm, int index) {
-  return (perm - (1L << (4 * index)));
+inline perm_t decrementdigit(perm_t perm, int index) {
+  return (perm - (1L << (LETTERSIZE * index)));
 }
 
 
 
-inline void displayperm(uint64_t perm) {
-  for (int i = 0; i < 16; i++) cout<<getdigit(perm, i)<<" ";
+inline void displayperm(perm_t perm) {
+  for (int i = 0; i < sizeof(perm_t) * 8 / LETTERSIZE; i++) cout<<getdigit(perm, i)<<" ";
   cout<<endl;
 }
 
-inline void displayperm(uint64_t perm, int size) {
+inline void displayperm(perm_t perm, int size) {
   for (int i = 0; i < size; i++) cout<<getdigit(perm, i)<<" ";
   cout<<endl;
 }
@@ -69,23 +71,23 @@ inline void displayperm(uint64_t perm, int size) {
 
 // kills digit in position index (with indexing startign at zero)
 // DOES NOT NORMALIZE PERMUTATION AFTERWARDS
-inline uint64_t killpos(uint64_t perm, int index) {
-  uint64_t bottom = perm & ((1L << (4 * index)) - 1);
-  uint64_t top = perm & ((~ 0L) - ((1L << (4 * index + 4)) - 1));
-  if (index == 15) return bottom; // top is ill-defined in this case
-  return bottom + (top >> 4); 
+inline perm_t killpos(perm_t perm, int index) {
+  perm_t bottom = perm & ((1L << (LETTERSIZE * index)) - 1);
+  perm_t top = perm & ((~ 0L) - ((1L << (LETTERSIZE * index + LETTERSIZE)) - 1));
+  if ((LETTERSIZE * index + LETTERSIZE) == (sizeof(perm_t) << 3)) return bottom; // top is ill-defined in this case
+  return bottom + (top >> LETTERSIZE); 
 }
 
 // inserts a blank in position index
-inline uint64_t addpos(uint64_t perm, int index) {
-  uint64_t bottom = perm & ((1L << (4 * index)) - 1);
-  uint64_t top = perm & ((~ 0L) - ((1L << (4 * index)) - 1));
-  return bottom + (top << 4);
+inline perm_t addpos(perm_t perm, int index) {
+  perm_t bottom = perm & ((1L << (LETTERSIZE * index)) - 1);
+  perm_t top = perm & ((~ 0L) - ((1L << (LETTERSIZE * index)) - 1));
+  return bottom + (top << LETTERSIZE);
 }
 
 
-inline uint64_t getinverse(uint64_t perm, int length) {
-  uint64_t answer = 0;
+inline perm_t getinverse(perm_t perm, int length) {
+  perm_t answer = 0;
   for (int i = 0; i < length; i++) {
     answer = setdigit(answer, getdigit(perm, i), i);
   }
@@ -93,42 +95,35 @@ inline uint64_t getinverse(uint64_t perm, int length) {
 }
 
 
-inline uint64_t getreverse(uint64_t perm, int length) {
-  uint64_t answer = 0;
+inline perm_t getreverse(perm_t perm, int length) {
+  perm_t answer = 0;
   for (int i = 0; i < length; i++) {
     answer = setdigit(answer, i, getdigit(perm, length - i - 1));
   }
   return answer;
 }
 
-inline uint64_t getcomplement(uint64_t perm, int length) {
-  uint64_t answer = 0;
+inline perm_t getcomplement(perm_t perm, int length) {
+  perm_t answer = 0;
   for (int i = 0; i < length; i++) {
     answer = setdigit(answer, i, length - getdigit(perm, i) - 1);
   }
   return answer;
 }
 
-// For patterns in S_{<10} can use like this:
-//  hashdb patternset(1<<3); 
-//  string permlist = "3124 4123 3142 4132";
-//  makepatterns(permlist, patternset);
-// Fills patternset with permutations in permlist, each as a 64 bit integer
-void makepatterns(string permlist, hashdb &patternset, int &maxpatternsize);
-
 // gives permuation corresponding with a string
-inline uint64_t stringtoperm(string perm) {
-  uint64_t answer = 0;
+inline perm_t stringtoperm(string perm) {
+  perm_t answer = 0;
   for (int i = 0; i < perm.size(); i++) answer = setdigit(answer, i, (unsigned long long)(perm[i] - '1'));
   return answer;
 }
 
 // A fast map bijection from S_length to \mathbb{Z}_{length!}
-unsigned long long permtonum(uint64_t perm, int length);
+unsigned long long permtonum(perm_t perm, int length);
 
-inline uint64_t getmaxdigit(uint64_t perm) {
+inline uint64_t getmaxdigit(perm_t perm) {
   uint64_t answer = 0;
-  for (int i = 0; i < 16; i++) {
+  for (int i = 0; i < sizeof(perm_t) * 8 / LETTERSIZE; i++) {
     answer = max(answer, getdigit(perm, i));
   }
   return answer;
@@ -137,10 +132,37 @@ inline uint64_t getmaxdigit(uint64_t perm) {
 
 // Input: perm, perm's inverse (which needs to be correct in position length - index), perm's length, index, answer = complement of normalization of (index)-prefix of perm, a bitmap named seenpos which should start off at zero for index = 0. 
 // Output: bitmap is updated to keep track of the positions in perm of each letter from n - i to n. answer is updated to be complement of normalization of (index + 1)-prefix of perm
-void extendnormalizetop(uint64_t perm, uint64_t inverse, int length, int index, uint64_t &answer, uint32_t & seenpos);
+void extendnormalizetop(perm_t perm, perm_t inverse, int length, int index, perm_t &answer, uint32_t & seenpos);
 
-// build prefix table containing all complements of normalizations of prefixes of every perm in permset
-void addprefixes(const hashdb &permset, hashdb &table);
+// works if key is 64 bit integer
+// requires maxsize is a power of two. Returns a number from zero to maxsize - 1.
+inline unsigned long long hash_perm (perm_t key, uint64_t maxsize)
+{
+  key = (~key) + (key << 21); // key = (key << 21) - key - 1;
+  key = key ^ (key >> 24);
+  key = (key + (key << 3)) + (key << 8); // key * 265
+  key = key ^ (key >> 14);
+  key = (key + (key << 2)) + (key << 4); // key * 21
+  key = key ^ (key >> 28);
+  key = key + (key << 31);
+  return key&(maxsize-1); //assume maxsize is power of two
+  //This hash function comes from http://www.concentric.net/~ttwang/tech/inthash.htm
+}
 
+inline perm_t make_key_nonzero (perm_t key) {
+  return key + 1;
+}
+
+inline perm_t revert_stored_key (perm_t key) {
+  return key - 1;
+}
+
+inline perm_t get_zero_perm () {
+  return 0;
+}
+
+inline void assert_key_nonzero (perm_t key) {
+  assert(key != -1);
+}
 
 #endif 

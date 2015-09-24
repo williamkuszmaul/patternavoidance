@@ -37,13 +37,12 @@ static unsigned long long next_power_of_two(unsigned long long v) {
 
 hashdb :: hashdb(unsigned long long startsize)
     : averageinsertiontime(0)
-    , array(new unsigned long long [next_power_of_two(startsize)])
+    , array(new perm_t [next_power_of_two(startsize)])
     , maxsize(next_power_of_two(startsize))
     , size(0)
-    , prevplace(0)
 { //The initial maxsize is startsize
   //cout<<maxsize<<endl;
-  memset(array, 0, startsize*sizeof(*array));
+  memset(array, 0, startsize * sizeof(*array));
 }
 
 hashdb :: ~hashdb() {
@@ -54,69 +53,66 @@ unsigned long long hashdb :: getsize () const {
   return size;
 }
 
-void hashdb :: add (unsigned long long element){
-  assert(element != -1L);
+void hashdb :: add (perm_t perm){
+  perm_t element = make_key_nonzero(perm);
+  assert_key_nonzero(element);
   if(size >= maxsize/2){ //up to 50% full before we resize
     hashdb temp = hashdb(maxsize*2);
-    unsigned long long *oldarray = array;
+    perm_t *oldarray = array;
     for(unsigned long long x=0; x<maxsize; x++){
-      if(array[x]!=0) temp.add(array[x]-1); //add all of the original elements
+      if(array[x] != get_zero_perm()) temp.add(revert_stored_key(array[x])); //add all of the original elements
     }
     *this = temp;
     temp.array = oldarray; // so that when the destructor runs on temp, it frees the oldarray, not the new array.  It's ugly, but...
   }
-  unsigned long long place = hash(element);
-  while(array[place]!=0 && array[place] != element + 1){
+  unsigned long long place = hash_perm(element, maxsize);
+  while(array[place]!=0 && array[place] != element){
     place=(place+1) & (maxsize - 1);
     averageinsertiontime++;
   }
-  if (array[place] != element + 1) {
+  if (array[place] != element) {
     size++;
-    array[place] = element+1; // we insert element + 1 into the array
+    array[place] = element; // we insert element + 1 into the array
   }
-  prevplace = place;
 }
 
-bool hashdb :: contains (unsigned long long element) const {
-  assert(element != -1L);
-  unsigned long long place = hash(element);
+bool hashdb :: contains (perm_t perm) const {
+  perm_t element = make_key_nonzero(perm);
+  assert_key_nonzero(element);
+  unsigned long long place = hash_perm(element, maxsize);
   while(array[place]!=0){
-    if(array[place]==element+1) return true; //look for element+1 in the array
-    place=(place+1) & (maxsize - 1);
+    if(array[place] == element) return true; //look for element+1 in the array
+    place = (place + 1) & (maxsize - 1);
   }
   return false;
 }
 
 
-unsigned long long hashdb :: hash (unsigned long long key) const
-{
-  key = (~key) + (key << 21); // key = (key << 21) - key - 1;
-  key = key ^ (key >> 24);
-  key = (key + (key << 3)) + (key << 8); // key * 265
-  key = key ^ (key >> 14);
-  key = (key + (key << 2)) + (key << 4); // key * 21
-  key = key ^ (key >> 28);
-  key = key + (key << 31);
-  return key&(maxsize-1); //assume maxsize is power of two
-  //This hash function comes from http://www.concentric.net/~ttwang/tech/inthash.htm
-}
+// unsigned long long hashdb :: hash (unsigned long long key) const
+// {
+//   key = (~key) + (key << 21); // key = (key << 21) - key - 1;
+//   key = key ^ (key >> 24);
+//   key = (key + (key << 3)) + (key << 8); // key * 265
+//   key = key ^ (key >> 14);
+//   key = (key + (key << 2)) + (key << 4); // key * 21
+//   key = key ^ (key >> 28);
+//   key = key + (key << 31);
+//   return key&(maxsize-1); //assume maxsize is power of two
+//   //This hash function comes from http://www.concentric.net/~ttwang/tech/inthash.htm
+// }
 
 unsigned long long hashdb :: getavtime () const { //just to check how well hash function is doing for data set; should round to zero under normal circumstances
   if(size==0) return 0;
   return averageinsertiontime/size;
 }
 
-void hashdb::removeprev() {
-  array[prevplace] = 0;
-}
-
-void hashdb::getvals(vector <unsigned long long> & vals) const{
+void hashdb::getvals(vector <perm_t> & vals) const{
   vals.resize(0);
   int count = 0;
   for (int i = 0; i < maxsize; i++) {
-    if (array[i] != 0) {
+    if (array[i] != get_zero_perm()) {
       count++;
-      vals.push_back(array[i] - 1);
+      vals.push_back(revert_stored_key(array[i]));
     }
   }
   assert(count == size);

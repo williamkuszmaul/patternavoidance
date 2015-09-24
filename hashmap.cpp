@@ -34,11 +34,11 @@ static unsigned long long next_power_of_two(unsigned long long v) {
 }
 
 hashmap :: hashmap(unsigned long long startsize, int payloadsize)
-  : array(new char [(sizeof(unsigned long long) + payloadsize) * next_power_of_two(startsize)])
+  : array(new char [(sizeof(perm_t) + payloadsize) * next_power_of_two(startsize)])
   , maxsize(next_power_of_two(startsize))
   , size(0)
   , payloadsize(payloadsize)
-  , stepsize(payloadsize + sizeof(unsigned long long))
+  , stepsize(payloadsize + sizeof(perm_t))
 {
   memset(array, 0, maxsize * stepsize);
 }
@@ -48,47 +48,36 @@ hashmap :: ~hashmap() {
 }
 
 
-void hashmap :: add (unsigned long long element, void* payload) {
-  assert(element != -1L);
+void hashmap :: add (perm_t perm, void* payload) {
+  perm_t element = make_key_nonzero(perm);
+  assert_key_nonzero(element);
   if(size >= maxsize/2){ //up to 50% full before we resize
     hashmap temp = hashmap(maxsize*2, payloadsize);
     void *oldarray = array;
     for(unsigned long long x=0; x<maxsize; x++){
-      if(getkey(x) != 0) temp.add(getkey(x), getval(x)); //add all of the original elements
+      if(getkey(x) != get_zero_perm()) temp.add(revert_stored_key(getkey(x)), getval(x)); //add all of the original elements
     }
     *this = temp;
     temp.array = oldarray; // so that when the destructor runs on temp, it frees the oldarray, not the new array.  It's ugly, but...
   }
-  unsigned long long place = hash(element);
-  while(getkey(place) != 0 && getkey(place) != element + 1){
+  unsigned long long place = hash_perm(element, maxsize);
+  while(getkey(place) != get_zero_perm() && getkey(place) != element){
     place=(place+1) & (maxsize - 1);
   }
-  if (getkey(place) != element + 1) {
-    setkey(place, element + 1);
+  if (getkey(place) != element) {
+    setkey(place, element);
     setval(place, payload);
     size++;
   }
 }
 
-void * hashmap :: getpayload(unsigned long long element) const {
-    assert(element != -1L);
-    unsigned long long place=hash(element);
-    while(getkey(place) != 0){
-      if(getkey(place) == element+1) return getval(place);
-      place=(place+1) & (maxsize - 1);
-    }
-    return NULL;
-}
-
-unsigned long long hashmap :: hash (unsigned long long key) const
-{
-  key = (~key) + (key << 21); // key = (key << 21) - key - 1;
-  key = key ^ (key >> 24);
-  key = (key + (key << 3)) + (key << 8); // key * 265
-  key = key ^ (key >> 14);
-  key = (key + (key << 2)) + (key << 4); // key * 21
-  key = key ^ (key >> 28);
-  key = key + (key << 31);
-  return key&(maxsize-1); //assume maxsize is power of two
-  //This hash function comes from http://www.concentric.net/~ttwang/tech/inthash.htm
+void * hashmap :: getpayload(perm_t perm) const {
+  perm_t element = make_key_nonzero(perm);
+  assert_key_nonzero(element);
+  unsigned long long place=hash_perm(element, maxsize);
+  while(getkey(place) != get_zero_perm()){
+    if(getkey(place) == element) return getval(place);
+    place = (place+1) & (maxsize - 1);
+  }
+  return NULL;
 }

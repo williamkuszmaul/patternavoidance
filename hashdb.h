@@ -37,25 +37,23 @@ using namespace std;
 #include <string.h>
 #include <vector>
 #include <cassert>
+#include "perm.h"
 
 class hashdb{
 public:
   hashdb(unsigned long long startsize);
   ~hashdb();
-  unsigned long long hash(unsigned long long key) const;
-  void add(unsigned long long element);
-  bool contains(unsigned long long element) const;
+  void add(perm_t perm);
+  bool contains(perm_t perm) const;
   unsigned long long getavtime() const;
-  void removeprev();
   unsigned long long getsize() const;
   // makes vals contain all entries in hash table
-  void getvals(vector <unsigned long long> &vals) const;
+  void getvals(vector <perm_t> &vals) const;
  private:
   unsigned long long averageinsertiontime;
-  unsigned long long *array;
+  perm_t *array;
   unsigned long long maxsize; //empty spots will be initated at 0 and elements will be added as one plus themselves
   unsigned long long size; 
-  unsigned long long prevplace;
 };
 
 #endif

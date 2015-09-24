@@ -9,7 +9,9 @@ Citation information bibtex entry:
   year = {2015},
   howpublished = {\url{github.com/williamkuszmaul/patternavoidance}}
 }
-	
+
+11111111111111111111111111111111111111111111111111 NEED TO CHECK HASHMAP RESIZE
+
 Note: If, for some reason your computer cannot run CILK (which is
 built into G++), replace the code in function
 countavoidersfromfile_parallel in fastavoidance.cpp with a call to

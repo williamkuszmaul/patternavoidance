@@ -42,15 +42,15 @@ using namespace std;
 #include <iostream>
 #include <string.h>
 #include <cassert>
+#include "perm.h"
 
 // NOTE: KEYS ARE ADDED AS 1 + THEMSELVES. SO -1 IS NOT A VALID KEY
 class hashmap{
 public:
   hashmap(unsigned long long startsize, int payloadsize);
   ~hashmap();
-  unsigned long long hash(unsigned long long key) const;
-  void add(unsigned long long element, void *payload);
-  void* getpayload(unsigned long long element) const;
+  void add(perm_t perm, void *payload);
+  void* getpayload(perm_t perm) const;
   inline unsigned long long getsize () const {
     return size;
   }
@@ -59,21 +59,21 @@ public:
   unsigned long long size; // number of elts presents
   void *array;
   unsigned int payloadsize; // size of payload
-  unsigned int stepsize; // payload + key size (payloadsize + sizeof(unsigned long long))
-  inline unsigned long long getkey(unsigned int index) const {
-    return *(unsigned long long*)((char*)array + stepsize * index);
+  unsigned int stepsize; // payload + key size (payloadsize + sizeof(perm_t))
+  inline perm_t getkey(unsigned int index) const {
+    return *(perm_t*)((char*)array + stepsize * index);
   }
   
-  inline void  setkey(unsigned int index, unsigned long long key) const {
-    *(unsigned long long*)((char*)array + stepsize * index) = key;
+  inline void  setkey(unsigned int index, perm_t key) const {
+    *(perm_t*)((char*)array + stepsize * index) = key;
   }
   
   inline void*  getval(unsigned int index) const {
-    return (char*)array + stepsize * index + sizeof(unsigned long long);
+    return (char*)array + stepsize * index + sizeof(perm_t);
   }
   
   inline void  setval(unsigned int index, void *value) const {
-    memcpy((char*)array + stepsize * index + sizeof(unsigned long long), value, payloadsize);
+    memcpy((char*)array + stepsize * index + sizeof(perm_t), value, payloadsize);
   }
   
 };

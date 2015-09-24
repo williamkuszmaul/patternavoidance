@@ -26,7 +26,7 @@ default: $(TESTS)
 .PHONY: default clean
 # phony because default and clean are not files
 
-%:  fastavoidance.cpp countpatterns.cpp buildinput.cpp oeislocal.cpp hashdb.cpp hashmap.cpp perm.cpp %.cpp
+%:  fastavoidance.cpp countpatterns.cpp buildinput.cpp oeislocal.cpp hashdb.cpp hashmap.cpp perm.cpp utilities.cpp %.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 # To start over from scratch, type 'make clean'.  This

@@ -16,6 +16,7 @@
 #include "hashdb.h"
 #include <sys/time.h>
 #include "fastavoidance.h"
+#include "utilities.h"
 #include "buildinput.h"
 #include "oeislocal.h"
 #include "countpatterns.h"

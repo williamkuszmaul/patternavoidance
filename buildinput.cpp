@@ -93,10 +93,10 @@ bool isminset(Bitmap& bitmap, vector <int> &reverseindices, vector <int> &invers
 }
 
 // Builds all permutations of size finalsize. Adds them to optionvals and the string representation of them to patternoptions
-void buildpermutations(uint64_t perm, int currentsize, int finalsize, vector <string> &patternoptions, vector <uint64_t> &optionvals) {
+void buildpermutations(perm_t perm, int currentsize, int finalsize, vector <string> &patternoptions, vector <perm_t> &optionvals) {
   if (currentsize < finalsize) {
     for (int i = 0; i < currentsize + 1; i++) {
-      uint64_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
+      perm_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
       buildpermutations(extendedperm, currentsize + 1, finalsize, patternoptions, optionvals);
     }
   }
@@ -171,7 +171,7 @@ void writepatternsetstofile(ofstream &file, int patternsize, bool verbose) {
   vector<int> inverseindices;
   vector<int> complementindices;
   vector <string> options; // stores string representation of S_patternsize
-  vector <uint64_t> optionvals; // stores each element of S_patternsize as unsigned long long
+  vector <perm_t> optionvals; // stores each element of S_patternsize as unsigned long long
   buildpermutations(0L, 1, patternsize, options, optionvals); // builds options and optionvals
   int numoptions = options.size();
   for (int i = 0; i < optionvals.size(); i++) { // builds permutations mapping each element of options to its reverse, inverse, and complement respectively
@@ -212,7 +212,7 @@ void writepatternsetstofile(ofstream &file, int setsize, int patternsize, bool v
   vector<int> inverseindices;
   vector<int> complementindices;
   vector <string> options; // stores string representation of S_patternsize
-  vector <uint64_t> optionvals; // stores each element of S_patternsize as unsigned long long
+  vector <perm_t> optionvals; // stores each element of S_patternsize as unsigned long long
   buildpermutations(0L, 1, patternsize, options, optionvals); // builds options and optionvals
   int numoptions = options.size();
   for (int i = 0; i < optionvals.size(); i++) { // builds permutations mapping each element of options to its reverse, inverse, and complement respectively
