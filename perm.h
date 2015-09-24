@@ -26,6 +26,7 @@ using namespace std;
 
 #define LETTERSIZE 5
 typedef boost::multiprecision::uint128_t perm_t;
+#define numbits 128
 #define LETTERFACE ((((perm_t) 1) << LETTERSIZE) - (perm_t)1)
 //  NOTE: WE USE SIZEOF(PERM_T) IN WAYS THAT WILL NOT BE VALID IF THERE IS ANY EXTRA BAGGAGE ON PERM_T, BUT ONLY IN THIS FILE
 typedef unsigned long long timestamp_t;
@@ -61,7 +62,7 @@ inline perm_t decrementdigit(perm_t perm, int index) {
 
 
 inline void displayperm(perm_t perm) {
-  for (int i = 0; i < sizeof(perm_t) * 8 / LETTERSIZE; i++) cout<<getdigit(perm, i)<<" ";
+  for (int i = 0; i < numbits / LETTERSIZE; i++) cout<<getdigit(perm, i)<<" ";
   cout<<endl;
 }
 
@@ -76,7 +77,7 @@ inline void displayperm(perm_t perm, int size) {
 inline perm_t killpos(perm_t perm, int index) {
   perm_t bottom = perm & (((perm_t)1 << (LETTERSIZE * index)) - 1);
   perm_t top = perm & ((~ (perm_t)0) - (((perm_t)1 << (LETTERSIZE * index + LETTERSIZE)) - 1));
-  if ((LETTERSIZE * index + LETTERSIZE) == (sizeof(perm_t) << 3)) return bottom; // top is ill-defined in this case
+  if ((LETTERSIZE * index + LETTERSIZE) == numbits) return bottom; // top is ill-defined in this case
   return bottom + (top >> LETTERSIZE); 
 }
 
@@ -125,7 +126,7 @@ unsigned long long permtonum(perm_t perm, int length);
 
 inline uint64_t getmaxdigit(perm_t perm) {
   uint64_t answer = 0;
-  for (int i = 0; i < sizeof(perm_t) * 8 / LETTERSIZE; i++) {
+  for (int i = 0; i < numbits / LETTERSIZE; i++) {
     answer = max(answer, getdigit(perm, i));
   }
   return answer;
@@ -140,7 +141,8 @@ void extendnormalizetop(perm_t perm, perm_t inverse, int length, int index, perm
 // requires maxsize is a power of two. Returns a number from zero to maxsize - 1.
 inline unsigned long long hash_perm (perm_t key, uint64_t maxsize)
 {
-  if (sizeof(key) == 16) key = key + (key >> 31); // for 128 bit case
+  if (numbits == 128) key = key + (key >> 61); // for 128 bit case
+  if (numbits == 256) key = key + (key >> 61) + (key >> 126) + (key >> 189); 
   key = (~key) + (key << 21); // key = (key << 21) - key - 1;
   key = key ^ (key >> 24);
   key = (key + (key << 3)) + (key << 8); // key * 265

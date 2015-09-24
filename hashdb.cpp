@@ -42,7 +42,9 @@ hashdb :: hashdb(unsigned long long startsize)
     , size(0)
 { //The initial maxsize is startsize
   //cout<<maxsize<<endl;
-  memset(array, 0, startsize * sizeof(*array));
+  for (int i = 0; i < maxsize; i++) array[i] = 0;
+  // below code was not working with uint256_t because is not properly setting to zeros.
+  // memset(array, 0, startsize * sizeof(*array));
 }
 
 hashdb :: ~hashdb() {
