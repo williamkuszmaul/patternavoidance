@@ -17,17 +17,19 @@
 #include <iostream>
 #include <fstream>
 #include <queue>
-//#include <boost/multiprecision/cpp_int.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
 #include "math.h"
 #include <sys/time.h>
 #include <vector>
 using namespace std;
 
 
-#define LETTERSIZE 4
-#define LETTERFACE ((1L << LETTERSIZE) - 1)
+#define LETTERSIZE 5
+typedef boost::multiprecision::uint128_t perm_t;
+#define LETTERFACE ((((perm_t) 1) << LETTERSIZE) - (perm_t)1)
+// NOTE: WE USE SIZEOF(PERM_T) IN WAYS THAT WILL NOT BE VALID IF THERE IS ANY EXTRA BAGGAGE ON PERM_T, BUT ONLY IN THIS FILE
 typedef unsigned long long timestamp_t;
-typedef uint64_t perm_t;
+
 
 // copied from http://stackoverflow.com/questions/1861294/how-to-calculate-execution-time-of-a-code-snippet-in-c
 static timestamp_t
@@ -40,20 +42,20 @@ static timestamp_t
 
 // indexing starts at 0 for both position and value in permutation
 inline uint64_t getdigit(perm_t perm, int index) {
-  return (perm >> (index * LETTERSIZE))  & LETTERFACE; // grab digit
+  return (uint64_t)((perm >> (index * LETTERSIZE))  & LETTERFACE); // grab digit
 }
 
 // indexing starts at 0 for both position and value in permutation
 inline perm_t setdigit(perm_t perm, int index, uint64_t newdigit) {
-  return (perm & ~(LETTERFACE << (index * LETTERSIZE))) |  (newdigit << (index * LETTERSIZE)); // clear digit and then rewrite its value
+  return (perm & ~((perm_t)LETTERFACE << (index * LETTERSIZE))) |  ((perm_t)newdigit << (index * LETTERSIZE)); // clear digit and then rewrite its value
 }
 
 inline perm_t incrementdigit(perm_t perm, int index) {
-  return (perm + (1L << (LETTERSIZE * index)));
+  return (perm + ((perm_t)1 << (LETTERSIZE * index)));
 }
 
 inline perm_t decrementdigit(perm_t perm, int index) {
-  return (perm - (1L << (LETTERSIZE * index)));
+  return (perm - ((perm_t)1 << (LETTERSIZE * index)));
 }
 
 
@@ -72,16 +74,16 @@ inline void displayperm(perm_t perm, int size) {
 // kills digit in position index (with indexing startign at zero)
 // DOES NOT NORMALIZE PERMUTATION AFTERWARDS
 inline perm_t killpos(perm_t perm, int index) {
-  perm_t bottom = perm & ((1L << (LETTERSIZE * index)) - 1);
-  perm_t top = perm & ((~ 0L) - ((1L << (LETTERSIZE * index + LETTERSIZE)) - 1));
+  perm_t bottom = perm & (((perm_t)1 << (LETTERSIZE * index)) - 1);
+  perm_t top = perm & ((~ (perm_t)0) - (((perm_t)1 << (LETTERSIZE * index + LETTERSIZE)) - 1));
   if ((LETTERSIZE * index + LETTERSIZE) == (sizeof(perm_t) << 3)) return bottom; // top is ill-defined in this case
   return bottom + (top >> LETTERSIZE); 
 }
 
 // inserts a blank in position index
 inline perm_t addpos(perm_t perm, int index) {
-  perm_t bottom = perm & ((1L << (LETTERSIZE * index)) - 1);
-  perm_t top = perm & ((~ 0L) - ((1L << (LETTERSIZE * index)) - 1));
+  perm_t bottom = perm & (((perm_t)1 << (LETTERSIZE * index)) - 1);
+  perm_t top = perm & ((~ (perm_t)0) - (((perm_t)1 << (LETTERSIZE * index)) - 1));
   return bottom + (top << LETTERSIZE);
 }
 
@@ -138,6 +140,7 @@ void extendnormalizetop(perm_t perm, perm_t inverse, int length, int index, perm
 // requires maxsize is a power of two. Returns a number from zero to maxsize - 1.
 inline unsigned long long hash_perm (perm_t key, uint64_t maxsize)
 {
+  if (sizeof(key) == 16) key = key + (key >> 31); // for 128 bit case
   key = (~key) + (key << 21); // key = (key << 21) - key - 1;
   key = key ^ (key >> 24);
   key = (key + (key << 3)) + (key << 8); // key * 265
@@ -145,7 +148,7 @@ inline unsigned long long hash_perm (perm_t key, uint64_t maxsize)
   key = (key + (key << 2)) + (key << 4); // key * 21
   key = key ^ (key >> 28);
   key = key + (key << 31);
-  return key&(maxsize-1); //assume maxsize is power of two
+  return ((uint64_t)key) & (maxsize-1); //assume maxsize is power of two
   //This hash function comes from http://www.concentric.net/~ttwang/tech/inthash.htm
 }
 

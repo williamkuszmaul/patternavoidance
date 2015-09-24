@@ -112,7 +112,7 @@ void buildpermutations(perm_t perm, int currentsize, int finalsize, vector <stri
 
 
 // Finds position of val in a vector of values. There is probably a C++ built-in for this...
-int find(vector<uint64_t> &vec, uint64_t val) {
+int find(vector<perm_t> &vec, perm_t val) {
   for (int i = 0; i < vec.size(); i++) {
     if (vec[i] == val) return i;
   }
