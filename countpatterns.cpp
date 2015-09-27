@@ -1,4 +1,3 @@
-
 #include <bitset>
 #include <cassert>
 #include <cmath>
@@ -44,7 +43,7 @@ unsigned long long factorial(long long num) {
 }
 
 // updates tally
-void increasetally(uint64_t *tally, uint64_t val) {
+void increasetally(cilk::reducer< cilk::op_add<uint64_t> > *tally, uint64_t val) {
   // if (val + 1 > tally.size()) {
   //   uint64_t oldsize = tally.size();
   //   uint64_t size = oldsize;
@@ -55,7 +54,7 @@ void increasetally(uint64_t *tally, uint64_t val) {
   //   for (int i = oldsize; i < size; i++) tally[i] = 0;
   // }
   //assert(val < tally.size());
-  tally[val] += 1;
+  *(tally[val]) += 1;
 }
 
 // Recursively checks whether perm contains a pattern from patternset.
@@ -93,7 +92,7 @@ static void checkpatterns(perm_t perm, perm_t inverse, perm_t currentpatterncomp
 }
 
 // constructs the permutations of size finalsize. Then passes on paramaters to checkpatterns, in order to find number of patterns appearing in each permutation
-void buildpermutations_brute(perm_t perm, perm_t inverse, int currentsize, int finalsize, int maxpatternsize, hashdb &prefixmap, uint64_t **tally, vector < vector < int > > &completelist, int addfactor, bool justcount) {
+void buildpermutations_brute(perm_t perm, perm_t inverse, int currentsize, int finalsize, int maxpatternsize, hashdb &prefixmap, cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, int addfactor, bool justcount) {
   int count = 0;
   checkpatterns(perm, inverse, 0, 0, currentsize, maxpatternsize, 0, prefixmap, count);
   if (USEADDFACTOR) count += addfactor; // add factor is P_0(perm\downarrow_1)
@@ -106,15 +105,14 @@ void buildpermutations_brute(perm_t perm, perm_t inverse, int currentsize, int f
       // need to increment newinverse[perm[i]], decrement newinverse[length]
       if (i < currentsize) newinverse = decrementdigit(incrementdigit(newinverse, getdigit(perm, i)), currentsize);
       perm_t extendedperm = setdigit(addpos(perm, i), i, currentsize); // extendedperm = perm\uparrow^{i + 1}
-      //cilk_spawn
-      buildpermutations_brute(extendedperm, newinverse, currentsize + 1, finalsize, maxpatternsize, prefixmap, tally, completelist, count, justcount);
+      cilk_spawn buildpermutations_brute(extendedperm, newinverse, currentsize + 1, finalsize, maxpatternsize, prefixmap, tally, completelist, count, justcount);
     }
-    //cilk_sync;
+    cilk_sync;
   }
 }
 
 // same as buildpermutations_brute but with USESECONDADDFACTOR installed
-void buildpermutations_brute_usingbothaddfactors(perm_t perm, perm_t inverse, int currentsize, int finalsize, int maxpatternsize, hashdb &prefixmap, uint64_t **tally, vector < vector < int > > &completelist, int prevcount, int* prevextensions, bool justcount) {
+void buildpermutations_brute_usingbothaddfactors(perm_t perm, perm_t inverse, int currentsize, int finalsize, int maxpatternsize, hashdb &prefixmap, cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, int prevcount, int* prevextensions, bool justcount) {
   int actualcounts[currentsize + 1]; // Each P_0(perm\uparrow^{i + 1})
   int newextensions[currentsize + 1]; // Each P_1(perm\uparrow^{i + 1})
   perm_t newinverse = setdigit(inverse, currentsize, currentsize); // inverse of the perm\uparrow^{currentsize + 1}
@@ -140,14 +138,13 @@ void buildpermutations_brute_usingbothaddfactors(perm_t perm, perm_t inverse, in
       // need to increment newinverse[perm[i]], decrement newinverse[length]
       if (i < currentsize) newinverse = newinverse + (1L << (4 * getdigit(perm, i))) - (1L << (4 * currentsize));
       perm_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
-      //cilk_spawn
-      buildpermutations_brute_usingbothaddfactors(extendedperm, newinverse, currentsize + 1, finalsize, maxpatternsize, prefixmap, tally, completelist, actualcounts[i], newextensions, justcount);
+      cilk_spawn buildpermutations_brute_usingbothaddfactors(extendedperm, newinverse, currentsize + 1, finalsize, maxpatternsize, prefixmap, tally, completelist, actualcounts[i], newextensions, justcount);
     }
   }
-  //cilk_sync;
+  cilk_sync;
 }
 
-void start_brute(int maxpatternsize, int maxpermsize, hashdb &patternset, uint64_t **tally, vector < vector < int > > &completelist, bool verbose, bool justcount) {
+void start_brute(int maxpatternsize, int maxpermsize, hashdb &patternset, cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, bool verbose, bool justcount) {
   if (verbose && !USESECONDADDFACTOR) cout<<"Using Brute Force Algorithm"<<endl;
   if (verbose && USESECONDADDFACTOR) cout<<"Using Hybrid Algorithm"<<endl;
 
@@ -194,10 +191,10 @@ inline unsigned short getPval(perm_t perm, int i, const hashmap &Phashmap) {
 // Inputs perm \in S_length, set of pattern patternset with longest pattern of size maxpatternsize, tally, completelist.
 // Computes P_i(perm) for i from 0 , ... , maxpatternsize + 1; and if length < maxpermsize. stores all but final one
 // Updates tally and completelist using P_0(perm). Only updates completelist of justcount is false
-// Phashmap_read contains all Pvals previously computed 
+// Phashmap_read contains all Pvals previously computed
 // Phashmap_write is for Pvals to be written to
 // patternset contains the complements of the normalizations of the prefixes of patterns
-static void Pcount(perm_t perm, int length, int maxpatternsize, const hashdb &patternset, const hashdb &prefixmap, const hashmap &Phashmap_read, hashmap &Phashmap_write, uint64_t prevP0, uint64_t prevP1, uint64_t **tally, vector < vector < int > > &completelist, bool justcount, bool recordPval) {
+static void Pcount(perm_t perm, int length, int maxpatternsize, const hashdb &patternset, const hashdb &prefixmap, const hashmap &Phashmap_read, hashmap &Phashmap_write, uint64_t prevP0, uint64_t prevP1, cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, bool justcount, bool recordPval) {
   perm_t inverse = getinverse(perm, length);
   unsigned short Pvals[maxpatternsize + 2]; // indices range from [0...maxpatternsize+1]. Assumes no Pvals as short as large as 63504. Will not work, for example, for counting id_10 patterns in id_20.
   int Pvalpos = maxpatternsize + 1;
@@ -269,7 +266,7 @@ static void Pcount(perm_t perm, int length, int maxpatternsize, const hashdb &pa
 // Requires that it has already been run for each smaller currentsize >= 1
 // Note first call to this function should be with currentsize = 1
 // Uses non-memory efficient algorithm, is NOT parallized using Cilk.
-void buildpermutations_raw_dynamic(perm_t perm, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patternset, hashdb &prefixmap, hashmap &Phashmap,  uint64_t **tally, vector < vector < int > > &completelist, uint64_t *cachedP1s, bool justcount, bool recordallPvals) {
+void buildpermutations_raw_dynamic(perm_t perm, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patternset, hashdb &prefixmap, hashmap &Phashmap,  cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, uint64_t *cachedP1s, bool justcount, bool recordallPvals) {
   if (USEOLDP1 && currentsize == finalsize - 2) {
     for (int i = 0; i < currentsize + 1; i++) {
       perm_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
@@ -295,11 +292,11 @@ void buildpermutations_raw_dynamic(perm_t perm, int currentsize, int finalsize, 
 // Fills in tally, complete list, and Pvals for all permutation in S_{<= finalsize} (unless justcount, in which case does not fill in completelist)
 // Uses non-memory-efficient un-parallelized algorithm (used to do start case of efficient parallelized alg)
 // Note: patterns in patternset required to be in S_{>1}
-void createPmap(uint64_t finalsize, hashdb &patternset, int maxpatternsize, timestamp_t start_time, hashmap &Phashmap, uint64_t **tally, vector < vector < int > > &completelist, bool verbose, bool justcount, bool recordallPvals) {
+void createPmap(uint64_t finalsize, hashdb &patternset, int maxpatternsize, timestamp_t start_time, hashmap &Phashmap,  cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, bool verbose, bool justcount, bool recordallPvals) {
   unsigned short temp[maxpatternsize + 1];
   for (int i = 0; i < maxpatternsize + 1; i++) temp[i] = 0;
   setPvals(0L, temp, Phashmap); // fill in Pvals to be 0 for S_1
-  tally[1][0] += 1;
+  *(tally[1][0]) += 1;
   if (!justcount) completelist[1][0] = 0;
 
   hashdb prefixmap(1<<3);
@@ -316,7 +313,7 @@ void createPmap(uint64_t finalsize, hashdb &patternset, int maxpatternsize, time
 }
 
 
-void buildpermutations_dynamic_helper(perm_t perm, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patternset, hashdb &prefixmap, hashmap &Phashmap_read, hashmap &Phashmap_write,  uint64_t **tally, vector < vector < int > > &completelist, uint64_t *cachedP1s, bool justcount) {
+void buildpermutations_dynamic_helper(perm_t perm, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patternset, hashdb &prefixmap, hashmap &Phashmap_read, hashmap &Phashmap_write,  cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, uint64_t *cachedP1s, bool justcount) {
   if (USEOLDP1 && currentsize == finalsize - 2) {
     for (int i = 0; i < currentsize + 1; i++) {
       perm_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
@@ -342,7 +339,7 @@ void buildpermutations_dynamic_helper(perm_t perm, int currentsize, int finalsiz
 
 // Implements depth-first dynamic algorithm using O(n^{k+1}k)-memory and O(n!k) time (see paper.pdf)
 // NOTE: TO USE P1, REQUIRES PATTERNS AT LEAST SIZE 3
-void buildpermutations_dynamic(perm_t perm, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patternset, hashdb &prefixmap, hashmap &Phashmap_read,  uint64_t **tally, vector < vector < int > > &completelist, bool justcount) {
+void buildpermutations_dynamic(perm_t perm, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patternset, hashdb &prefixmap, hashmap &Phashmap_read,  cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, bool justcount) {
   int numnewlevels = maxpatternsize; // is correct
   uint64_t newmapsize = 1;
   uint64_t cachedP1s[finalsize];
@@ -350,7 +347,6 @@ void buildpermutations_dynamic(perm_t perm, int currentsize, int finalsize, int 
   if (currentsize > finalsize - 1 - maxpatternsize) newmapsize = 0;
   hashmap Phashmap_write(newmapsize * 3, sizeof(short)*(maxpatternsize + 1));
   buildpermutations_dynamic_helper(perm, currentsize, currentsize + numnewlevels, maxpatternsize, maxpermsize, patternset, prefixmap, Phashmap_read, Phashmap_write, tally, completelist, cachedP1s, justcount);
-  //cout<<Phashmap_write.getsize()<<" "<<newmapsize<<endl;
   for (int i = 0; i < currentsize + 1; i++) {
     perm_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
     if (currentsize <= finalsize  - 1 - maxpatternsize) {
@@ -363,7 +359,7 @@ void buildpermutations_dynamic(perm_t perm, int currentsize, int finalsize, int 
 
 // Fills in tally, complete list, and Pvals for all permutation in S_{<= finalsize} (unless justcount, in which case does not fill in completelist)
 // Note: patterns in patternset required to be in S_{> 2}
-void createtally_dynamic(uint64_t finalsize, hashdb &patternset, int maxpatternsize, timestamp_t start_time,  uint64_t**tally, vector < vector < int > > &completelist, bool verbose, bool justcount) {
+void createtally_dynamic(uint64_t finalsize, hashdb &patternset, int maxpatternsize, timestamp_t start_time,  cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, bool verbose, bool justcount) {
   uint64_t currentsize = 1;
   int numnewlevels = maxpatternsize;
   unsigned long long reservedspace = 0;
@@ -430,9 +426,9 @@ double run_interior_experiment2(string patternlist, int maxpermsize) {
   for (int i = 1; i <= maxpermsize - 1; i++) reservedspace += factorial(i);
   timestamp_t current_time = get_timestamp();
   uint64_t maxtally = choose(maxpermsize, maxpatternsize) * patternset.getsize();
-  uint64_t  *tallytemp[maxpermsize + 1];
+  cilk::reducer< cilk::op_add<uint64_t> >  *tallytemp[maxpermsize + 1];
   for(int i = 0; i < maxpermsize + 1; i++) {
-    tallytemp[i] = new uint64_t[maxtally + 1];
+    tallytemp[i] = new cilk::reducer< cilk::op_add<uint64_t> >[maxtally + 1];
   }
   if (USEBRUTE)  start_brute(maxpatternsize, maxpermsize, patternset, tallytemp, completelist, verbose, true);
   else {
@@ -443,11 +439,11 @@ double run_interior_experiment2(string patternlist, int maxpermsize) {
   for (int j = 0; j <= maxpermsize; j++) {
     int largestval = 0;
     for (int i = 0; i < maxpermsize + 1; i++) {
-      if (tallytemp[j][i] != 0) largestval = i;
+      if (tallytemp[j][i].get_value() != 0) largestval = i;
     }
     tally[j].resize(largestval + 1);
     for (int i = 0; i <= largestval; i++) {
-      tally[j][i] = tallytemp[j][i];
+      tally[j][i] = tallytemp[j][i].get_value();
     }
   }
   for(int i = 0; i < maxpermsize + 1; i++) {
@@ -495,25 +491,25 @@ void countpatterns(string patternlist, int maxpermsize, vector < vector <int> > 
     }
   }
   uint64_t maxtally = choose(maxpermsize, maxpatternsize) * patternset.getsize();
-  uint64_t  *tallytemp[maxpermsize + 1];
+  cilk::reducer< cilk::op_add<uint64_t> >  *tallytemp[maxpermsize + 1];
   for(int i = 0; i < maxpermsize + 1; i++) {
-    tallytemp[i] = new uint64_t [maxtally + 1];
+    tallytemp[i] = new cilk::reducer< cilk::op_add<uint64_t> >[maxtally + 1];
   }
   if (USEBRUTE)  start_brute(maxpatternsize, maxpermsize, patternset, tallytemp, completelist, verbose, justcount);
   else {
     //hashmap Phashmap(reservedspace * 3, sizeof(short)*(maxpatternsize + 1)); // initialize hash table of Pvals // should be automatically optimized out in brute-force version
-    //createPmap(maxpermsize, patternset, maxpatternsize, current_time, Phashmap, tallytemp, completelist, verbose, justcount, false);
+    //createPmap(maxpermsize, patternset, maxpatternsize, current_time, Phashmap, tallytemp, completelist, verbose, justcount);
     createtally_dynamic(maxpermsize, patternset, maxpatternsize, current_time, tallytemp, completelist, verbose, justcount);
   }
   timestamp_t end_time = get_timestamp();
   for (int j = 0; j <= maxpermsize; j++) {
     int largestval = 0;
     for (int i = 0; i < maxpermsize + 1; i++) {
-      if (tallytemp[j][i] != 0) largestval = i;
+      if (tallytemp[j][i].get_value() != 0) largestval = i;
     }
     tally[j].resize(largestval + 1);
     for (int i = 0; i <= largestval; i++) {
-      tally[j][i] = tallytemp[j][i];
+      tally[j][i] = tallytemp[j][i].get_value();
     }
   }
   for(int i = 0; i < maxpermsize + 1; i++) {
