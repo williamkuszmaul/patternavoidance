@@ -23,11 +23,32 @@
 #include <vector>
 using namespace std;
 
+// Choices are 16, 25, or 42. All three choices work for avoidance
+// code.  However, third choice is much slower than the others
+#define MAXPERMSIZE 25
 
+// permutations up to size 16
+#if (MAXPERMSIZE == 16)
+#define LETTERSIZE 4
+typedef uint64_t perm_t;
+#define numbits 64
+#endif
+// permutations up to size 25
+#if (MAXPERMSIZE == 25)
 #define LETTERSIZE 5
 typedef boost::multiprecision::uint128_t perm_t;
 #define numbits 128
+#endif
+// permutations up to size 42
+#if (MAXPERMSIZE == 42)
+#define LETTERSIZE 6
+typedef boost::multiprecision::uint256_t perm_t;
+#define numbits 256
+#endif
+
 #define LETTERFACE ((((perm_t) 1) << LETTERSIZE) - (perm_t)1)
+
+
 //  NOTE: WE USE SIZEOF(PERM_T) IN WAYS THAT WILL NOT BE VALID IF THERE IS ANY EXTRA BAGGAGE ON PERM_T, BUT ONLY IN THIS FILE
 typedef unsigned long long timestamp_t;
 
@@ -141,10 +162,18 @@ void extendnormalizetop(perm_t perm, perm_t inverse, int length, int index, perm
 // requires maxsize is a power of two. Returns a number from zero to maxsize - 1.
 inline unsigned long long hash_perm (perm_t key_in, uint64_t maxsize)
 {
-  perm_t bits = ((perm_t) 1 << 64) - 1;
+#if (numbits <= 64)
+  perm_t bits = ~(0L);
   uint64_t key = (uint64_t)(key_in & bits);
-  if (numbits == 128) key = (uint64_t) (bits & (key_in + (key_in >> 61))); // for 128 bit case
-  if (numbits == 256) key = (uint64_t) (bits & (key_in + (key_in >> 61) + (key_in >> 126) + (key_in >> 189))); 
+#endif
+#if (numbits == 128)
+  perm_t bits = ((perm_t) 1 << 64) - 1;
+  uint64_t key = (uint64_t) (bits & (key_in + (key_in >> 61))); // for 128 bit case
+#endif
+#if (numbits == 256)
+  perm_t bits = ((perm_t) 1 << 64) - 1;
+  uint64_t key = (uint64_t) (bits & (key_in + (key_in >> 61) + (key_in >> 126) + (key_in >> 189)));
+#endif
   key = (~key) + (key << 21); // key = (key << 21) - key - 1;
   key = key ^ (key >> 24);
   key = (key + (key << 3)) + (key << 8); // key * 265
@@ -157,19 +186,27 @@ inline unsigned long long hash_perm (perm_t key_in, uint64_t maxsize)
 }
 
 inline perm_t make_key_nonzero (perm_t key) {
-  return key + 1;
+  return key + 1; // for all permutations we consider, adding 1 is guaranteed to result in a non-zero integer
 }
 
 inline perm_t revert_stored_key (perm_t key) {
   return key - 1;
 }
 
-inline perm_t get_zero_perm () {
-  return 0;
+inline bool not_zero_perm(perm_t key) {
+#if (numbits == 256) // In this case, because of how the boost library works, being zero as an integer is not the same as having all zero bytes.
+  for (int i = 0; i < sizeof(key) / 8; i++) {
+    if (*(((uint64_t *)(&key)) + i) != 0L) {
+	return true;
+    }
+  }
+  return false;
+#endif
+  return key != (perm_t)0;
 }
 
 inline void assert_key_nonzero (perm_t key) {
-  assert(key != -1);
+  assert(not_zero_perm(key));
 }
 
 #endif 

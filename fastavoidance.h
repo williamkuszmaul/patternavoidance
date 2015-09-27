@@ -18,29 +18,16 @@
 #include <stdint.h>
 // #include <unordered_set>
 #include <queue>
+#include "perm.h"
 #include "hashdb.h"
 #include <sys/time.h>
 using namespace std;
-
-
-// Builds the permutations in $S_1, ..., S_maxsize$ avoiding the
-// patterns in patternset, the longest of which is length
-// maxavoidsize. If justcount, does nothing with avoidervector but
-// makes nuavoiders[i] be the number of avoiders in S_i (for i >
-// 0). If !justcount, does nothing with numavoiders, but makes
-// avoidervector contain a vector of all permutations in S_i in
-// avoidervector[i] (for i > 0). plannedavoisetsize should be large if
-// we expect a major computation and small otherwise (dictates how
-// much memory is initially allocated to data structures at start of
-// algorithm.).
-// Note: Patternset patterns required to be size >= 2
-void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vector < vector < uint64_t > > &avoidervector, vector < uint64_t > &numavoiders, bool justcount, uint64_t plannedavoidsetsize);
 
 // Example:
 // string patternlist = "1234 3214"; // space separated list of patterns; need not be same sizes; must be in S_{<10}
 // vector < vector < uint64_t > > avoidervector;
 // buildavoidersfrompatternlist(patternlist, 10, avoidervector); // now avoidervector contains S_n(patternlist) stored in avoidervector[n] for 0 < n < 11
-void buildavoidersfrompatternlist(string patternlist, int maxpermsize, vector < list < uint64_t > > &avoidervector);
+void buildavoidersfrompatternlist(string patternlist, int maxpermsize, vector < list < perm_t > > &avoidervector);
 
 // Example:
 // string patternlist = "1234 3214"; // space separated list of patterns; need not be same sizes; must be in S_{<10}

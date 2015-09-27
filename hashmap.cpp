@@ -55,13 +55,13 @@ void hashmap :: add (perm_t perm, void* payload) {
     hashmap temp = hashmap(maxsize*2, payloadsize);
     void *oldarray = array;
     for(unsigned long long x=0; x<maxsize; x++){
-      if(getkey(x) != get_zero_perm()) temp.add(revert_stored_key(getkey(x)), getval(x)); //add all of the original elements
+      if(not_zero_perm(getkey(x))) temp.add(revert_stored_key(getkey(x)), getval(x)); //add all of the original elements
     }
     *this = temp;
     temp.array = oldarray; // so that when the destructor runs on temp, it frees the oldarray, not the new array.  It's ugly, but...
   }
   unsigned long long place = hash_perm(element, maxsize);
-  while(getkey(place) != get_zero_perm() && getkey(place) != element){
+  while(not_zero_perm(getkey(place)) && getkey(place) != element){
     place=(place+1) & (maxsize - 1);
   }
   if (getkey(place) != element) {
@@ -75,7 +75,7 @@ void * hashmap :: getpayload(perm_t perm) const {
   perm_t element = make_key_nonzero(perm);
   assert_key_nonzero(element);
   unsigned long long place=hash_perm(element, maxsize);
-  while(getkey(place) != get_zero_perm()){
+  while(not_zero_perm(getkey(place))){
     if(getkey(place) == element) return getval(place);
     place = (place+1) & (maxsize - 1);
   }

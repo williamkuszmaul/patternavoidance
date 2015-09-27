@@ -16,9 +16,10 @@
 #include "hashdb.h"
 #include "hashmap.h"
 #include <sys/time.h>
-#include "fastavoidance.h"
+#include "perm.h"
 using namespace std;
 
+// Requires all patterns size 3 or more
 // Example usage:
 // string patternlist = "123 3124";
 // int maxpermize = 10;

@@ -10,21 +10,12 @@ Citation information bibtex entry:
   howpublished = {\url{github.com/williamkuszmaul/patternavoidance}}
 }
 
-11111111111111111111111111111111111111111111111111 NEED TO CHECK HASHMAP RESIZE
-
-Note: If, for some reason your computer cannot run CILK (which is
-built into G++), replace the code in function
-countavoidersfromfile_parallel in fastavoidance.cpp with a call to
-countavoidersfromfile, remove the header #include <cilk/cilk.h> from
-fastavoidance.cpp, and remove the -fcilkplus argument
-from the Makefile. However, this will prevent use of parallelism in
-masstest.cpp.
-
                           Core files
 
 LICENSE: Copyright information.
 
-Makefile: Simple makefile.
+Makefile: Simple makefile. Note, all of our code uses Cilk for
+parallelism.
 
 paper.pdf: Contains in depth discussion of the algorithms implemented
 here. Also, introduces the notation we use in our comments. When
@@ -32,18 +23,20 @@ discussing permutations, we use the same notation as in the paper,
 indexing both position and value at 1 in the comments; the code,
 however, indexes at zero
 
-perm.cpp/.h: We represent permutation in 64-bit integers, using a
-half-byte per letter. We can only represent permutations of size <=
-16. This file contains basic functions for using this
-permutation-representation.
+perm.cpp/.h and utilities.cpp/.h: We represent permutations in
+unsigned integers, a fixed amount of space per letter. For efficiency,
+we cap the size of a permutation at 16. However, changing a macro in
+perm.h allows for this cap to be raised to 25 or 42. These files
+contain basic functions for using our permutation-representation.
 
 fastavoidance.cpp/.h: Implements O(|S_{N-1}(Pi)Nk) algorithm for
 building S_n(Pi) for each n in [1..N] and some set of patterns (which
 need not be the same size) Pi, the largest being of size k. Could
 easily be modified to build S \cap S_n(Pi) for a down-closed set of
-permutation S. Also implements a brute-force algorith an and algorithm
-based on PermLab for the same task; for certain settings, this leads
-to the requirement that Pi comprise patterns of only one size.
+permutation S. Also implements a brute-force algorithm and an
+algorithm based on PermLab for the same task; for certain settings,
+this leads to the requirement that Pi comprise patterns of only one
+size.
 
 countpatterns.cpp/.h: Implements an O(n!k) algorithm for counting the
 number of Pi-patterns appearing in each permutation in S_n for n in
@@ -72,16 +65,16 @@ builds data structures for doing OEIS look-ups using file
 stripped. Comes with user interface for looking up sequences in OEIS
 (using only local copy of OEIS).
 
-hashdb.cpp/.h: A simple linear-probing hash table storing 64 bit
-integers. Often runs several times faster than unordered_set<unsigned
-long long>.
+hashdb.cpp/.h: A simple linear-probing hash table storing perm_t's
+(defined in perm.h). Runs several times faster than using
+unordered_set.
 
 hashmap.cpp/.h: A simple linear-probing hash table for storing
-(unsigned long long, <payload>) pairs. Often runs faster than C++
-unordered map. Payload must be fixed size. No special destructor is
-called on payload.
+(perm_t, <payload>) pairs (with perm_t defined in perm.h). Often runs
+faster than C++ unordered map. Payload must be fixed size. No special
+destructor is called on payload.
 
-                     Usage Example Files
+                     Usage Files
 
 example.cpp: Example use of fastavoidance.h and countpatterns.h
 modules. And a bit of use of perm.h module.
@@ -115,4 +108,21 @@ presented in paper.pdf)
 
 datafolder.tar.gz: Contains compressed output of masstest.cpp.
 
-hashmaptest.cpp: Does a simple test to see if hashmap is working.
+
+                          Settings
+
+To change maximum-possible permutation-size settings, see perm.h.
+To change settings for which pattern-avoidance algorithm to use, see fastavoidance.cpp.
+To change settings for which pattern-counting algorithm to use, see countpatterns.cpp.
+
+                          Version Descriptions
+
+Version 1.0: First version of code. All experiments in paper.pdf
+having to do with generate-and-check, as well as PermLab's algorithm
+were conducted using this version.
+
+Version 2.0: Second version of code. All experiments in paper.pdf
+having to do with our dynamic algorithms are conducted using this
+version (except with cilk_spawn and cilk_sync's deleted to make code
+serial). Introduces memory-efficient implementations of dynamic
+algorithms. Uses Cilk to parallelize algorithms.

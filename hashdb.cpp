@@ -42,9 +42,7 @@ hashdb :: hashdb(unsigned long long startsize)
     , size(0)
 { //The initial maxsize is startsize
   //cout<<maxsize<<endl;
-  for (int i = 0; i < maxsize; i++) array[i] = 0;
-  // below code was not working with uint256_t because is not properly setting to zeros.
-  // memset(array, 0, startsize * sizeof(*array));
+  memset(array, 0, startsize * sizeof(*array));
 }
 
 hashdb :: ~hashdb() {
@@ -62,13 +60,13 @@ void hashdb :: add (perm_t perm){
     hashdb temp = hashdb(maxsize*2);
     perm_t *oldarray = array;
     for(unsigned long long x=0; x<maxsize; x++){
-      if(array[x] != get_zero_perm()) temp.add(revert_stored_key(array[x])); //add all of the original elements
+      if(not_zero_perm(array[x])) temp.add(revert_stored_key(array[x])); //add all of the original elements
     }
     *this = temp;
     temp.array = oldarray; // so that when the destructor runs on temp, it frees the oldarray, not the new array.  It's ugly, but...
   }
   unsigned long long place = hash_perm(element, maxsize);
-  while(array[place]!=0 && array[place] != element){
+  while(not_zero_perm(array[place]) && array[place] != element){
     place=(place+1) & (maxsize - 1);
     averageinsertiontime++;
   }
@@ -82,7 +80,7 @@ bool hashdb :: contains (perm_t perm) const {
   perm_t element = make_key_nonzero(perm);
   assert_key_nonzero(element);
   unsigned long long place = hash_perm(element, maxsize);
-  while(array[place]!=0){
+  while(not_zero_perm(array[place])){
     if(array[place] == element) return true; //look for element+1 in the array
     place = (place + 1) & (maxsize - 1);
   }
@@ -112,7 +110,7 @@ void hashdb::getvals(vector <perm_t> & vals) const{
   vals.resize(0);
   int count = 0;
   for (int i = 0; i < maxsize; i++) {
-    if (array[i] != get_zero_perm()) {
+    if (not_zero_perm(array[i])) {
       count++;
       vals.push_back(revert_stored_key(array[i]));
     }

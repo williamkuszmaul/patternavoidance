@@ -20,18 +20,19 @@
 #include "fastavoidance.h"
 #include "countpatterns.h"
 #include "perm.h"
+#include "utilities.h"
 using namespace std;
 
 int main() {
   string patternlist = "123 4231"; // write pattern set as list of strings
 
   // example building S_n(Pi)
-  vector < list < uint64_t > > avoiders; // avoiders[i] will store the avoiders appearing in S_i
+  vector < list < perm_t > > avoiders; // avoiders[i] will store the avoiders appearing in S_i
   buildavoidersfrompatternlist(patternlist, 8, avoiders); 
   for (int i = 1; i <= 8; i++) {
     cout<<"Number avoiders in S_"<<i<<" of "<<patternlist<<" is "<<avoiders[i].size()<<endl; // print number of avoiders in S_n
     cout<<"Example avoider: "<<endl;
-    uint64_t perm = *(avoiders[i].begin()); // Permutations are represented in 64-bit integers
+    perm_t perm = *(avoiders[i].begin()); // Permutations are represented in 64-bit integers
     displayperm(perm, i); // Permutations have smallest digit 0 instead of 1 -- sorry for this inconsistancy with the patternset format
     cout<<"In particular, the third digit is "<<getdigit(perm, 2)<<endl; // the function getdigit give you the (i-1)-th digit (i.e., indexing starts at zero for digit positions)
   }

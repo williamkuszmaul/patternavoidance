@@ -26,7 +26,7 @@ using namespace std;
 #define USEBITHACK 1 // 1 to use a bithack inspired by permlab; implemented both for brute force and non-brute force algs.
 #define USEPREFIXMAP 1 // only has meaning in non-brute force algorithm. 1 to use the trick which checks for each i-prefix of w whether it is order-isomorphic to an i-prefix of some \pi \in \Pi
 #define SINGLEPATTERNOPT 1 // 1 if you want brute-force algorithm to test for each pattern separately rather than use hash table of pattern prefixes to check for all patterns at once whether a subsequence is order isomorphic to any pattern prefixes. Gets some speedup for single-pattern case.
-#define USEBRUTE 1 // whether to use brute-force algorithm
+#define USEBRUTE 0 // whether to use brute-force algorithm
 #define VERBOSE 0 // whether to be verbose. normally should be false
 #define GETSTAT 0 // whether or not to collect statistics -- slows things down a bit. Only used in function run_interior_experiment, and is optionally used for countavoidersfromfile when verbose argument is given to function. Is not implemented for SINGLEPATTERNOPT
 
@@ -118,13 +118,6 @@ static bool isavoider_brute(perm_t perm, perm_t inverse, int maxavoidsize, int l
   }
 }
 
-// void temp_buildavoiders_brute_helper(perm_t perm, perm_t inverse, uint64_t length, uint32_t bitmap, const hashdb &prefixmap, const vector < vector < perm_t > > & prefixes, vector  < uint64_t > patternlengths) {
-//   for (int i = length; i >= 0; i--) {
-//     cilk_spawn temp_buildavoiders_brute_helper(1, 1, length + 1, bitmap, prefixmap, prefixes, patternlengths);
-//   }
-//   cilk_sync;
-// }
-
 
 void buildavoiders_brute_helper(perm_t perm, perm_t inverse, uint64_t length, uint32_t bitmap, const hashdb &prefixmap, const vector < vector < perm_t > > & prefixes, vector  < uint64_t > & patternlengths, int maxavoidsize, int maxsize,  vector < cilk::reducer< cilk::op_list_append<perm_t> > > &avoidervector, cilk::reducer< cilk::op_add<uint64_t> > *numavoiders, bool justcount) {
   perm_t newinverse = setdigit(inverse, length, length); // inverse of the extended permutation
@@ -210,7 +203,7 @@ void buildavoiders_brute(const hashdb &patternset, int maxavoidsize, int maxsize
 
 // Detects if perm is in S_{length}(patternset), where maxavoidsize is the length of the longest pattern in patternset.
 // Prerequisite:
-// -- The subset of S_{n-1} contained in avoidset is exactly S_{n-1}(patternset)
+// -- The subset of S_{n-1} contained in avoidset contains each perm\downarrow_i for i from 1 to k + 1
 // -- If USEBITHACK, then we also require that the user has already verified that all patterns in perm use both n and n-1.
 // -- If USEPREFIXMAP, prefixmap is used to determine whether prefixes of perm are order isomorphic to prefixes of permutations in patternset
 // prefixmap actually contains the complements of the normalizations of the prefixes of the patterns.
@@ -244,24 +237,25 @@ static bool isavoider(perm_t perm, perm_t inverse, int maxavoidsize, int length,
       }
     }
   }
-  //if (length == 4) displayperm(perm);
   return true;
 }
 
 
-// Builds the permutations in $S_1, ..., S_maxsize$ avoiding the
-// patterns in patternset, the longest of which is length
-// maxavoidsize. If justcount, does nothing with avoidervector but
-// makes nuavoiders[i] be the number of avoiders in S_i (for i >
-// 0). If !justcount, does nothing with numavoiders, but makes
-// avoidervector contain a vector of all permutations in S_i in
-// avoidervector[i] (for i > 0). plannedavoisetsize should be large if
-// we expect a major computation and small otherwise (dictates how
-// much memory is initially allocated to data structures at start of
-// algorithm.).  If using bithack, fills in future_bitmaps to contain
-// the bitmaps for the avoiders of size maxsize.
-// Note: Patternset patterns required to be size >= 2
-void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vector < list <perm_t> > &avoidervector, vector < uint32_t > &future_bitmaps, vector < uint64_t > &numavoiders, bool justcount, uint64_t plannedavoidsetsize) {
+// This is the implementation of the pattern-avoidance algorithm which
+// does not use the memory-efficient optimizations.  Builds the
+// permutations in $S_1, ..., S_maxsize$ avoiding the patterns in
+// patternset, the longest of which is length maxavoidsize. If
+// justcount, does nothing with avoidervector but makes nuavoiders[i]
+// be the number of avoiders in S_i (for i > 0). If !justcount, does
+// nothing with numavoiders, but makes avoidervector contain a vector
+// of all permutations in S_i in avoidervector[i] (for i >
+// 0). plannedavoisetsize should be large if we expect a major
+// computation and small otherwise (dictates how much memory is
+// initially allocated to data structures at start of algorithm.).  If
+// using bithack, fills in future_bitmaps to contain the bitmaps for
+// the avoiders of size maxsize.  Note: Patternset patterns required
+// to be size >= 2
+void buildavoiders_raw_dynamic(const hashdb &patternset, int maxavoidsize, int maxsize,  vector < list <perm_t> > &avoidervector, vector < uint32_t > &future_bitmaps, vector < uint64_t > &numavoiders, bool justcount, uint64_t plannedavoidsetsize) {
   if (!justcount) avoidervector.resize(maxsize + 1);
   else numavoiders.resize(maxsize + 1);
 
@@ -344,42 +338,33 @@ void buildavoiders(const hashdb &patternset, int maxavoidsize, int maxsize,  vec
 }
 
 
+// Implements the depth-first search described in memory-efficient version of dynamic algorithm in paper (see README)
 // length is length of perm, which is k-1 shorter than each of the candidates
-// NOTE: IF JUST COUTN FALSE, THEN AVOIDERVECTOR UPDATE IS NOT THREAD SAFE YET. CAN USE THE LIST REDUCER
-void buildavoiders_tight_helper(perm_t perm, perm_t inverse, uint64_t length, const hashdb &patternset, const hashdb &prefixmap, int maxavoidsize, int maxsize,  vector < cilk::reducer< cilk::op_list_append<perm_t> > > &avoidervector, cilk::reducer< cilk::op_add<uint64_t> > *numavoiders, bool justcount, vector <perm_t> &candidates, int64_t candidate_start_pos, int64_t candidate_end_pos, hashdb &avoiderset_read, vector <uint32_t> &prevbitmaps) {
-  hashdb avoiderset_write(1 << 10);
+// The candidates are the permutations which can be extended to obtain potential elements of C^k(perm) \cap S_{\le n}(\Pi)
+// candidate_start_pos is position of first candidate in candidates, candidate_end_pos position of last
+// avoiderset_read is the hash table C^k(perm\downarrow_1) \cap S_{\le n}(\Pi)
+void buildavoiders_dynamic_helper(perm_t perm, perm_t inverse, uint64_t length, const hashdb &patternset, const hashdb &prefixmap, int maxavoidsize, int maxsize,  vector < cilk::reducer< cilk::op_list_append<perm_t> > > &avoidervector, cilk::reducer< cilk::op_add<uint64_t> > *numavoiders, bool justcount, vector <perm_t> &candidates, int64_t candidate_start_pos, int64_t candidate_end_pos, const hashdb &avoiderset_read, vector <uint32_t> &prevbitmaps) {
+  hashdb avoiderset_write(1 << 8);
   vector <perm_t> next_candidates;
   vector <uint32_t> bitmaps;
   uint64_t candidate_length = length + maxavoidsize - 1;
   for (int64_t pos = candidate_start_pos; pos <= candidate_end_pos; pos++) { // signed because end_pos might be -1
-    //cout<<"----"<<endl;
-    // cout<<candidate_start_pos<<" "<<candidate_end_pos<<endl;
-    // cout<<pos<<" "<<candidates.size()<<endl;
     perm_t candidate = candidates[pos];
-    //displayperm(candidate);
-    // cout<<candidates.size()<<endl;
     perm_t candidate_inverse = getinverse(candidate, candidate_length);
     uint32_t bitmap = prevbitmaps[pos];
-    //cout<<bitmap + 1<<" "<<prevbitmaps[0]<<endl;
     perm_t newinverse = setdigit(candidate_inverse, candidate_length, candidate_length); // inverse of the extended permutation
     for (int i = candidate_length; i >= 0; i--) {
       // need to increment newinverse[candidate[i]], decrement newinverse[currentlength]
       if (i < candidate_length) newinverse = decrementdigit(incrementdigit(newinverse, getdigit(candidate, i)), candidate_length);
-      // TODOD: MAKE BITHACK WORK
       if (!USEBITHACK || getbit(bitmap, i) == 1) { // If we are using bithack, then we only bother extending candidate by inserting value candidate_length in i-th position if the bitmap tells tells us the result is a potential avoider
 	perm_t extendedperm = setdigit(addpos(candidate, i), i, candidate_length); // insert candidate_length in i-th position (remember, values are indexed starting at 0, so results in permutation in S_candidate_length)
 	uint64_t tempstat2 = stat2;
-	//cout<<"extended candidate: "<<endl;
-	//displayperm(extendedperm);
-	//cout<<avoiderset_read.getsize()<<endl;
 	if (isavoider(extendedperm, newinverse, maxavoidsize, candidate_length + 1, avoiderset_read, patternset, prefixmap)) { // if extended permutation is avoider
 	  if (GETSTAT) stat4 += stat2 - tempstat2;
 	  if (!justcount) (*avoidervector[candidate_length + 1]).push_back(extendedperm); // Not implementing this for now
 	  else *(numavoiders[candidate_length + 1]) += 1;
 	  //cout<<"got here..."<<endl;
 	  if (candidate_length + 1 < maxsize) {
-	    //  displayperm(extendedperm);
-	    //cout<<"new candidate :"<<endl;
 	    next_candidates.push_back(extendedperm);
 	    avoiderset_write.add(extendedperm);
 	  }
@@ -406,7 +391,6 @@ void buildavoiders_tight_helper(perm_t perm, perm_t inverse, uint64_t length, co
       perm_t extendedperm = setdigit(addpos(perm, i), i, length);
       
       for (uint64_t cand_pos = candidates_prev_end_pos + 1; cand_pos < next_candidates.size(); cand_pos++) {
-	//displayperm(next_candidates[cand_pos]);
 	perm_t next_candidate = next_candidates[cand_pos]; 
 	int norm_counter = 0; // ends up being position of length + 1 relative to the first length letters of candidate.
 	for (int t = 0; t < candidate_length; t++) {
@@ -416,12 +400,12 @@ void buildavoiders_tight_helper(perm_t perm, perm_t inverse, uint64_t length, co
 	if (norm_counter != i) {
 	  //displayperm(next_candidate);
 	  break;  // If it turns out we're out of candidates who spawn from perm in the tree of candidates, then we're done
+	  // This works, because it turns out we are putting all the candidates with (length + 1) in a given position next to each other.
 	}
 	candidates_end_pos = cand_pos;
       }
-      // cout<<candidates_prev_end_pos + 1<<" "<<candidates_end_pos<<" "<<next_candidates.size()<<" "<<length<<endl;
       if (candidates_prev_end_pos + 1 <= candidates_end_pos) {
-	cilk_spawn 	buildavoiders_tight_helper(extendedperm, nextinverse, length + 1, patternset, prefixmap,maxavoidsize, maxsize,  avoidervector, numavoiders, justcount, next_candidates, candidates_prev_end_pos + 1, candidates_end_pos, avoiderset_write, bitmaps);
+	cilk_spawn buildavoiders_dynamic_helper(extendedperm, nextinverse, length + 1, patternset, prefixmap,maxavoidsize, maxsize,  avoidervector, numavoiders, justcount, next_candidates, candidates_prev_end_pos + 1, candidates_end_pos, avoiderset_write, bitmaps);
 	candidates_prev_end_pos = candidates_end_pos;
       }
     }
@@ -430,10 +414,8 @@ void buildavoiders_tight_helper(perm_t perm, perm_t inverse, uint64_t length, co
 }
 
 
-
-void buildavoiders_tight(const hashdb &patternset, int maxavoidsize, int maxsize,  vector < list < perm_t > > &avoidervector, vector < uint64_t > &numavoiders, bool justcount) {
-  // TODO: STILL HAVE TO FIX THINGS FOR N < K
-  // TODO: THIS BEGINNING PART IS ONLY RIGHT IF ALL PATTERNS ARE SAME SIZE
+// Dynamic buildavoiders algorithm, implemented using asymptoticly memory efficient algorithm, and with Cilk for parallelism
+void buildavoiders_dynamic(const hashdb &patternset, int maxavoidsize, int maxsize,  vector < list < perm_t > > &avoidervector, vector < uint64_t > &numavoiders, bool justcount) {
   if (!justcount) avoidervector.resize(maxsize + 1);
   else numavoiders.resize(maxsize + 1);
 
@@ -449,7 +431,7 @@ void buildavoiders_tight(const hashdb &patternset, int maxavoidsize, int maxsize
   hashdb currentavoiders(1<<10);
   kmin1perms[0].push_back(0);
   vector < list < perm_t > > avoidervector2(maxavoidsize);
-  buildavoiders(patternset, maxavoidsize, maxavoidsize - 1, avoidervector2, bitmaps, numavoiders, false, (1L << 10));
+  buildavoiders_raw_dynamic(patternset, maxavoidsize, maxavoidsize - 1, avoidervector2, bitmaps, numavoiders, false, (1L << 10));
   for (int i = 1; i < maxavoidsize; i++) {
     if (justcount) numavoiders[i] = avoidervector2[i].size();
     if (!justcount) avoidervector[i] = avoidervector2[i];
@@ -460,23 +442,9 @@ void buildavoiders_tight(const hashdb &patternset, int maxavoidsize, int maxsize
       }
     }
   }
-  // for (int i = 1; i < maxavoidsize; i++) {
-  //   for (int x = 0; x < kmin1perms[i - 1].size(); x++) {
-  //     for (int j = i - 1; j >= 0; j--) {
-  // 	uint64_t perm = kmin1perms[i-1][x];
-  // 	uint64_t extendedperm = setdigit(addpos(perm, j), j, i - 1);
-  // 	kmin1perms[i].push_back(extendedperm);
-  // 	if (i == maxavoidsize - 1) {
-  // 	  currentavoiders.add(extendedperm);
-  // 	  bitmaps.push_back((1 << (maxavoidsize )) - 1);
-  // 	  //displayperm(extendederm);
-  // 	}
-  //     }
-  //   }
-  // }
   vector < cilk::reducer< cilk::op_list_append<perm_t> > > avoidervectortemp(maxsize + 1);
   cilk::reducer< cilk::op_add<uint64_t> > numavoiderstemp[maxsize + 1];
-  buildavoiders_tight_helper(0L, 0L, 0L, patternset, prefixmap, maxavoidsize, maxsize, avoidervectortemp, numavoiderstemp, justcount, kmin1perms[maxavoidsize - 1], 0, kmin1perms[maxavoidsize - 1].size() - 1, currentavoiders, bitmaps);
+  buildavoiders_dynamic_helper(0L, 0L, 0L, patternset, prefixmap, maxavoidsize, maxsize, avoidervectortemp, numavoiderstemp, justcount, kmin1perms[maxavoidsize - 1], 0, kmin1perms[maxavoidsize - 1].size() - 1, currentavoiders, bitmaps);
   for (int i = maxavoidsize; i < maxsize + 1; i++) {
     if (!justcount) avoidervector[i] = avoidervectortemp[i].get_value();
     else numavoiders[i] = (uint64_t) numavoiderstemp[i].get_value();
@@ -486,7 +454,7 @@ void buildavoiders_tight(const hashdb &patternset, int maxavoidsize, int maxsize
 
 // Example:
 // string patternlist = "1234 3214"; // space separated list of patterns; need not be same sizes; must be in S_{<10}
-// vector < vector < perm_t > > avoidervector;
+// vector < list < perm_t > > avoidervector;
 // buildavoidersfrompatternlist(patternlist, 10, avoidervector); // now avoidervector contains S_n(patternlist) stored in avoidervector[n] for 0 < n < 11
 void buildavoidersfrompatternlist(string patternlist, int maxpermsize, vector < list < perm_t > > &avoidervector) {
   int maxpatternsize;
@@ -494,7 +462,7 @@ void buildavoidersfrompatternlist(string patternlist, int maxpermsize, vector < 
   makepatterns(patternlist, patternset, maxpatternsize);
   vector < uint64_t > numavoiders;
   if (USEBRUTE) buildavoiders_brute(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, false, (1L << 10));
-  else buildavoiders_tight(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, false); // for large cases, make last argument much larger
+  else buildavoiders_dynamic(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, false); 
 }
 
 // just for use when GETSTAT IS TRUE
@@ -529,7 +497,7 @@ double run_interior_experiment(string patternlist, int maxpermsize) {
   vector < list < perm_t > > avoidervector;
   if (VERBOSE) cout<<"Effective pattern size "<<maxpatternsize<<endl;
   if (USEBRUTE) buildavoiders_brute(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true, (1L << 10));
-  else  buildavoiders_tight(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true); // for large cases, make last argument much larger//buildavoiders(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true, (1L << 10)); // for large cases, could make last argument much larger. But we will not bother in our tests in the paper.
+  else  buildavoiders_dynamic(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true); //buildavoiders_raw_dynamic(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true, (1L << 10)); // for large cases, could make last argument much larger. But we will not bother in our tests in the paper.
   stat3 = numavoiders[maxpermsize];
   timestamp_t end_time = get_timestamp();
   return (end_time - start_time)/1000000.0L;
@@ -548,8 +516,8 @@ void countavoidersfrompatternlist(string patternlist, int maxpermsize, vector < 
   if (USEBRUTE) buildavoiders_brute(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true, (1L << 10));
   
   else {
-    //buildavoiders(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true, (1L << 10)); // for large cases, make last argument much larger
-    buildavoiders_tight(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true); // for large cases, make last argument much larger
+    //buildavoiders_raw_dynamic(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true, (1L << 10)); // for large cases, make last argument much larger
+    buildavoiders_dynamic(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true);
   }
 }
 
@@ -589,7 +557,7 @@ void countavoidersfromfile(ifstream &infile, ofstream &outfile, int maxpermsize,
 }
 
 
-
+// Parallel version of countavoidersfromfile. (Both use parallel dynamic alg. This one also parallelizes work for different sets of patterns)
 void countavoidersfromfile_parallel(ifstream &infile, ofstream &outfile, int maxpermsize, bool verbose) {
   struct timespec start_p,end_p;
   clock_gettime(CLOCK_MONOTONIC, &start_p);
@@ -628,6 +596,5 @@ void countavoidersfromfile_parallel(ifstream &infile, ofstream &outfile, int max
   clock_gettime(CLOCK_MONOTONIC, &end_p);
   long long total_t = (end_p.tv_sec - start_p.tv_sec)*1000000000 + (end_p.tv_nsec - start_p.tv_nsec);
   if (verbose) printf("For total_t=%.6fs maxv=%.6fs sumv=%.6fs parallelism=%f\n", total_t*1e-9, maxv*1e-9, sumv*1e-9, (double)sumv/(double)maxv);
-
   return;
 }
