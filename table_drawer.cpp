@@ -11,6 +11,7 @@
 #include <unordered_set>
 #include <queue>
 #include "countpatterns.h"
+#include "fastavoidance.h"
 using namespace std;
 
 // To deal with a bug in icpc compiler (/usr/include/c++/5.1.1/bits/stl_iterator_base_types.h(155): error: name followed by "::" must be a class or namespace name)
@@ -102,7 +103,7 @@ void test231extensions_avoid(bool getstats) {
   int startk = 3; // just start index. will actually start in first element of bitsets
   int endk = 6;
   int startn = 8;
-  int endn = 13;
+  int endn = 16;
   vector < vector < double  > > runtimes = make_vector < vector < double > > (endk + 1, make_vector < double > (endn + 1, 0));
   vector < vector < uint64_t  > > stat1 = make_vector < vector < uint64_t  > > (endk + 1, make_vector < uint64_t > (endn + 1, 0));
   vector < vector < uint64_t  > > stat2 =  make_vector < vector < uint64_t  > >  (endk + 1, make_vector < uint64_t > (endn + 1, 0));

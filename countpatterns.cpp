@@ -25,6 +25,7 @@ using namespace std;
 // Conventions for comments: We use all the conventions from our paper in our comments. Thus the comments disagree with the code in that they do not zero-index the values or positions of a permutation
 
 // Turn these on to turn brute force algorithm into a memory efficient hybrid between the brute-force algorithm and the asymptotically good algorithm
+// This was added before I found how to make asymptotically good algorithm memory efficient also, and is less relavent now. But still maintained as an option.
 #define USEADDFACTOR 1
 #define USESECONDADDFACTOR 1 // forces useaddfactor on
 
@@ -349,10 +350,11 @@ void buildpermutations_dynamic(perm_t perm, int currentsize, int finalsize, int 
   for (int i = 0; i < currentsize + 1; i++) {
     perm_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
     if (currentsize <= finalsize  - 1 - maxpatternsize) {
-      cilk_spawn buildpermutations_dynamic(extendedperm, currentsize + 1, finalsize, maxpatternsize, maxpermsize, patternset, prefixmap, Phashmap_write, tally, completelist, justcount);
+      //cilk_spawn
+      buildpermutations_dynamic(extendedperm, currentsize + 1, finalsize, maxpatternsize, maxpermsize, patternset, prefixmap, Phashmap_write, tally, completelist, justcount);
     }
   }
-  cilk_sync;
+  //cilk_sync;
 }
 
 // Fills in tally, complete list, and Pvals for all permutation in S_{<= finalsize} (unless justcount, in which case does not fill in completelist)
@@ -375,7 +377,7 @@ void createtally_dynamic(uint64_t finalsize, hashdb &patternset, int maxpatterns
   hashdb prefixmap(1<<3);
   addprefixes(patternset, prefixmap);
   createPmap(numnewlevels, patternset, maxpatternsize , start_time, Phashmap, tally, completelist, verbose, justcount, true);
-  cout<<"Ended initialization"<<endl;
+  //cout<<"Ended initialization"<<endl;
   buildpermutations_dynamic(0L, 1, finalsize, maxpatternsize, finalsize, patternset, prefixmap, Phashmap, tally, completelist, justcount);
   timestamp_t current_time = get_timestamp();
   if (verbose) cout<< "Time elapsed to build perms of size "<<finalsize<<" in seconds: "<<(current_time - start_time)/1000000.0L<<endl;

@@ -25,7 +25,7 @@ using namespace std;
 
 // Choices are 16, 25, or 42. All three choices work for avoidance
 // code.  However, third choice is much slower than the others
-#define MAXPERMSIZE 25
+#define MAXPERMSIZE 16
 
 // permutations up to size 16
 #if (MAXPERMSIZE == 16)
