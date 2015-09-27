@@ -424,8 +424,7 @@ void buildavoiders_dynamic(const hashdb &patternset, int maxavoidsize, int maxsi
   addprefixes(patternset, prefixmap);
   perm_t startperm = 0;
   if (!justcount) avoidervector[1].push_back(startperm);
-  else numavoiders[1] = 1;
-  
+  else numavoiders[1] = 1;  
 
   vector < vector < perm_t > > kmin1perms(maxavoidsize);
   vector < uint32_t > bitmaps;
