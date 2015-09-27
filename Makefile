@@ -6,7 +6,7 @@
 #
 # for C++ define  CC = g++
 CXX = g++
-CXXFLAGS  = -O3 -std=c++11   -march=native -flto -g -fcilkplus 
+CXXFLAGS  = -O3 -std=c++11   -march=native -flto -g -fcilkplus
 # also should include -Wall -W -Werror someday...
 
 # or

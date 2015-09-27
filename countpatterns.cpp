@@ -350,11 +350,10 @@ void buildpermutations_dynamic(perm_t perm, int currentsize, int finalsize, int 
   for (int i = 0; i < currentsize + 1; i++) {
     perm_t extendedperm = setdigit(addpos(perm, i), i, currentsize);
     if (currentsize <= finalsize  - 1 - maxpatternsize) {
-      //cilk_spawn
-      buildpermutations_dynamic(extendedperm, currentsize + 1, finalsize, maxpatternsize, maxpermsize, patternset, prefixmap, Phashmap_write, tally, completelist, justcount);
+      cilk_spawn buildpermutations_dynamic(extendedperm, currentsize + 1, finalsize, maxpatternsize, maxpermsize, patternset, prefixmap, Phashmap_write, tally, completelist, justcount);
     }
   }
-  //cilk_sync;
+  cilk_sync;
 }
 
 // Fills in tally, complete list, and Pvals for all permutation in S_{<= finalsize} (unless justcount, in which case does not fill in completelist)

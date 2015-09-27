@@ -405,13 +405,12 @@ void buildavoiders_dynamic_helper(perm_t perm, perm_t inverse, uint64_t length, 
 	candidates_end_pos = cand_pos;
       }
       if (candidates_prev_end_pos + 1 <= candidates_end_pos) {
-	//cilk_spawn
-	buildavoiders_dynamic_helper(extendedperm, nextinverse, length + 1, patternset, prefixmap,maxavoidsize, maxsize,  avoidervector, numavoiders, justcount, next_candidates, candidates_prev_end_pos + 1, candidates_end_pos, avoiderset_write, bitmaps);
+	cilk_spawn buildavoiders_dynamic_helper(extendedperm, nextinverse, length + 1, patternset, prefixmap,maxavoidsize, maxsize,  avoidervector, numavoiders, justcount, next_candidates, candidates_prev_end_pos + 1, candidates_end_pos, avoiderset_write, bitmaps);
 	candidates_prev_end_pos = candidates_end_pos;
       }
     }
   }
-  //cilk_sync;
+  cilk_sync;
 }
 
 

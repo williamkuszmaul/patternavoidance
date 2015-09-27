@@ -103,13 +103,10 @@ results into tables. To use, put settings of fastavoidance.cpp and
 countpatterns.cpp to the algorithms you want to test, pick which tests
 in table_drawer.cpp you want to run, and compile and run table_drawer.
 
-data.txt: Contains outputs for table_drawer.cpp. (most of which are
-presented in paper.pdf)
-
 datafolder.tar.gz: Contains compressed output of masstest.cpp.
 
 
-                          Settings
+                               Settings
 
 To change maximum-possible permutation-size settings, see perm.h.
 To change settings for which pattern-avoidance algorithm to use, see fastavoidance.cpp.
@@ -123,6 +120,6 @@ were conducted using this version.
 
 Version 2.0: Second version of code. All experiments in paper.pdf
 having to do with our dynamic algorithms are conducted using this
-version (except with cilk_spawn and cilk_sync's deleted to make code
-serial). Introduces memory-efficient implementations of dynamic
+version (in serial using compiler settings -D_Cilk_spawn=
+-D_Cilk_sync=). Introduces memory-efficient implementations of dynamic
 algorithms. Uses Cilk to parallelize algorithms.
