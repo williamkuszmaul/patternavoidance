@@ -180,11 +180,11 @@ inline void setPvals(perm_t perm, unsigned short* payload, hashmap &Phashmap) {
 
 // Returns P_i(perm)
 inline unsigned short getPval(perm_t perm, int i, const hashmap &Phashmap) {
-  if (Phashmap.getpayload(perm) == NULL) { // !!
-    cout<<"perm read failed: "<<endl;
-    displayperm(perm);
-  }
-  assert(Phashmap.getpayload(perm) != NULL); // !!
+  // if (Phashmap.getpayload(perm) == NULL) { // !!
+  //   cout<<"perm read failed: "<<endl;
+  //   displayperm(perm);
+  // }
+  // assert(Phashmap.getpayload(perm) != NULL); // !!
   return ((unsigned short*)Phashmap.getpayload(perm))[i];
 }
 
@@ -343,8 +343,9 @@ void buildpermutations_dynamic_helper(perm_t perm, int currentsize, int finalsiz
 void buildpermutations_dynamic(perm_t perm, int currentsize, int finalsize, int maxpatternsize, int maxpermsize, hashdb &patternset, hashdb &prefixmap, hashmap &Phashmap_read,  cilk::reducer< cilk::op_add<uint64_t> > **tally, vector < vector < int > > &completelist, bool justcount) {
   int numnewlevels = maxpatternsize; // is correct
   uint64_t newmapsize = 1;
-  uint64_t cachedP1s[finalsize]; // Why is this final size sized?
+  uint64_t cachedP1s[finalsize];
   for (uint64_t j = currentsize + 1; j <= currentsize + numnewlevels; j++) newmapsize *= j;
+  if (currentsize > finalsize - 1 - maxpatternsize) newmapsize = 0;
   hashmap Phashmap_write(newmapsize * 3, sizeof(short)*(maxpatternsize + 1));
   buildpermutations_dynamic_helper(perm, currentsize, currentsize + numnewlevels, maxpatternsize, maxpermsize, patternset, prefixmap, Phashmap_read, Phashmap_write, tally, completelist, cachedP1s, justcount);
   for (int i = 0; i < currentsize + 1; i++) {

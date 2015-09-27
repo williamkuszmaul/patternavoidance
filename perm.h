@@ -163,8 +163,7 @@ void extendnormalizetop(perm_t perm, perm_t inverse, int length, int index, perm
 inline unsigned long long hash_perm (perm_t key_in, uint64_t maxsize)
 {
 #if (numbits <= 64)
-  perm_t bits = ~(0L);
-  uint64_t key = (uint64_t)(key_in & bits);
+  uint64_t key = key_in;
 #endif
 #if (numbits == 128)
   perm_t bits = ((perm_t) 1 << 64) - 1;
