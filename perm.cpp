@@ -22,7 +22,7 @@ using namespace std;
 unsigned long long permtonum(perm_t perm, int length) {
   int answer = 0;
   unsigned long long fac = 1; // will be updated to take values of factorials
-  uint64_t seenletters = 0; // bit map of which letters we've seen so far
+  uint32_t seenletters = 0; // bit map of which letters we've seen so far
   for (int i = length - 1; i >= 0; i--) {
     unsigned long long facdig = 0; // will be the number of letters to the right of the i-th letter with value less than the i-th letter
     int digit = getdigit(perm, i);

@@ -26,7 +26,7 @@ however, indexes at zero
 perm.cpp/.h and utilities.cpp/.h: We represent permutations in
 unsigned integers, a fixed amount of space per letter. For efficiency,
 we cap the size of a permutation at 16. However, changing a macro in
-perm.h allows for this cap to be raised to 25 or 42. These files
+perm.h allows for this cap to be raised to 25 or 31. These files
 contain basic functions for using our permutation-representation.
 
 fastavoidance.cpp/.h: Implements O(|S_{N-1}(Pi)Nk) algorithm for

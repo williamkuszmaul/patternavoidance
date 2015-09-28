@@ -23,8 +23,8 @@
 #include <vector>
 using namespace std;
 
-// Choices are 16, 25, or 42. All three choices work for avoidance
-// code.  However, third choice is much slower than the others
+// Choices are 16, 25, or 31. All three choices work for avoidance
+// code.  However, third choice is much slower than the others.
 #define MAXPERMSIZE 16
 
 // permutations up to size 16
@@ -39,8 +39,8 @@ typedef uint64_t perm_t;
 typedef boost::multiprecision::uint128_t perm_t;
 #define numbits 128
 #endif
-// permutations up to size 42
-#if (MAXPERMSIZE == 42)
+// permutations up to size 31
+#if (MAXPERMSIZE == 31) // this is capped at 32 because we are using 31-bit bitmaps to keep track of positions of letters. This could easily be changed to get up to 42, if we used 64-bit bit maps.
 #define LETTERSIZE 6
 typedef boost::multiprecision::uint256_t perm_t;
 #define numbits 256
