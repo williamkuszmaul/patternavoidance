@@ -123,3 +123,5 @@ having to do with our dynamic algorithms are conducted using this
 version (in serial using compiler settings -D_Cilk_spawn=
 -D_Cilk_sync=). Introduces memory-efficient implementations of dynamic
 algorithms. Uses Cilk to parallelize algorithms.
+
+Version 2.1: Fixed minor bugs in code and paper.
