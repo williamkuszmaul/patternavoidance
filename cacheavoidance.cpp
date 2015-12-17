@@ -273,9 +273,11 @@ static bool isavoider(perm_t perm, perm_t inverse, int maxavoidsize, int length,
 // the avoiders of size maxsize.  Note: Patternset patterns required
 // to be size >= 2
 
+// FAILS HERE FOR PATTERNS SIZE 3
 // Now we require patterns size >= 3 for new avoidmap representation
 // returns a hashmap, but note that this requires copying only constant amount of space
 hashmap buildavoiders_raw_dynamic(const hashdb &patternset, int maxavoidsize, int maxsize,  vector < list <perm_t> > &avoidervector, vector < uint64_t > &future_bitmaps, vector < uint64_t > &numavoiders, bool justcount, uint64_t plannedavoidsetsize) {
+  cout<<maxsize<<endl;
   if (!justcount) avoidervector.resize(maxsize + 1);
   else numavoiders.resize(maxsize + 1);
 
@@ -299,6 +301,13 @@ hashmap buildavoiders_raw_dynamic(const hashdb &patternset, int maxavoidsize, in
     numavoiders[2] = 2;
   }
   
+  if (maxsize == 2) {
+    if (USEBITHACK) {
+      future_bitmaps.push_back(7L);
+      future_bitmaps.push_back(7L);
+    }
+    return avoidmap; 
+  }
   std::queue<perm_t> avoiderstoextend; // queue of avoiders built so far.
   // when we find an avoider, we will add it to this queue. We will
   // then later take it out of the queue and use it to generate
@@ -556,7 +565,6 @@ void buildavoiders_dynamic(const hashdb &patternset, int maxavoidsize, int maxsi
   //hashdb currentavoiders(1<<10);
   kmin1perms[0].push_back(0);
   vector < list < perm_t > > avoidervector2(maxavoidsize);
-  
   hashmap currentavoiders = buildavoiders_raw_dynamic(patternset, maxavoidsize, maxavoidsize - 1, avoidervector2, bitmaps, numavoiders, false, (1L << 10));
   for (int i = 1; i < maxavoidsize; i++) {
     if (justcount) numavoiders[i] = avoidervector2[i].size();
