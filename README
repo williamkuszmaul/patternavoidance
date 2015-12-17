@@ -34,9 +34,9 @@ building S_n(Pi) for each n in [1..N] and some set of patterns (which
 need not be the same size) Pi, the largest being of size k. Could
 easily be modified to build S \cap S_n(Pi) for a down-closed set of
 permutation S. Also implements a brute-force algorithm and an
-algorithm based on PermLab for the same task; for certain settings,
-this leads to the requirement that Pi comprise patterns of only one
-size.
+algorithm based on PermLab for the same task; if SINGLEPATTERNOPT (in
+cacheavoidance.cpp) is false, then we require that Pi comprise
+patterns of only one size.
 
 countpatterns.cpp/.h: Implements an O(n!k) algorithm for counting the
 number of Pi-patterns appearing in each permutation in S_n for n in

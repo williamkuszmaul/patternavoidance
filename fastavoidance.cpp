@@ -547,7 +547,8 @@ void countavoidersfromfile(ifstream &infile, ofstream &outfile, int maxpermsize,
     }
     if (verbose) cout<<endl;
     outfile<<endl;
-    if (verbose) cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
+    //    if (verbose) cout<< "Time elapsed (s): "<<(end_time - start_time)
+    //		   /1000000.0L<<endl; // seems to get floating point error...
     stat3 = numavoiders[maxpermsize];
     if (verbose && GETSTAT && !USEBRUTE) cout<<(double)stat2/(double)stat1<<" prefixes looked at on average per call to isavoider"<<endl;
     if (verbose && GETSTAT && !USEBRUTE) cout<<(double)stat2/(double)stat3<<" prefixes looked at on average per actual avoider"<<endl;
