@@ -406,21 +406,29 @@ void buildavoiders_dynamic_helper(perm_t perm, perm_t inverse, uint64_t length, 
 
     uint64_t avoidbits = bitmap; // Will end up saying in which positions candidate can be extended to get a new avoider
 
-    perm_t smallerperm = candidate; // smallerperm will take values of candidate\downarrow_i for i from 1 to maxavoidsize - 1
-    
+   
+
     perm_t prefixentry = 0; // will contain the complement of the normalization of the prefix of perm we're currently looking at
     uint32_t seenpos = 0;
-    for (int killval = candidate_length - 1; killval > (int)candidate_length - 1 - maxavoidsize && killval >= 0; killval--) {
-      if (killval < candidate_length - 1) { // add back in digit we deleted a moment ago, but with value one smaller
-        smallerperm = addpos(smallerperm, getdigit(candidate_inverse, killval + 1));
-	smallerperm = setdigit(smallerperm, getdigit(candidate_inverse, killval + 1), killval);
-      }
+
+    // delete largest letter from candidate to get smaller perm
+    perm_t smallerperm = killpos(candidate, getdigit(candidate_inverse, candidate_length - 1));
+    // smallerperm will take values of candidate\downarrow_i for i from 2 to maxavoidsize - 1
+    // (currently takes the value for i = 1)
+    if (USEPREFIXMAP) extendnormalizetop(candidate, candidate_inverse, candidate_length, 0, prefixentry, seenpos); // defined in perm.cpp
+    
+    for (int killval = candidate_length - 2; killval > (int)candidate_length - 1 - maxavoidsize && killval >= 0; killval--) {
+      // add back in digit we deleted a moment ago, but with value one smaller
+      smallerperm = addpos(smallerperm, getdigit(candidate_inverse, killval + 1));
+      smallerperm = setdigit(smallerperm, getdigit(candidate_inverse, killval + 1), killval);
+      // remove the value to be killed
       uint64_t killedpos = getdigit(candidate_inverse, killval);
       smallerperm = killpos(smallerperm, killedpos); // now smallerperm is candidate, except with the letter of value killval removed, and the permutation normalized to be on the letters 0,...,(candidate_length - 2)
-
+      
       // now patternbits is the bitmap for what positions we can extend smallerperm in to get an avoider
       uint64_t patternbits = *((uint64_t *)(avoidermap_read.getpayload(smallerperm)));
 
+      
       // We will now translate this into a bitmap telling us possible positions we can extend candidate in to get a new avoider
       // need to copy the killedpos-th bit to killedpos-th position + 1, and slide higher indexed bits each one over to make room
       uint64_t mask1 = ~((1 << (killedpos)) - 1); // all bits after and including killed pos
