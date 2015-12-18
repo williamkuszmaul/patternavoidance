@@ -592,39 +592,39 @@ void buildavoiders_dynamic(const hashdb &patternset, int maxavoidsize, int maxsi
   }
   addprefixes(cutpatternset, shiftedprefixmap);
 
-  perm_t startperm = 0;
-  if (!justcount) avoidervector[1].push_back(startperm);
-  else numavoiders[1] = 1;
 
-  vector < list < perm_t > > avoidervector2(maxavoidsize); // avoiders for sizes less than maxavoidsize
-  vector < vector < perm_t > > kmin1perms(maxavoidsize); // avoidervector 2 stored as vector of vectors
-  vector < vector < perm_t > > kmin1inverses(maxavoidsize); // avoidervector 2 stored as vector of vectors
+  vector < vector < perm_t > > kmin1perms(maxavoidsize);
+  vector < vector < perm_t > > kmin1inverses(maxavoidsize);
   vector < uint64_t > bitmaps;
-  kmin1perms[0].push_back(0);
   hashmap currentavoiders((1L << 10), 8); // might be worth playing with size of first argument
   //buildavoiders_raw_dynamic(patternset, maxavoidsize, 2, avoidervector2, bitmaps, numavoiders, false, currentavoiders);
 
+  perm_t startperm = 0;
+  if (!justcount) avoidervector[1].push_back(startperm);
+  else numavoiders[1] = 1;
   uint64_t startpatternmap = 3L;
   currentavoiders.add(startperm, &startpatternmap); // permutations in S_2
-  avoidervector2[1].push_back(startperm);
+  if (!justcount) {
+    avoidervector[1].push_back(startperm);
+  } else {
+    numavoiders[1] = 1;
+  }
   perm_t startperm1 = stringtoperm("12");
   perm_t startperm2 = stringtoperm("21");
-  avoidervector2[2].push_back(startperm1);
-  avoidervector2[2].push_back(startperm2);
+  if (!justcount) {
+    avoidervector[2].push_back(startperm1);
+    avoidervector[2].push_back(startperm2); 
+  } else {
+    numavoiders[2] = 2;
+  }
+  // Now only kmin1perms[2] is ever filled in
+  kmin1perms[2].push_back(startperm1);
+  kmin1inverses[2].push_back(getinverse(startperm1, 2));
+  kmin1perms[2].push_back(startperm2);
+  kmin1inverses[2].push_back(getinverse(startperm2, 2));
+ 
   bitmaps.push_back(7L);
   bitmaps.push_back(7L);
-
-  
-  for (int i = 1; i < maxavoidsize; i++) {
-    if (justcount) numavoiders[i] = avoidervector2[i].size();
-    if (!justcount) avoidervector[i] = avoidervector2[i];
-    for (std::list<perm_t>::iterator it = avoidervector2[i].begin(); it != avoidervector2[i].end(); ++it) {
-      // NOTE: This ordering is important because it ends up being relied on later when we
-      // are choosing which candidates to send down which part of the recursion tree in buildavoiders_dynamic_helper
-      kmin1perms[i].push_back(*it);
-      kmin1inverses[i].push_back(getinverse(*it, i));
-    }
-  }  
   
   vector < cilk::reducer< cilk::op_list_append<perm_t> > > avoidervectortemp(maxsize + 1);
   cilk::reducer< cilk::op_add<uint64_t> > numavoiderstemp[maxsize + 1];
