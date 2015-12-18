@@ -56,6 +56,12 @@ inline uint64_t insertbit(uint64_t word, uint64_t pos, uint64_t val) { // val is
   return (word & ((1 << pos) - 1) ) + ((word >> pos) << (pos + 1)) + val * (1 << pos);
 }
 
+// returns position of first 1, with indexing starting at 0
+inline uint64_t firstonepos(uint64_t word) {
+  assert(word != 0);
+  return __builtin_ctzl(word);
+}
+
 
 // Note: to prevent a function from inlining for debugging, use this before the function decleration:
 //__attribute__((noinline))
@@ -256,19 +262,21 @@ static bool isavoider(perm_t perm, perm_t inverse, int maxavoidsize, int length,
 // does not use the memory-efficient optimizations. It is used to
 // build the small avoiders as a base case for the more efficient
 // implementation. Nor does it use clever bit hacks to remove the $n$
-// factor from the $O(|S_{\le n - 1}(Pi)| nk)$ time algorithm.  Builds
-// the permutations in $S_1, ..., S_maxsize$ avoiding the patterns in
+// factor from the $O(|S_{\le n - 1}(Pi)| nk)$ time algorithm;
+// however, these mostly are used in the other version of the
+// implementation and would not be hard to add here.  Builds the
+// permutations in $S_1, ..., S_maxsize$ avoiding the patterns in
 // patternset, the longest of which is length maxavoidsize. If
 // justcount, does nothing with avoidervector but makes nuavoiders[i]
 // be the number of avoiders in S_i (for i > 0). If !justcount, does
 // nothing with numavoiders, but makes avoidervector contain a vector
-// of all permutations in S_i in avoidervector[i] (for i >
-// 0). 
-// Fills in future_bitmaps to contain the bitmaps for the avoiders of
-// size maxsize.  avoidmap is filled in to map avoiders to bitmaps
-// saying in which positions n can be added to get another avoider.
-//  Note: Patternset patterns required to be size >= 3
-//  Note: In current implementation, justcount option is never used. But it still maintained to work correctly.
+// of all permutations in S_i in avoidervector[i] (for i > 0).  Fills
+// in future_bitmaps to contain the bitmaps for the avoiders of size
+// maxsize.  avoidmap is filled in to map avoiders to bitmaps saying
+// in which positions n can be added to get another avoider.  Note:
+// Patternset patterns required to be size >= 3 Note: In current
+// implementation, justcount option is never used. But it still
+// maintained to work correctly.
 void buildavoiders_raw_dynamic(const hashdb &patternset, int maxavoidsize, int maxsize,  vector < list <perm_t> > &avoidervector, vector < uint64_t > &future_bitmaps, vector < uint64_t > &numavoiders, bool justcount, hashmap &avoidmap) {
   if (!justcount) avoidervector.resize(maxsize + 1);
   else numavoiders.resize(maxsize + 1);
@@ -449,9 +457,12 @@ void buildavoiders_dynamic_helper(perm_t perm, perm_t inverse, uint64_t length, 
 
     // Next we update avoidbits for cases where one of the extensions of candidate are actually a pattern
     if (candidate_length < maxavoidsize) {
-      for (int i = candidate_length; i >= 0; i--) {
+      uint64_t tempbits = avoidbits;
+      while (tempbits != 0) {
+	int i = firstonepos(tempbits); // next position which avoidbits has a one in
 	perm_t extendedperm = setdigit(addpos(candidate, i), i, candidate_length); // insert candidate_length in i-th position (remember, values are indexed starting at 0, so results in permutation in S_candidate_length);
 	if (patternset.contains(extendedperm)) avoidbits = setbit(avoidbits, i, 0);
+	tempbits = tempbits - (1 << i);
       }
     }
 
@@ -466,11 +477,11 @@ void buildavoiders_dynamic_helper(perm_t perm, perm_t inverse, uint64_t length, 
       if (justcount) {
 	*(numavoiders[candidate_length + 1]) += __builtin_popcount((uint32_t)bitmap);
       } else {
-	for (int i = candidate_length; i >= 0; i--) {
-	  if (getbit(bitmap, i) == 1) {
-	    perm_t extendedperm = setdigit(addpos(candidate, i), i, candidate_length); // insert candidate_length in i-th position (remember, values are indexed starting at 0, so results in permutation in S_candidate_length);
-	    (*avoidervector[candidate_length + 1]).push_back(extendedperm); 
-	  }
+	uint64_t tempbits = bitmap;
+	while (tempbits != 0) {
+	  int i = firstonepos(tempbits); // next position which bitmap has a one in
+	  perm_t extendedperm = setdigit(addpos(candidate, i), i, candidate_length); // insert candidate_length in i-th position (remember, values are indexed starting at 0, so results in permutation in S_candidate_length);
+	  (*avoidervector[candidate_length + 1]).push_back(extendedperm); 
 	}
       }
     }
@@ -564,6 +575,8 @@ void buildavoiders_dynamic(const hashdb &patternset, int maxavoidsize, int maxsi
     if (justcount) numavoiders[i] = avoidervector2[i].size();
     if (!justcount) avoidervector[i] = avoidervector2[i];
     for (std::list<perm_t>::iterator it = avoidervector2[i].begin(); it != avoidervector2[i].end(); ++it) {
+      // NOTE: This ordering is important because it ends up being relied on later when we
+      // are choosing which candidates to send down which part of the recursion tree in buildavoiders_dynamic_helper
       kmin1perms[i].push_back(*it); 
     }
   }

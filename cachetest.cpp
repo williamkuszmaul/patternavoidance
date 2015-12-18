@@ -41,7 +41,6 @@ void countallfromfiletest(ifstream &infile, int maxpermsize, bool verbose) {
   return;
 }
 
-
 // arguments can either be:
 // (1) av <input file name> <output file name> <permsize> <whether or not to be verbose>
 // (2) cnt <input file name> <permsize> <whether to be verbose> 
