@@ -103,15 +103,17 @@ void wordavoiders_raw_dynamic(const hashdb &patternprintset, int maxavoidsize, i
 	}
       }
       // Now we have completely determined which extensions of word are avoiders
-      avoidmap.add(prepareforavoidset(word, size), &avoidbits);
-      for (int addval = 0; addval < base; addval++) {
-	if ((avoidbits & (1 << addval)) != 0) {
-	  perm_t newword = setdigit(word, size, addval);
-	  avoiderstoextend.push(newword);
-	  //avoidset.add(prepareforavoidset(newword, size + 1));
-	  //cout<<size + 1<<endl;
-	  //displayperm(newword);
-	  numavoiders[size + 1]++;
+      if (size + 1 < maxsize) avoidmap.add(prepareforavoidset(word, size), &avoidbits);
+      numavoiders[size + 1] += __builtin_popcount((uint32_t)avoidbits);
+      if (size + 1 < maxsize) {
+	for (int addval = 0; addval < base; addval++) {
+	  if ((avoidbits & (1 << addval)) != 0) {
+	    perm_t newword = setdigit(word, size, addval);
+	    avoiderstoextend.push(newword);
+	    //avoidset.add(prepareforavoidset(newword, size + 1));
+	    //cout<<size + 1<<endl;
+	    //displayperm(newword);
+	  }
 	}
       }
     }
