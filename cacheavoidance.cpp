@@ -263,22 +263,19 @@ static bool isavoider(perm_t perm, perm_t inverse, int maxavoidsize, int length,
 // be the number of avoiders in S_i (for i > 0). If !justcount, does
 // nothing with numavoiders, but makes avoidervector contain a vector
 // of all permutations in S_i in avoidervector[i] (for i >
-// 0). plannedavoisetsize should be large if we expect a major
-// computation and small otherwise (dictates how much memory is
-// initially allocated to data structures at start of algorithm.).
+// 0). 
 // Fills in future_bitmaps to contain the bitmaps for the avoiders of
-// size maxsize.
+// size maxsize.  avoidmap is filled in to map avoiders to bitmaps
+// saying in which positions n can be added to get another avoider.
 //  Note: Patternset patterns required to be size >= 3
-//  A weakness: returns an entire hashmap called avoidmap (which maps avoiders\downarrow_1 to bitmaps)
 //  Note: In current implementation, justcount option is never used. But it still maintained to work correctly.
-hashmap buildavoiders_raw_dynamic(const hashdb &patternset, int maxavoidsize, int maxsize,  vector < list <perm_t> > &avoidervector, vector < uint64_t > &future_bitmaps, vector < uint64_t > &numavoiders, bool justcount, uint64_t plannedavoidsetsize) {
+void buildavoiders_raw_dynamic(const hashdb &patternset, int maxavoidsize, int maxsize,  vector < list <perm_t> > &avoidervector, vector < uint64_t > &future_bitmaps, vector < uint64_t > &numavoiders, bool justcount, hashmap &avoidmap) {
   if (!justcount) avoidervector.resize(maxsize + 1);
   else numavoiders.resize(maxsize + 1);
 
   hashdb prefixmap(1<<3);
   addprefixes(patternset, prefixmap);
-  if (VERBOSE) cout<<"Planned size: "<<plannedavoidsetsize<<endl;
-  hashmap avoidmap = hashmap(plannedavoidsetsize, 8); // maps avoiders\downarrow_1 to the bitmaps for which positions inserting n results in an avoider
+  
   perm_t startperm = 0;
   uint64_t startpatternmap = 3L;
   avoidmap.add(startperm, &startpatternmap); // permutations in S_2
@@ -298,7 +295,7 @@ hashmap buildavoiders_raw_dynamic(const hashdb &patternset, int maxavoidsize, in
   if (maxsize == 2) {
     future_bitmaps.push_back(7L);
     future_bitmaps.push_back(7L);
-    return avoidmap; 
+    return;
   }
   
   std::queue<perm_t> avoiderstoextend; // queue of avoiders built so far.
@@ -377,7 +374,7 @@ hashmap buildavoiders_raw_dynamic(const hashdb &patternset, int maxavoidsize, in
       }
     }
   }
-  return avoidmap;
+  return;
 }
 
 
@@ -560,9 +557,9 @@ void buildavoiders_dynamic(const hashdb &patternset, int maxavoidsize, int maxsi
   vector < list < perm_t > > avoidervector2(maxavoidsize); // avoiders for sizes less than maxavoidsize
   vector < vector < perm_t > > kmin1perms(maxavoidsize); // avoidervector 2 stored as vector of vectors
   vector < uint64_t > bitmaps;
-  //hashdb currentavoiders(1<<10);
   kmin1perms[0].push_back(0);
-  hashmap currentavoiders = buildavoiders_raw_dynamic(patternset, maxavoidsize, maxavoidsize - 1, avoidervector2, bitmaps, numavoiders, false, (1L << 10));
+  hashmap currentavoiders((1L << 10), 8); // might be worth playing with size of first argument
+  buildavoiders_raw_dynamic(patternset, maxavoidsize, maxavoidsize - 1, avoidervector2, bitmaps, numavoiders, false, currentavoiders);
   for (int i = 1; i < maxavoidsize; i++) {
     if (justcount) numavoiders[i] = avoidervector2[i].size();
     if (!justcount) avoidervector[i] = avoidervector2[i];
@@ -575,6 +572,10 @@ void buildavoiders_dynamic(const hashdb &patternset, int maxavoidsize, int maxsi
   buildavoiders_dynamic_helper(0L, 0L, 0L, patternset, shiftedprefixmap, maxavoidsize, maxsize, avoidervectortemp, numavoiderstemp, justcount, kmin1perms[maxavoidsize - 1], 0, kmin1perms[maxavoidsize - 1].size() - 1, currentavoiders, bitmaps);
   for (int i = maxavoidsize; i < maxsize + 1; i++) {
     if (!justcount) avoidervector[i] = avoidervectortemp[i].get_value();
+    // note: we copy the entire avoidervectortemp[i] into avoidervector[i] because
+    // it is convenient for the user to not have a data structure which
+    // contains a bunch of cilk reducers. However, this is a bit of a waste of work.
+    // It's not asymptotically bad though.
     else numavoiders[i] = (uint64_t) numavoiderstemp[i].get_value();
   }
 }
@@ -625,7 +626,7 @@ double run_interior_experiment(string patternlist, int maxpermsize) {
   vector < list < perm_t > > avoidervector;
   if (VERBOSE) cout<<"Effective pattern size "<<maxpatternsize<<endl;
   if (USEBRUTE) buildavoiders_brute(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true, (1L << 10));
-  else  buildavoiders_dynamic(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true); //buildavoiders_raw_dynamic(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true, (1L << 10)); // for large cases, could make last argument much larger. But we will not bother in our tests in the paper.
+  else  buildavoiders_dynamic(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true);
   stat3 = numavoiders[maxpermsize];
   timestamp_t end_time = get_timestamp();
   return (end_time - start_time)/1000000.0L;
@@ -644,7 +645,6 @@ void countavoidersfrompatternlist(string patternlist, int maxpermsize, vector < 
   if (USEBRUTE) buildavoiders_brute(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true, (1L << 10));
   
   else {
-    //buildavoiders_raw_dynamic(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true, (1L << 10)); // for large cases, make last argument much larger
     buildavoiders_dynamic(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true);
   }
 }
