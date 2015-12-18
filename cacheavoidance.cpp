@@ -728,7 +728,7 @@ void countavoidersfromfile(ifstream &infile, ofstream &outfile, int maxpermsize,
     }
     if (verbose) cout<<endl;
     outfile<<endl;
-    if (verbose) {
+    if (verbose) { 
       timestamp_t diff = end_time - start_time;
       double      diff_d = diff* 1e-6;
       cout<< "Time elapsed (s): "<<diff_d<<endl;
