@@ -602,7 +602,19 @@ void buildavoiders_dynamic(const hashdb &patternset, int maxavoidsize, int maxsi
   vector < uint64_t > bitmaps;
   kmin1perms[0].push_back(0);
   hashmap currentavoiders((1L << 10), 8); // might be worth playing with size of first argument
-  buildavoiders_raw_dynamic(patternset, maxavoidsize, maxavoidsize - 1, avoidervector2, bitmaps, numavoiders, false, currentavoiders);
+  //buildavoiders_raw_dynamic(patternset, maxavoidsize, 2, avoidervector2, bitmaps, numavoiders, false, currentavoiders);
+
+  uint64_t startpatternmap = 3L;
+  currentavoiders.add(startperm, &startpatternmap); // permutations in S_2
+  avoidervector2[1].push_back(startperm);
+  perm_t startperm1 = stringtoperm("12");
+  perm_t startperm2 = stringtoperm("21");
+  avoidervector2[2].push_back(startperm1);
+  avoidervector2[2].push_back(startperm2);
+  bitmaps.push_back(7L);
+  bitmaps.push_back(7L);
+
+  
   for (int i = 1; i < maxavoidsize; i++) {
     if (justcount) numavoiders[i] = avoidervector2[i].size();
     if (!justcount) avoidervector[i] = avoidervector2[i];
@@ -612,7 +624,7 @@ void buildavoiders_dynamic(const hashdb &patternset, int maxavoidsize, int maxsi
       kmin1perms[i].push_back(*it);
       kmin1inverses[i].push_back(getinverse(*it, i));
     }
-  }
+  }  
   
   vector < cilk::reducer< cilk::op_list_append<perm_t> > > avoidervectortemp(maxsize + 1);
   cilk::reducer< cilk::op_add<uint64_t> > numavoiderstemp[maxsize + 1];
