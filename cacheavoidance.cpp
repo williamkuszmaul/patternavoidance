@@ -63,6 +63,13 @@ inline uint64_t firstonepos(uint64_t word) {
 }
 
 
+// returns position of last 1, with indexing starting at 0
+inline uint64_t lastonepos(uint64_t word) {
+  assert(word != 0);
+  return 63 - __builtin_clzl(word);
+}
+
+
 // Note: to prevent a function from inlining for debugging, use this before the function decleration:
 //__attribute__((noinline))
 
@@ -479,7 +486,8 @@ void buildavoiders_dynamic_helper(perm_t perm, perm_t inverse, uint64_t length, 
       } else {
 	uint64_t tempbits = bitmap;
 	while (tempbits != 0) {
-	  int i = firstonepos(tempbits); // next position which bitmap has a one in
+	  int i = lastonepos(tempbits); // next position which bitmap has a one in
+	  tempbits = tempbits - (1 << i);
 	  perm_t extendedperm = setdigit(addpos(candidate, i), i, candidate_length); // insert candidate_length in i-th position (remember, values are indexed starting at 0, so results in permutation in S_candidate_length);
 	  (*avoidervector[candidate_length + 1]).push_back(extendedperm); 
 	}
@@ -487,14 +495,19 @@ void buildavoiders_dynamic_helper(perm_t perm, perm_t inverse, uint64_t length, 
     }
     // Need to build candidates of size one larger. 
     if (candidate_length + 1 < maxsize) {
-      for (int i = candidate_length; i >= 0; i--) {
-	if (getbit(bitmap, i) == 1) {
+	uint64_t tempbits = bitmap;
+	while (tempbits != 0) {
+	  // i traverses the positions of bitmap with on-bits from greatest to least
+	  int i = lastonepos(tempbits); // next position which bitmap has a one in
+	  // doing lastonepos first is important for next_candidates ordering
+	  // so that it's easy to partition next_candidates for recursion
+	  tempbits = tempbits - (1 << i);
+	  
 	  perm_t extendedperm = setdigit(addpos(candidate, i), i, candidate_length); // insert candidate_length in i-th position (remember, values are indexed starting at 0, so results in permutation in S_candidate_length);
 	  next_candidates.push_back(extendedperm);
 	  if (!justcount) (*avoidervector[candidate_length + 1]).push_back(extendedperm); 
 	  else	   *(numavoiders[candidate_length + 1]) += 1;
 	  bitmaps.push_back(insertbit(bitmap, i + 1, 1)); // using which insertion positions resulted in an avoider, build bitmap for each new avoider
-	}
       }
     }
   }
