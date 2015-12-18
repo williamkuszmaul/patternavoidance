@@ -556,7 +556,7 @@ void buildavoiders_dynamic_helper(perm_t perm, perm_t inverse, uint64_t length, 
       // nextinverse is inverse of extendedperm
       
       for (uint64_t cand_pos = candidates_prev_end_pos + 1; cand_pos < next_candidates.size(); cand_pos++) {
-	perm_t next_candidate = next_candidates[cand_pos]; 
+	//perm_t next_candidate = next_candidates[cand_pos]; 
 	perm_t next_candidate_inverse = next_candidate_inverses[cand_pos];
 	int lenpos = getdigit(next_candidate_inverse, length);
 	int skip_counter = 0; // counts number of letters larger than length to length's left
@@ -565,12 +565,6 @@ void buildavoiders_dynamic_helper(perm_t perm, perm_t inverse, uint64_t length, 
 	}
 	int norm_counter = lenpos - skip_counter; // position of length + 1 relative to first length letters of candidate
 	
-	
-	// int norm_counter = 0; // ends up being position of length + 1 relative to the first length letters of candidate.
-	// for (int t = 0; t < candidate_length; t++) {
-	//   if (getdigit(next_candidate, t) < length) norm_counter++;
-	//   if (getdigit(next_candidate, t) == length) break;
-	// }
 	if (norm_counter != i) { // then we've hit the end of the run in next_candidates with ancestor extendedperm
 	  //displayperm(next_candidate);
 	  break;  // If it turns out we're out of candidates who spawn from extendedperm in the tree of candidates, then we're done with this part of the partition
