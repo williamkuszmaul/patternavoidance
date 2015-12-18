@@ -1,0 +1,41 @@
+With initial hacks:
+k = 7, n = 10
+Avoiding 1234
+7 49 343 2366 15890 103250 647790 3925761 23016231 130812213 
+53.68user 4.08system 0:57.77elapsed 99%CPU (0avgtext+0avgdata 7199724maxresident)k
+0inputs+0outputs (0major+2368257minor)pagefaults 0swaps
+
+After added bit hack reducing runtime by factor of base:
+(technically, I only implemented it in the portion involving memory-lookups
+and I still have some for loops tha take an asymptotically long time)
+7 49 343 2366 15890 103250 647790 3925761 23016231 130812213 
+10.46user 1.35system 0:11.82elapsed 99%CPU (0avgtext+0avgdata 2207568maxresident)k
+0inputs+0outputs (0major+795390minor)pagefaults 0swaps
+
+Use popcount at end to grab number of things to add, and avoided unnecesarily doing work at last layer.
+7 49 343 2366 15890 103250 647790 3925761 23016231 130812213 
+5.98user 0.29system 0:06.28elapsed 99%CPU (0avgtext+0avgdata 563236maxresident)k
+0inputs+0outputs (0major+178323minor)pagefaults 0swaps
+
+Hmm, there may be another factor of two to be squeezed by doing similar hacks to actually get
+the best asymptotically possible. But I'll hold back on that since I suspect it's more like
+a factor of a fourth (based on computations from fastavoidance.cpp).
+
+Changed killedpos to be decremented from n rather than incremented from 1, and got roughly factor of two speedup (for a bit subtle reasons)
+7 49 343 2366 15890 103250 647790 3925761 23016231 130812213 
+2.33user 0.30system 0:02.63elapsed 100%CPU (0avgtext+0avgdata 563052maxresident)k
+0inputs+0outputs (0major+178317minor)pagefaults 0swaps
+
+introduced the memory-efficient version of algorithm; got about a third speedup
+7 49 343 2366 15890 103250 647790 3925761 23016231 130812213 
+1.68user 0.03system 0:01.72elapsed 100%CPU (0avgtext+0avgdata 9776maxresident)k
+0inputs+0outputs (0major+28703minor)pagefaults 0swaps
+
+Got it cilkified:
+7 49 343 2366 15890 103250 647790 3925761 23016231 130812213 
+3.95user 0.23system 0:00.53elapsed 791%CPU (0avgtext+0avgdata 40928maxresident)k
+0inputs+0outputs (0major+100085minor)pagefaults 0swaps
+
+
+To add:
+-- prefix hack

@@ -1,0 +1,1 @@
+In fastavoidance.cpp, am I uncessesarily having a size < avoidsize case?
