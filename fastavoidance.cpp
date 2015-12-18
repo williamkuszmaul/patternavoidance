@@ -417,18 +417,18 @@ inline perm_t extendpartialinverse(perm_t inverse, uint64_t pos, uint64_t length
 
 // Implements the depth-first search described in memory-efficient version of dynamic algorithm in paper (see README)
 // Moreover, uses bithacks to analyze all the extensions of an avoider at once. (and figure out if they're avoiders)
-// length is k-1 shorter than each of the candidates, and is the length of the common ancestor of the candidates in the
-// candidate tree.
 // The candidates are the permutations which can be extended to obtain potential elements of C^k(perm) \cap S_{\le n}(\Pi)
 // candidate_start_pos is position of first candidate in candidates, candidate_end_pos position of last
 // avoiderset_read is the hash table C^k(perm\downarrow_1) \cap S_{\le n}(\Pi)
-void buildavoiders_dynamic_helper(uint64_t length, const hashdb &patternset, const hashdb &shiftedprefixmap, int maxavoidsize, int maxsize,  vector < cilk::reducer< cilk::op_list_append<perm_t> > > &avoidervector, cilk::reducer< cilk::op_add<uint64_t> > *numavoiders, bool justcount, const vector <perm_t> &candidates, const vector <perm_t> &candidate_inverses, int64_t candidate_start_pos, int64_t candidate_end_pos, const hashmap &avoidermap_read, const vector <uint64_t> &prevbitmaps) {
+void buildavoiders_dynamic_helper(uint64_t candidate_length, const hashdb &patternset, const hashdb &shiftedprefixmap, int maxavoidsize, int maxsize,  vector < cilk::reducer< cilk::op_list_append<perm_t> > > &avoidervector, cilk::reducer< cilk::op_add<uint64_t> > *numavoiders, bool justcount, const vector <perm_t> &candidates, const vector <perm_t> &candidate_inverses, int64_t candidate_start_pos, int64_t candidate_end_pos, const hashmap &avoidermap_read, const vector <uint64_t> &prevbitmaps) {
   hashmap avoidermap_write(1 << 8, 8);
   vector <perm_t> next_candidates; // the avoiders obtained from current candidates
   vector <perm_t> next_candidate_inverses; // the avoiders obtained from current candidates
   vector <uint64_t> bitmaps;
 
-  uint64_t candidate_length = length + maxavoidsize - 1;
+  int length = (int)candidate_length - maxavoidsize + 1; // length of the common ancestor in candidates tree of candidates
+  // could be negative if candidates are very small
+  
   // Go through the candidates and build for each a bitmap of which positions the candidate can be extended in to get a new avoider
   for (int64_t pos = candidate_start_pos; pos <= candidate_end_pos; pos++) { // signed because end_pos might be -1
     perm_t candidate = candidates[pos];
@@ -536,31 +536,35 @@ void buildavoiders_dynamic_helper(uint64_t length, const hashdb &patternset, con
   // memory efficient.  Note that each part of this partition is
   // currently a single contiguous run inside next_candidates.
   if (candidate_length + 1 < maxsize) {
-    int64_t candidates_prev_end_pos = -1; // index in next_candidates of final candidate in previous part of partition
-    int64_t candidates_end_pos = -1; // index of final candidate in current part of partition
-
-    for (int i = length; i >= 0; i--) {
-      // recall that all original candidates already had shared ancestor of length length in tree of candidates
-      // we are partitioning the next_candidates based on shared ancestors of length (length + 1)
-      for (uint64_t cand_pos = candidates_prev_end_pos + 1; cand_pos < next_candidates.size(); cand_pos++) {
-	//perm_t next_candidate = next_candidates[cand_pos];
-	perm_t next_candidate_inverse = next_candidate_inverses[cand_pos];
-	int lenpos = getdigit(next_candidate_inverse, length);
-	int skip_counter = 0; // counts number of letters larger than length to length's left
-	for (int t = length + 1; t <= candidate_length; t++) {
-	  if (getdigit(next_candidate_inverse, t) < lenpos) skip_counter++;
+    if (candidate_length < maxavoidsize) { 
+      buildavoiders_dynamic_helper(candidate_length + 1, patternset, shiftedprefixmap, maxavoidsize, maxsize,  avoidervector, numavoiders, justcount, next_candidates, next_candidate_inverses, 0, next_candidates.size() - 1, avoidermap_write, bitmaps);
+    } else {
+      int64_t candidates_prev_end_pos = -1; // index in next_candidates of final candidate in previous part of partition
+      int64_t candidates_end_pos = -1; // index of final candidate in current part of partition
+      
+      for (int i = length; i >= 0; i--) {
+	// recall that all original candidates already had shared ancestor of length length in tree of candidates
+	// we are partitioning the next_candidates based on shared ancestors of length (length + 1)
+	for (uint64_t cand_pos = candidates_prev_end_pos + 1; cand_pos < next_candidates.size(); cand_pos++) {
+	  //perm_t next_candidate = next_candidates[cand_pos];
+	  perm_t next_candidate_inverse = next_candidate_inverses[cand_pos];
+	  int lenpos = getdigit(next_candidate_inverse, length);
+	  int skip_counter = 0; // counts number of letters larger than length to length's left
+	  for (int t = length + 1; t <= candidate_length; t++) {
+	    if (getdigit(next_candidate_inverse, t) < lenpos) skip_counter++;
+	  }
+	  int norm_counter = lenpos - skip_counter; // position of length + 1 relative to first length letters of candidate
+	  
+	  if (norm_counter != i) { // then we've hit the end of the run in next_candidates with this common (length+1)-long ancestor
+	    //displayperm(next_candidate);
+	    break;  // We're done with this part of the partition
+	  }
+	  candidates_end_pos = cand_pos;
 	}
-	int norm_counter = lenpos - skip_counter; // position of length + 1 relative to first length letters of candidate
-
-	if (norm_counter != i) { // then we've hit the end of the run in next_candidates with this common (length+1)-long ancestor
-	  //displayperm(next_candidate);
-	  break;  // We're done with this part of the partition
+	if (candidates_prev_end_pos + 1 <= candidates_end_pos) {
+	  cilk_spawn buildavoiders_dynamic_helper(candidate_length + 1, patternset, shiftedprefixmap,maxavoidsize, maxsize,  avoidervector, numavoiders, justcount, next_candidates, next_candidate_inverses, candidates_prev_end_pos + 1, candidates_end_pos, avoidermap_write, bitmaps);
+	  candidates_prev_end_pos = candidates_end_pos;
 	}
-	candidates_end_pos = cand_pos;
-      }
-      if (candidates_prev_end_pos + 1 <= candidates_end_pos) {
-	cilk_spawn buildavoiders_dynamic_helper(length + 1, patternset, shiftedprefixmap,maxavoidsize, maxsize,  avoidervector, numavoiders, justcount, next_candidates, next_candidate_inverses, candidates_prev_end_pos + 1, candidates_end_pos, avoidermap_write, bitmaps);
-	candidates_prev_end_pos = candidates_end_pos;
       }
     }
   }
@@ -609,9 +613,12 @@ void buildavoiders_dynamic(const hashdb &patternset, int maxavoidsize, int maxsi
       kmin1inverses[i].push_back(getinverse(*it, i));
     }
   }
+  
   vector < cilk::reducer< cilk::op_list_append<perm_t> > > avoidervectortemp(maxsize + 1);
   cilk::reducer< cilk::op_add<uint64_t> > numavoiderstemp[maxsize + 1];
-  buildavoiders_dynamic_helper(0L, patternset, shiftedprefixmap, maxavoidsize, maxsize, avoidervectortemp, numavoiderstemp, justcount, kmin1perms[maxavoidsize - 1], kmin1inverses[maxavoidsize - 1], 0, kmin1perms[maxavoidsize - 1].size() - 1, currentavoiders, bitmaps);
+  buildavoiders_dynamic_helper(2, patternset, shiftedprefixmap, maxavoidsize, maxsize, avoidervectortemp, numavoiderstemp, justcount, kmin1perms[2], kmin1inverses[2], 0, kmin1perms[2].size() - 1, currentavoiders, bitmaps);
+  //buildavoiders_dynamic_helper(maxavoidsize - 1, patternset, shiftedprefixmap, maxavoidsize, maxsize, avoidervectortemp, numavoiderstemp, justcount, kmin1perms[maxavoidsize - 1], kmin1inverses[maxavoidsize - 1], 0, kmin1perms[maxavoidsize - 1].size() - 1, currentavoiders, bitmaps);
+
   for (int i = maxavoidsize; i < maxsize + 1; i++) {
     if (!justcount) avoidervector[i] = avoidervectortemp[i].get_value();
     // note: we copy the entire avoidervectortemp[i] into avoidervector[i] because
