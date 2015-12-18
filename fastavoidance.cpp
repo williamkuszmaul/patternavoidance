@@ -488,17 +488,16 @@ void buildavoiders_dynamic_helper(uint64_t length, const hashdb &patternset, con
     }
 
     // Now avoidbits correctly tells us which extensions of candidate result in avoiders
-    bitmap = avoidbits;
-    if (candidate_length + 1 < maxsize) avoidermap_write.add(candidate, &bitmap); // adding even when bitmap all zeros for now. allows us to not worry about NULLs in lookups
+    if (candidate_length + 1 < maxsize) avoidermap_write.add(candidate, &avoidbits); // adding even when avoidbits all zeros for now. allows us to not worry about NULLs in lookups
 
-    // If we're done, report the new avoiders found
+    // If we're at our final size, report the new avoiders found
     if (candidate_length + 1 == maxsize) {
       if (justcount) {
-	*(numavoiders[candidate_length + 1]) += __builtin_popcount((uint32_t)bitmap);
+	*(numavoiders[candidate_length + 1]) += __builtin_popcount((uint32_t)avoidbits);
       } else {
-	uint64_t tempbits = bitmap;
+	uint64_t tempbits = avoidbits;
 	while (tempbits != 0) {
-	  int i = lastonepos(tempbits); // next position which bitmap has a one in
+	  int i = lastonepos(tempbits); // next position which avoidbits has a one in
 	  tempbits = tempbits - (1 << i);
 	  perm_t extendedperm = setdigit(addpos(candidate, i), i, candidate_length); // insert candidate_length in i-th position (remember, values are indexed starting at 0, so results in permutation in S_candidate_length);
 	  (*avoidervector[candidate_length + 1]).push_back(extendedperm);
@@ -506,12 +505,12 @@ void buildavoiders_dynamic_helper(uint64_t length, const hashdb &patternset, con
       }
     }
 
-    // Need to build candidates of size one larger.
+    // Need to add newly found avoiders to next_candidates 
     if (candidate_length + 1 < maxsize) {
-      uint64_t tempbits = bitmap;
+      uint64_t tempbits = avoidbits;
       while (tempbits != 0) {
-	// i traverses the positions of bitmap with on-bits from greatest to least
-	int i = lastonepos(tempbits); // next position which bitmap has a one in
+	// i traverses the positions of avoidbits with on-bits from greatest to least
+	int i = lastonepos(tempbits); // next position which avoidbits has a one in
 	// doing lastonepos first is important for next_candidates ordering
 	// so that it's easy to partition next_candidates for recursion
 	tempbits = tempbits - (1 << i);
@@ -523,7 +522,7 @@ void buildavoiders_dynamic_helper(uint64_t length, const hashdb &patternset, con
 	next_candidate_inverses.push_back(extendedinverse);
 	if (!justcount) (*avoidervector[candidate_length + 1]).push_back(extendedperm);
 	else   *(numavoiders[candidate_length + 1]) += 1;
-	bitmaps.push_back(insertbit(bitmap, i + 1, 1)); // using which insertion positions resulted in an avoider, build bitmap for each new avoider
+	bitmaps.push_back(insertbit(avoidbits, i + 1, 1)); // using which insertion positions resulted in an avoider, build avoidbits for each new avoider
       }
     }
   }
