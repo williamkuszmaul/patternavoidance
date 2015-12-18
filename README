@@ -38,12 +38,9 @@ algorithm based on PermLab for the same task; if SINGLEPATTERNOPT is
 false, then we require that Pi comprise patterns of only one size.
 
 NOTE: paper.pdf describes an O(|S_{N-1}(Pi)|Nk) algorithm, which is a
-factor of N slower than the one implemented in fastavoidance.cpp. In
-fact, the slower algorithm is also implemented in fastavoidance.cpp,
-but is no longer used (except as a base case for the faster algorithm;
-it could easily be updated to not be used at all, however). As soon as
-I complete a writeup describing the modifications appearing in the new
-algorithm, I will post it here.
+factor of N slower than the one implemented in fastavoidance.cpp As
+soon as I complete a writeup describing the modifications appearing in
+the new algorithm, I will post it here.
 
 countpatterns.cpp/.h: Implements an O(n!k) algorithm for counting the
 number of Pi-patterns appearing in each permutation in S_n for n in
