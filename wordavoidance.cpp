@@ -91,6 +91,8 @@ void wordavoiders_raw_dynamic(const hashdb &patternprintset, int maxavoidsize, i
       }
       // still need to check if each of detected avoider might actually be a pattern:
       if (size + 1 <= maxavoidsize) {
+	// Not worth messing with bithacks to make this loop more efficient
+	// since we only enter this if statement in small cases.
 	for (int addval = 0; addval < base; addval++) {
 	  if ((avoidbits & (1 << addval)) != 0) {
 	    perm_t newword = setdigit(word, size, addval);
@@ -105,8 +107,12 @@ void wordavoiders_raw_dynamic(const hashdb &patternprintset, int maxavoidsize, i
       // Now we have completely determined which extensions of word are avoiders
       if (size + 1 < maxsize) avoidmap.add(prepareforavoidset(word, size), &avoidbits);
       numavoiders[size + 1] += __builtin_popcount((uint32_t)avoidbits);
-      if (size + 1 < maxsize) {
+      if (size + 1 < maxsize) 
 	for (int addval = 0; addval < base; addval++) {
+	  // Probably not worth messing around with bit hacks to improve asymptoics on this for loop.
+	  // In particular, if number of avoiders grows even sort of fast, then for the
+	  // avoiders we push onto avoiderstoextend we're going to be doing enough work
+	  // to amortize the wasted cost in this for loop.
 	  if ((avoidbits & (1 << addval)) != 0) {
 	    perm_t newword = setdigit(word, size, addval);
 	    avoiderstoextend.push(newword);
