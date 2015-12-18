@@ -57,7 +57,7 @@ perm_t prepareforavoidset(perm_t word, int length) {
   return setdigit(word, length, 1); // mark length
 }
 
-void wordavoiders_raw_dynamic_helper(const hashdb &patternprintset,  int maxavoidsize, int maxsize, vector < uint64_t > &numavoiders, int base, int candidate_length, const vector <perm_t> &candidates, int first_cand_index, int last_cand_index, const hashmap &avoidmap_read) {
+void wordavoiders_raw_dynamic_helper(const hashdb &patternprintset,  int maxavoidsize, int maxsize,  cilk::reducer< cilk::op_add<uint64_t> > *numavoiders, int base, int candidate_length, const vector <perm_t> &candidates, int first_cand_index, int last_cand_index, const hashmap &avoidmap_read) {
   hashmap avoidmap_write(1<<8, 8);
   uint64_t trivialmap = (((uint64_t)1) << base) - 1;
   vector <perm_t> avoiderstoextend;
@@ -85,7 +85,7 @@ void wordavoiders_raw_dynamic_helper(const hashdb &patternprintset,  int maxavoi
       }
     }
     if (candidate_length + 1 < maxsize) avoidmap_write.add(prepareforavoidset(word, candidate_length), &avoidbits);
-    numavoiders[candidate_length + 1] += __builtin_popcount((uint32_t)avoidbits);
+    *(numavoiders[candidate_length + 1]) += __builtin_popcount((uint32_t)avoidbits);
     if (candidate_length + 1 < maxsize) {
       for (int addval = 0; addval < base; addval++) {
 	// Probably not worth messing around with bit hacks to improve asymptoics on this for loop.
@@ -120,22 +120,22 @@ void wordavoiders_raw_dynamic_helper(const hashdb &patternprintset,  int maxavoi
 	  end_index++;
 	  next_candidate_index++;
 	}
-	wordavoiders_raw_dynamic_helper(patternprintset, maxavoidsize, maxsize, numavoiders, base, candidate_length + 1, avoiderstoextend, start_index, end_index, avoidmap_write);
+	cilk_spawn wordavoiders_raw_dynamic_helper(patternprintset, maxavoidsize, maxsize, numavoiders, base, candidate_length + 1, avoiderstoextend, start_index, end_index, avoidmap_write);
       }
+      cilk_sync;
     }
   }
 }
 
 
 // PATTERNS HAVE TO BE AT LEAST SIZE THREE DUE TO HOW AVOIDMAP IS SET UP
-void wordavoiders_raw_dynamic(const hashdb &patternprintset, int maxavoidsize, int maxsize, vector < uint64_t > &numavoiders, int base) {
+void wordavoiders_raw_dynamic(const hashdb &patternprintset, int maxavoidsize, int maxsize,  cilk::reducer< cilk::op_add<uint64_t> > *numavoiders, int base) {
   hashmap avoidmap(1<<8, 8);
   std::vector<perm_t> avoiderstoextend; // queue of avoiders built so far.
   //for (int i = 0; i < base; i++)  avoidset.add(prepareforavoidset(setdigit(0, 0, i), 1));
   uint64_t trivialmap = (((uint64_t)1) << base) - 1;
   for (int i = 0; i < base; i++)  avoidmap.add(prepareforavoidset(setdigit(0, 0, i), 1), &trivialmap);
-  numavoiders[1] = base;
-
+  *(numavoiders[1]) += base;
   for (int i = 0; i < base; i++) {
     for (int j = 0; j < base; j++) {
       perm_t temp_perm = setdigit(setdigit(0, 0, i), 1, j);
@@ -144,56 +144,9 @@ void wordavoiders_raw_dynamic(const hashdb &patternprintset, int maxavoidsize, i
       avoidmap.add(prepareforavoidset(temp_perm, 2), &trivialmap);
     }
   }
-  numavoiders[2] = base * base;
+  *(numavoiders[2]) += base * base;
 
   wordavoiders_raw_dynamic_helper(patternprintset, maxavoidsize, maxsize, numavoiders, base,  2, avoiderstoextend, 0, avoiderstoextend.size() - 1, avoidmap);
-  // for (int size = 2; size < maxsize; size++) { // build avoiders of length size + 1
-  //   // cout<<numavoiders[size]<<endl;
-  //   //cout<<size<<" ----------------"<<endl;
-  //   for (int index = 0; index < numavoiders[size]; index++) {
-  //     perm_t word = avoiderstoextend.front(); 
-  //     avoiderstoextend.pop();
-  //     uint64_t avoidbits = trivialmap; // first base bits are ones
-  //     for (int killedpos = size - 1; killedpos > size - 1 - maxavoidsize && killedpos >= 0; killedpos--) {
-  // 	perm_t shrunkword = killpos(word, killedpos);
-  // 	uint64_t bitmap_temp = *((uint64_t *)(avoidmap.getpayload(prepareforavoidset(shrunkword, size - 1))));
-  // 	avoidbits = avoidbits & bitmap_temp;
-  //     }
-  //     // still need to check if each of detected avoider might actually be a pattern:
-  //     if (size + 1 <= maxavoidsize) {
-  // 	// Not worth messing with bithacks to make this loop more efficient
-  // 	// since we only enter this if statement in small cases.
-  // 	for (int addval = 0; addval < base; addval++) {
-  // 	  if ((avoidbits & (1 << addval)) != 0) {
-  // 	    perm_t newword = setdigit(word, size, addval);
-  // 	    perm_t wordaspattern = 0;
-  // 	    wordaspattern = wordfingerprint(newword, size + 1);
-  // 	    if (patternprintset.contains(wordaspattern)) {
-  // 	      avoidbits = avoidbits - (1 << addval); // was not an avoider after all
-  // 	    } 
-  // 	  }
-  // 	}
-  //     }
-  //     // Now we have completely determined which extensions of word are avoiders
-  //     if (size + 1 < maxsize) avoidmap.add(prepareforavoidset(word, size), &avoidbits);
-  //     numavoiders[size + 1] += __builtin_popcount((uint32_t)avoidbits);
-  //     if (size + 1 < maxsize) {
-  // 	for (int addval = 0; addval < base; addval++) {
-  // 	  // Probably not worth messing around with bit hacks to improve asymptoics on this for loop.
-  // 	  // In particular, if number of avoiders grows even sort of fast, then for the
-  // 	  // avoiders we push onto avoiderstoextend we're going to be doing enough work
-  // 	  // to amortize the wasted cost in this for loop.
-  // 	  if ((avoidbits & (1 << addval)) != 0) {
-  // 	    perm_t newword = setdigit(word, size, addval);
-  // 	    avoiderstoextend.push(newword);
-  // 	    //avoidset.add(prepareforavoidset(newword, size + 1));
-  // 	    //cout<<size + 1<<endl;
-  // 	    //displayperm(newword);
-  // 	  }
-  // 	}
-  //     }
-  //   }
-  // }
 }
 
 // REQUIREMENTS:
@@ -201,9 +154,10 @@ void wordavoiders_raw_dynamic(const hashdb &patternprintset, int maxavoidsize, i
 // base <= 31 and base <= max digit size in word (first requirement because of fingerprint function)
 // Cannot have word comprised of 16 16s if using 64 bit permutation representation (hash table -1 error)
 // maxwordsize <= number of digits we can store in word
-void countavoidersfrompatternlist(string patternlist, int base, int maxwordsize, vector < uint64_t > &numavoiders) {
+void countavoidersfrompatternlist(string patternlist, int base, int maxwordsize, vector <uint64_t> &numavoiders) {
   hashdb patternprintset(1);
   numavoiders.resize(maxwordsize + 1);
+  cilk::reducer< cilk::op_add<uint64_t> > numavoiderstemp[maxwordsize + 1];
   int maxpatternsize = 0;
   int pos = 0;
   perm_t word = 0;
@@ -224,7 +178,10 @@ void countavoidersfrompatternlist(string patternlist, int base, int maxwordsize,
   }
   maxpatternsize = max(pos, maxpatternsize);
 
-  wordavoiders_raw_dynamic(patternprintset, maxpatternsize, maxwordsize, numavoiders, base);
+  wordavoiders_raw_dynamic(patternprintset, maxpatternsize, maxwordsize, numavoiderstemp, base);
+  for (int i = 0; i < maxwordsize + 1; i++) {
+    numavoiders[i] = numavoiderstemp[i].get_value();
+  }
 }
 
 int main() {
