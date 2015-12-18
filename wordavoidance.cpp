@@ -102,13 +102,35 @@ void wordavoiders_raw_dynamic_helper(const hashdb &patternprintset,  int maxavoi
       }
     }
   }
+
+  if (candidate_length + 1 < maxsize) {
+    // If we can remove maxavoidsize + 1 letters from a word of length
+    // candidate_length + 1, and still have at least one more letter,
+    // then we can start doing the real recursion
+    if (candidate_length <= maxavoidsize) {
+      wordavoiders_raw_dynamic_helper(patternprintset, maxavoidsize, maxsize, numavoiders, base, candidate_length + 1, avoiderstoextend, 0, avoiderstoextend.size() - 1, avoidmap_write);
+    } else {
+      int next_candidate_index = 0;
+      for (int splitval = 0; splitval < base; splitval++) {
+	int start_index = next_candidate_index;
+	int end_index = next_candidate_index - 1;
+	
+	while (next_candidate_index < avoiderstoextend.size()
+	       && getdigit(avoiderstoextend[next_candidate_index], candidate_length - 1 - maxavoidsize) == splitval) {
+	  end_index++;
+	  next_candidate_index++;
+	}
+	wordavoiders_raw_dynamic_helper(patternprintset, maxavoidsize, maxsize, numavoiders, base, candidate_length + 1, avoiderstoextend, start_index, end_index, avoidmap_write);
+      }
+    }
+  }
 }
 
 
 // PATTERNS HAVE TO BE AT LEAST SIZE THREE DUE TO HOW AVOIDMAP IS SET UP
 void wordavoiders_raw_dynamic(const hashdb &patternprintset, int maxavoidsize, int maxsize, vector < uint64_t > &numavoiders, int base) {
   hashmap avoidmap(1<<8, 8);
-  std::queue<perm_t> avoiderstoextend; // queue of avoiders built so far.
+  std::vector<perm_t> avoiderstoextend; // queue of avoiders built so far.
   //for (int i = 0; i < base; i++)  avoidset.add(prepareforavoidset(setdigit(0, 0, i), 1));
   uint64_t trivialmap = (((uint64_t)1) << base) - 1;
   for (int i = 0; i < base; i++)  avoidmap.add(prepareforavoidset(setdigit(0, 0, i), 1), &trivialmap);
@@ -117,60 +139,61 @@ void wordavoiders_raw_dynamic(const hashdb &patternprintset, int maxavoidsize, i
   for (int i = 0; i < base; i++) {
     for (int j = 0; j < base; j++) {
       perm_t temp_perm = setdigit(setdigit(0, 0, i), 1, j);
-      avoiderstoextend.push(prepareforavoidset(temp_perm, 2));
+      avoiderstoextend.push_back(prepareforavoidset(temp_perm, 2));
       //avoidset.add(prepareforavoidset(temp_perm, 2));
       avoidmap.add(prepareforavoidset(temp_perm, 2), &trivialmap);
     }
   }
   numavoiders[2] = base * base;
 
-  for (int size = 2; size < maxsize; size++) { // build avoiders of length size + 1
-    // cout<<numavoiders[size]<<endl;
-    //cout<<size<<" ----------------"<<endl;
-    for (int index = 0; index < numavoiders[size]; index++) {
-      perm_t word = avoiderstoextend.front(); 
-      avoiderstoextend.pop();
-      uint64_t avoidbits = trivialmap; // first base bits are ones
-      for (int killedpos = size - 1; killedpos > size - 1 - maxavoidsize && killedpos >= 0; killedpos--) {
-	perm_t shrunkword = killpos(word, killedpos);
-	uint64_t bitmap_temp = *((uint64_t *)(avoidmap.getpayload(prepareforavoidset(shrunkword, size - 1))));
-	avoidbits = avoidbits & bitmap_temp;
-      }
-      // still need to check if each of detected avoider might actually be a pattern:
-      if (size + 1 <= maxavoidsize) {
-	// Not worth messing with bithacks to make this loop more efficient
-	// since we only enter this if statement in small cases.
-	for (int addval = 0; addval < base; addval++) {
-	  if ((avoidbits & (1 << addval)) != 0) {
-	    perm_t newword = setdigit(word, size, addval);
-	    perm_t wordaspattern = 0;
-	    wordaspattern = wordfingerprint(newword, size + 1);
-	    if (patternprintset.contains(wordaspattern)) {
-	      avoidbits = avoidbits - (1 << addval); // was not an avoider after all
-	    } 
-	  }
-	}
-      }
-      // Now we have completely determined which extensions of word are avoiders
-      if (size + 1 < maxsize) avoidmap.add(prepareforavoidset(word, size), &avoidbits);
-      numavoiders[size + 1] += __builtin_popcount((uint32_t)avoidbits);
-      if (size + 1 < maxsize) {
-	for (int addval = 0; addval < base; addval++) {
-	  // Probably not worth messing around with bit hacks to improve asymptoics on this for loop.
-	  // In particular, if number of avoiders grows even sort of fast, then for the
-	  // avoiders we push onto avoiderstoextend we're going to be doing enough work
-	  // to amortize the wasted cost in this for loop.
-	  if ((avoidbits & (1 << addval)) != 0) {
-	    perm_t newword = setdigit(word, size, addval);
-	    avoiderstoextend.push(newword);
-	    //avoidset.add(prepareforavoidset(newword, size + 1));
-	    //cout<<size + 1<<endl;
-	    //displayperm(newword);
-	  }
-	}
-      }
-    }
-  }
+  wordavoiders_raw_dynamic_helper(patternprintset, maxavoidsize, maxsize, numavoiders, base,  2, avoiderstoextend, 0, avoiderstoextend.size() - 1, avoidmap);
+  // for (int size = 2; size < maxsize; size++) { // build avoiders of length size + 1
+  //   // cout<<numavoiders[size]<<endl;
+  //   //cout<<size<<" ----------------"<<endl;
+  //   for (int index = 0; index < numavoiders[size]; index++) {
+  //     perm_t word = avoiderstoextend.front(); 
+  //     avoiderstoextend.pop();
+  //     uint64_t avoidbits = trivialmap; // first base bits are ones
+  //     for (int killedpos = size - 1; killedpos > size - 1 - maxavoidsize && killedpos >= 0; killedpos--) {
+  // 	perm_t shrunkword = killpos(word, killedpos);
+  // 	uint64_t bitmap_temp = *((uint64_t *)(avoidmap.getpayload(prepareforavoidset(shrunkword, size - 1))));
+  // 	avoidbits = avoidbits & bitmap_temp;
+  //     }
+  //     // still need to check if each of detected avoider might actually be a pattern:
+  //     if (size + 1 <= maxavoidsize) {
+  // 	// Not worth messing with bithacks to make this loop more efficient
+  // 	// since we only enter this if statement in small cases.
+  // 	for (int addval = 0; addval < base; addval++) {
+  // 	  if ((avoidbits & (1 << addval)) != 0) {
+  // 	    perm_t newword = setdigit(word, size, addval);
+  // 	    perm_t wordaspattern = 0;
+  // 	    wordaspattern = wordfingerprint(newword, size + 1);
+  // 	    if (patternprintset.contains(wordaspattern)) {
+  // 	      avoidbits = avoidbits - (1 << addval); // was not an avoider after all
+  // 	    } 
+  // 	  }
+  // 	}
+  //     }
+  //     // Now we have completely determined which extensions of word are avoiders
+  //     if (size + 1 < maxsize) avoidmap.add(prepareforavoidset(word, size), &avoidbits);
+  //     numavoiders[size + 1] += __builtin_popcount((uint32_t)avoidbits);
+  //     if (size + 1 < maxsize) {
+  // 	for (int addval = 0; addval < base; addval++) {
+  // 	  // Probably not worth messing around with bit hacks to improve asymptoics on this for loop.
+  // 	  // In particular, if number of avoiders grows even sort of fast, then for the
+  // 	  // avoiders we push onto avoiderstoextend we're going to be doing enough work
+  // 	  // to amortize the wasted cost in this for loop.
+  // 	  if ((avoidbits & (1 << addval)) != 0) {
+  // 	    perm_t newword = setdigit(word, size, addval);
+  // 	    avoiderstoextend.push(newword);
+  // 	    //avoidset.add(prepareforavoidset(newword, size + 1));
+  // 	    //cout<<size + 1<<endl;
+  // 	    //displayperm(newword);
+  // 	  }
+  // 	}
+  //     }
+  //   }
+  // }
 }
 
 // REQUIREMENTS:
