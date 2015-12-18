@@ -29,14 +29,21 @@ we cap the size of a permutation at 16. However, changing a macro in
 perm.h allows for this cap to be raised to 25 or 31. These files
 contain basic functions for using our permutation-representation.
 
-fastavoidance.cpp/.h: Implements O(|S_{N-1}(Pi)Nk) algorithm for
-building S_n(Pi) for each n in [1..N] and some set of patterns (which
-need not be the same size) Pi, the largest being of size k. Could
-easily be modified to build S \cap S_n(Pi) for a down-closed set of
-permutation S. Also implements a brute-force algorithm and an
-algorithm based on PermLab for the same task; if SINGLEPATTERNOPT (in
-cacheavoidance.cpp) is false, then we require that Pi comprise
-patterns of only one size.
+fastavoidance.cpp/.h: Implements O(|S_{N-1}(Pi)|k) algorithm for
+computing |S_n(Pi)| for each n in [1..N] and some set of patterns
+(which need not be the same size) Pi, the largest being of size
+k. Could easily be modified to build S \cap S_n(Pi) for a down-closed
+set of permutation S. Also implements a brute-force algorithm and an
+algorithm based on PermLab for the same task; if SINGLEPATTERNOPT is
+false, then we require that Pi comprise patterns of only one size.
+
+NOTE: paper.pdf describes an O(|S_{N-1}(Pi)|Nk) algorithm, which is a
+factor of N slower than the one implemented in fastavoidance.cpp. In
+fact, the slower algorithm is also implemented in fastavoidance.cpp,
+but is no longer used (except as a base case for the faster algorithm;
+it could easily be updated to not be used at all, however). As soon as
+I complete a writeup describing the modifications appearing in the new
+algorithm, I will post it here.
 
 countpatterns.cpp/.h: Implements an O(n!k) algorithm for counting the
 number of Pi-patterns appearing in each permutation in S_n for n in
