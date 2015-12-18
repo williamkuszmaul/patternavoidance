@@ -268,16 +268,18 @@ static bool isavoider(perm_t perm, perm_t inverse, int maxavoidsize, int length,
 // This is the implementation of the pattern-avoidance algorithm which
 // does not use the memory-efficient optimizations. It is used to
 // build the small avoiders as a base case for the more efficient
-// implementation. Nor does it use clever bit hacks to remove the $n$
-// factor from the $O(|S_{\le n - 1}(Pi)| nk)$ time algorithm;
-// however, since k is usually small relative to n, this is not a big
-// deal in practice; if it were, the hack could easily be added.
-// Builds the permutations in $S_1, ..., S_maxsize$ avoiding the
-// patterns in patternset, the longest of which is length
-// maxavoidsize. If justcount, does nothing with avoidervector but
-// makes nuavoiders[i] be the number of avoiders in S_i (for i >
-// 0). If !justcount, does nothing with numavoiders, but makes
-// avoidervector contain a vector of all permutations in S_i in
+// implementation. It also does not use the the bit-hacks that remove
+// the $n$ factor from the original $O(|S_{\le n - 1}(Pi)| nk)$ time
+// algorithm; however, because this is only used as a base case for
+// the more efficient implementation, the factor of n has no practical
+// affect on performance (which is why I have not bothered updating
+// this implementation as I have found new optimizations for the more
+// efficient implementation).  Builds the permutations in $S_1, ...,
+// S_maxsize$ avoiding the patterns in patternset, the longest of
+// which is length maxavoidsize. If justcount, does nothing with
+// avoidervector but makes nuavoiders[i] be the number of avoiders in
+// S_i (for i > 0). If !justcount, does nothing with numavoiders, but
+// makes avoidervector contain a vector of all permutations in S_i in
 // avoidervector[i] (for i > 0).  Fills in future_bitmaps to contain
 // the bitmaps for the avoiders of size maxsize.  avoidmap is filled
 // in to map avoiders to bitmaps saying in which positions n can be
