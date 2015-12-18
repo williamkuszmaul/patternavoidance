@@ -392,6 +392,26 @@ void buildavoiders_raw_dynamic(const hashdb &patternset, int maxavoidsize, int m
   return;
 }
 
+// Updates inverse to be the inverse of the same permutation, except with length inserted in position pos.
+// Only responsible for having accurate values of inverse for final partial letters of new inverse.
+// O(partial) time
+inline perm_t extendpartialinverse(perm_t inverse, uint64_t pos, uint64_t length, uint64_t partial) {
+  perm_t new_inverse = setdigit(inverse, length, pos); // add the new letter to inverse
+  for (int i = 1; i < partial && i < length + 1; i++) {
+    int letter = length - i;
+    int letter_pos = getdigit(inverse, letter);
+    if (letter_pos >= pos) {
+      new_inverse = setdigit(new_inverse, letter, letter_pos + 1);
+    }
+  }
+  // cout<<"-----------"<<endl;
+  // cout<<partial<<endl;
+  // cout<<pos<<endl;
+  // displayperm(inverse);
+  // displayperm(new_inverse);
+  return new_inverse;
+}
+
 
 // Implements the depth-first search described in memory-efficient version of dynamic algorithm in paper (see README)
 // Moreover, uses bithacks to analyze all the extensions of an avoider at once. (and figure out if they're avoiders)
@@ -399,16 +419,17 @@ void buildavoiders_raw_dynamic(const hashdb &patternset, int maxavoidsize, int m
 // The candidates are the permutations which can be extended to obtain potential elements of C^k(perm) \cap S_{\le n}(\Pi)
 // candidate_start_pos is position of first candidate in candidates, candidate_end_pos position of last
 // avoiderset_read is the hash table C^k(perm\downarrow_1) \cap S_{\le n}(\Pi)
-void buildavoiders_dynamic_helper(perm_t perm, perm_t inverse, uint64_t length, const hashdb &patternset, const hashdb &shiftedprefixmap, int maxavoidsize, int maxsize,  vector < cilk::reducer< cilk::op_list_append<perm_t> > > &avoidervector, cilk::reducer< cilk::op_add<uint64_t> > *numavoiders, bool justcount, vector <perm_t> &candidates, int64_t candidate_start_pos, int64_t candidate_end_pos, const hashmap &avoidermap_read, vector <uint64_t> &prevbitmaps) {
+void buildavoiders_dynamic_helper(perm_t perm, perm_t inverse, uint64_t length, const hashdb &patternset, const hashdb &shiftedprefixmap, int maxavoidsize, int maxsize,  vector < cilk::reducer< cilk::op_list_append<perm_t> > > &avoidervector, cilk::reducer< cilk::op_add<uint64_t> > *numavoiders, bool justcount, const vector <perm_t> &candidates, const vector <perm_t> &candidate_inverses, int64_t candidate_start_pos, int64_t candidate_end_pos, const hashmap &avoidermap_read, const vector <uint64_t> &prevbitmaps) {
   hashmap avoidermap_write(1 << 8, 8);
   vector <perm_t> next_candidates; // the avoiders obtained from current candidates
+  vector <perm_t> next_candidate_inverses; // the avoiders obtained from current candidates
   vector <uint64_t> bitmaps;
   
   uint64_t candidate_length = length + maxavoidsize - 1;
   // Go through the candidates
   for (int64_t pos = candidate_start_pos; pos <= candidate_end_pos; pos++) { // signed because end_pos might be -1
     perm_t candidate = candidates[pos]; 
-    perm_t candidate_inverse = getinverse(candidate, candidate_length);
+    perm_t candidate_inverse = candidate_inverses[pos]; // getinverse(candidate, candidate_length);
     uint64_t bitmap = prevbitmaps[pos];
     // based on candidate\downarrow_1, bitmap tells us options for positions we can extend candidate in to
     // get a new avoider.
@@ -502,9 +523,12 @@ void buildavoiders_dynamic_helper(perm_t perm, perm_t inverse, uint64_t length, 
 	  // doing lastonepos first is important for next_candidates ordering
 	  // so that it's easy to partition next_candidates for recursion
 	  tempbits = tempbits - (1 << i);
-	  
+
+	  perm_t extendedinverse =  extendpartialinverse(candidate_inverse, i, candidate_length, maxavoidsize + 1);
 	  perm_t extendedperm = setdigit(addpos(candidate, i), i, candidate_length); // insert candidate_length in i-th position (remember, values are indexed starting at 0, so results in permutation in S_candidate_length);
 	  next_candidates.push_back(extendedperm);
+	  
+	  next_candidate_inverses.push_back(extendedinverse);
 	  if (!justcount) (*avoidervector[candidate_length + 1]).push_back(extendedperm); 
 	  else	   *(numavoiders[candidate_length + 1]) += 1;
 	  bitmaps.push_back(insertbit(bitmap, i + 1, 1)); // using which insertion positions resulted in an avoider, build bitmap for each new avoider
@@ -545,7 +569,7 @@ void buildavoiders_dynamic_helper(perm_t perm, perm_t inverse, uint64_t length, 
 	candidates_end_pos = cand_pos;
       }
       if (candidates_prev_end_pos + 1 <= candidates_end_pos) {
-	cilk_spawn buildavoiders_dynamic_helper(extendedperm, nextinverse, length + 1, patternset, shiftedprefixmap,maxavoidsize, maxsize,  avoidervector, numavoiders, justcount, next_candidates, candidates_prev_end_pos + 1, candidates_end_pos, avoidermap_write, bitmaps);
+	cilk_spawn buildavoiders_dynamic_helper(extendedperm, nextinverse, length + 1, patternset, shiftedprefixmap,maxavoidsize, maxsize,  avoidervector, numavoiders, justcount, next_candidates, next_candidate_inverses, candidates_prev_end_pos + 1, candidates_end_pos, avoidermap_write, bitmaps);
 	candidates_prev_end_pos = candidates_end_pos;
       }
     }
@@ -580,6 +604,7 @@ void buildavoiders_dynamic(const hashdb &patternset, int maxavoidsize, int maxsi
 
   vector < list < perm_t > > avoidervector2(maxavoidsize); // avoiders for sizes less than maxavoidsize
   vector < vector < perm_t > > kmin1perms(maxavoidsize); // avoidervector 2 stored as vector of vectors
+  vector < vector < perm_t > > kmin1inverses(maxavoidsize); // avoidervector 2 stored as vector of vectors
   vector < uint64_t > bitmaps;
   kmin1perms[0].push_back(0);
   hashmap currentavoiders((1L << 10), 8); // might be worth playing with size of first argument
@@ -590,12 +615,13 @@ void buildavoiders_dynamic(const hashdb &patternset, int maxavoidsize, int maxsi
     for (std::list<perm_t>::iterator it = avoidervector2[i].begin(); it != avoidervector2[i].end(); ++it) {
       // NOTE: This ordering is important because it ends up being relied on later when we
       // are choosing which candidates to send down which part of the recursion tree in buildavoiders_dynamic_helper
-      kmin1perms[i].push_back(*it); 
+      kmin1perms[i].push_back(*it);
+      kmin1inverses[i].push_back(getinverse(*it, i));
     }
   }
   vector < cilk::reducer< cilk::op_list_append<perm_t> > > avoidervectortemp(maxsize + 1);
   cilk::reducer< cilk::op_add<uint64_t> > numavoiderstemp[maxsize + 1];
-  buildavoiders_dynamic_helper(0L, 0L, 0L, patternset, shiftedprefixmap, maxavoidsize, maxsize, avoidervectortemp, numavoiderstemp, justcount, kmin1perms[maxavoidsize - 1], 0, kmin1perms[maxavoidsize - 1].size() - 1, currentavoiders, bitmaps);
+  buildavoiders_dynamic_helper(0L, 0L, 0L, patternset, shiftedprefixmap, maxavoidsize, maxsize, avoidervectortemp, numavoiderstemp, justcount, kmin1perms[maxavoidsize - 1], kmin1inverses[maxavoidsize - 1], 0, kmin1perms[maxavoidsize - 1].size() - 1, currentavoiders, bitmaps);
   for (int i = maxavoidsize; i < maxsize + 1; i++) {
     if (!justcount) avoidervector[i] = avoidervectortemp[i].get_value();
     // note: we copy the entire avoidervectortemp[i] into avoidervector[i] because
