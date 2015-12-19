@@ -1,2 +1,1 @@
-Check that memory usage is n^k+1 not n^k
-comment in word code that we're being kind of lazy and using extr afactor of n (or just fix that) on memory usage
+
