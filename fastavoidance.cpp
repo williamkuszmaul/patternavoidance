@@ -243,9 +243,6 @@ void buildavoiders_dynamic_helper(uint64_t candidate_length, const hashdb &patte
   vector <perm_t> next_candidates; // the avoiders obtained from current candidates
   vector <perm_t> next_candidate_inverses; // the avoiders obtained from current candidates
   vector <uint64_t> bitmaps;
-
-  int length = (int)candidate_length - maxavoidsize + 1; // length of the common ancestor in candidates tree of candidates
-  // could be negative if candidates are very small
   
   // Go through the candidates and build for each a bitmap of which positions the candidate can be extended in to get a new avoider
   for (int64_t pos = candidate_start_pos; pos <= candidate_end_pos; pos++) { // signed because end_pos might be -1
@@ -345,37 +342,63 @@ void buildavoiders_dynamic_helper(uint64_t candidate_length, const hashdb &patte
     }
   }
 
-  // Now that we've identified the extensions of the candidates which
-  // are avoiders, we need to go to the next level of the recursion in
-  // which we find which extensions of these are also avoiders.  We
-  // will partition new candidates based on their ancestor of length
-  // (length + 1) in the tree of candidates.  And then we will recurse
-  // on those collections. See paper for how this allows us to be very
-  // memory efficient.  Note that each part of this partition is
-  // currently a single contiguous run inside next_candidates.
+  // In the next level of the recursion, we will want to be able to
+    // delete any of the largest k letters of the new candidates, and
+    // look the result up in the avoidmap. Thus it is okay for us to
+    // have fixed the relative order of all but the largest (k-1)
+    // letters of the candidates at this level of the
+    // recursion. Similarly, we can fix all but the largest (k-1)
+    // letters in the next level of the recursion. That means we want
+    // to pivot on the position (relative to smaller letters) of the
+    // k-th to largest letter of each next_candidate, which is
+    // zero-indexed position (candidate_length + 1 - k).  At each
+    // level of the recursion, we use n^{k-1} memory There are n
+    // levels of the recursion, resulting in n^k total memory
+    // usage. In particular, this is a factor of n better than the
+    // original memory hack got because we are compressing up to n
+    // objects into single bitmaps now.  The recursion partitions the
+    // next_candidates based on the pivot.  Note that because of the
+    // order we introduce new candidates, currently, all the elements
+    // in each part of the partition are already in a row in
+    // next_candidates.
+
+
+  
   if (candidate_length + 1 < maxsize) {
-    if (candidate_length < maxavoidsize) { 
+    // If candidate_length + 1 - maxavoidsize \ge 0, we want to do the real
+    // recursive step
+
+    if (candidate_length + 1 < maxavoidsize) { 
       buildavoiders_dynamic_helper(candidate_length + 1, patternset, shiftedprefixmap, maxavoidsize, maxsize,  avoidervector, numavoiders, justcount, next_candidates, next_candidate_inverses, 0, next_candidates.size() - 1, avoidermap_write, bitmaps);
     } else {
+      // for convenience, we set a variable length = length of common
+      // ancestor in tree of candidates of current candidates
+      int length = (int)candidate_length - maxavoidsize + 1; 
+      // Could be zero if this is the first time we are doing the
+      // actual recursion.
+
       int64_t candidates_prev_end_pos = -1; // index in next_candidates of final candidate in previous part of partition
       int64_t candidates_end_pos = -1; // index of final candidate in current part of partition
-      
+
+      // We are pivoting based on the number of letters to the left of
+      // the (length + 1)-th smallest letter that are less than it.  i
+      // iterates through the possible values for this pivot. By
+      // iterating i backwards, next_candidates is already ordered
+      // with based on the pivot value.
       for (int i = length; i >= 0; i--) {
-	// recall that all original candidates already had shared ancestor of length length in tree of candidates
-	// we are partitioning the next_candidates based on shared ancestors of length (length + 1)
+	// cand_pos goes through the indices of the next_candidates with this pivot value
 	for (uint64_t cand_pos = candidates_prev_end_pos + 1; cand_pos < next_candidates.size(); cand_pos++) {
-	  //perm_t next_candidate = next_candidates[cand_pos];
 	  perm_t next_candidate_inverse = next_candidate_inverses[cand_pos];
 	  int lenpos = getdigit(next_candidate_inverse, length);
 	  int skip_counter = 0; // counts number of letters larger than length to length's left
 	  for (int t = length + 1; t <= candidate_length; t++) {
 	    if (getdigit(next_candidate_inverse, t) < lenpos) skip_counter++;
 	  }
-	  int norm_counter = lenpos - skip_counter; // position of length + 1 relative to first length letters of candidate
+	  int norm_counter = lenpos - skip_counter; // position of (length + 1)-th smallest letter relative to smallest length letters of candidate
 	  
-	  if (norm_counter != i) { // then we've hit the end of the run in next_candidates with this common (length+1)-long ancestor
+	  if (norm_counter != i) { // at this point, we've hit the end of the run
 	    //displayperm(next_candidate);
-	    break;  // We're done with this part of the partition
+	    break; 
 	  }
 	  candidates_end_pos = cand_pos;
 	}
