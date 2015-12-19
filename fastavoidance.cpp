@@ -403,7 +403,9 @@ void buildavoiders_dynamic_helper(uint64_t candidate_length, const hashdb &patte
 	    // factor of n has already been chopped off. Of course,
 	    // from a practical standpoint, the prefix hack is still
 	    // useful since this for loop has almost nothing inside
-	    // it.
+	    // it. If you were wiling to scratch the memory-efficiency
+	    // portion of the algorithm, then you conjecture would
+	    // still apply.
 	    if (getdigit(next_candidate_inverse, t) < lenpos) skip_counter++;
 	  }
 	  int norm_counter = lenpos - skip_counter; // position of (length + 1)-th smallest letter relative to smallest length letters of candidate

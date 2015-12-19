@@ -21,7 +21,8 @@ Hmm, there may be another factor of two to be squeezed by doing similar hacks to
 the best asymptotically possible. But I'll hold back on that since I suspect it's more like
 a factor of a fourth (based on computations from fastavoidance.cpp).
 
-Changed killedpos to be decremented from n rather than incremented from 1, and got roughly factor of two speedup (for a bit subtle reasons)
+Changed killedpos to be decremented from n rather than incremented from 1, and got roughly factor of two speedup
+In particular, this gives us a lot of overlap in our lookups in a given time period, because the first ~(n-k) letters are the same for every lookup. Consequently this version is more cache friendly.
 7 49 343 2366 15890 103250 647790 3925761 23016231 130812213 
 2.33user 0.30system 0:02.63elapsed 100%CPU (0avgtext+0avgdata 563052maxresident)k
 0inputs+0outputs (0major+178317minor)pagefaults 0swaps
