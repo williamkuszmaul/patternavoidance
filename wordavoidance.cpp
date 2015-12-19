@@ -104,19 +104,34 @@ void wordavoiders_raw_dynamic_helper(const hashdb &patternprintset,  int maxavoi
   }
 
   if (candidate_length + 1 < maxsize) {
-    // If we can remove maxavoidsize + 1 letters from a word of length
-    // candidate_length + 1, and still have at least one more letter,
-    // then we can start doing the real recursion
-    if (candidate_length <= maxavoidsize) {
+    // In the next level of the recursion, we will want to be able to
+    // delete any of the final k letters of the new candidates, and
+    // look the result up in the avoidmap. Thus it is okay for us to
+    // have fixed all but the final (k-1) letters of the candidates at
+    // this level of the recursion. Similarly, we can fix all but the
+    // final (k-1) letters in the next level of the recursion. That
+    // means we want to pivot on the k-th to final letter of each
+    // next-candidate, which is zero-indexed position
+    // (candidate_length + 1 - k).
+    // At each level of the recursion, we use n^{k-1} memory
+    // There are n levels of the recursion, resulting in n^k
+    // total memory usage. In particular, this is a factor of n
+    // better than the original memory hack got because we are
+    // compressing up to n objects into single bitmaps now.
+
+    // If candidate_length + 1 - maxavoidsize \ge 0, we want to do the real
+    // recursive step
+    if (candidate_length < maxavoidsize - 1) {
       wordavoiders_raw_dynamic_helper(patternprintset, maxavoidsize, maxsize, numavoiders, base, candidate_length + 1, avoiderstoextend, 0, avoiderstoextend.size() - 1, avoidmap_write);
     } else {
       int next_candidate_index = 0;
       for (int splitval = 0; splitval < base; splitval++) {
 	int start_index = next_candidate_index;
 	int end_index = next_candidate_index - 1;
-	
+
+	// We use the letter in zero-indexed position candidate_length + 1 - k as our pivot 
 	while (next_candidate_index < avoiderstoextend.size()
-	       && getdigit(avoiderstoextend[next_candidate_index], candidate_length - 1 - maxavoidsize) == splitval) {
+	       && getdigit(avoiderstoextend[next_candidate_index], candidate_length + 1 - maxavoidsize) == splitval) {
 	  end_index++;
 	  next_candidate_index++;
 	}
