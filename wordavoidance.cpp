@@ -200,9 +200,9 @@ void countavoidersfrompatternlist(string patternlist, int base, int maxwordsize,
 }
 
 int main() {
-  int maxwordsize = 12;
+  int maxwordsize = 10;
   int base = 7;
-  string patternlist = "1234";
+  string patternlist = "1234 1423 2413 4321";
   vector < uint64_t > numavoiders; //(11);
   countavoidersfrompatternlist(patternlist, base, maxwordsize, numavoiders);
   //wordavoiders_raw_dynamic(patternprintset, 2, 10, numavoiders, 2);

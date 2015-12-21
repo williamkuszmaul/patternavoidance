@@ -225,7 +225,7 @@ int main() {
   // Only use true argument for variants of brute force; will give you stats.
   testsinglepatterns_avoid(false);
   test231extensions_avoid(false);
-  testsinglepatterns_count();
-  testmultiplepatterns_count();
+  //  testsinglepatterns_count();
+  //  testmultiplepatterns_count();
   return 0;
 }
