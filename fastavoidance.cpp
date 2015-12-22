@@ -333,7 +333,6 @@ void buildavoiders_dynamic_helper(uint64_t candidate_length, const hashdb &patte
 	perm_t extendedinverse =  extendpartialinverse(candidate_inverse, i, candidate_length, maxavoidsize + 1);
 	perm_t extendedperm = setdigit(addpos(candidate, i), i, candidate_length); // insert candidate_length in i-th position (remember, values are indexed starting at 0, so results in permutation in S_candidate_length);
 	next_candidates.push_back(extendedperm);
-
 	next_candidate_inverses.push_back(extendedinverse);
 	if (!justcount) (*avoidervector[candidate_length + 1]).push_back(extendedperm);
 	else   *(numavoiders[candidate_length + 1]) += 1;
@@ -479,7 +478,7 @@ void buildavoiders_dynamic(const hashdb &patternset, int maxavoidsize, int maxsi
   cilk::reducer< cilk::op_add<uint64_t> > numavoiderstemp[maxsize + 1];
   buildavoiders_dynamic_helper(2, patternset, shiftedprefixmap, maxavoidsize, maxsize, avoidervectortemp, numavoiderstemp, justcount, sizetwo, sizetwoinverses, 0, 1, currentavoiders, bitmaps);
   
-  for (int i = maxavoidsize; i < maxsize + 1; i++) {
+  for (int i = 3; i < maxsize + 1; i++) {
     if (!justcount) avoidervector[i] = avoidervectortemp[i].get_value();
     // note: we copy the entire avoidervectortemp[i] into avoidervector[i] because
     // it is convenient for the user to not have a data structure which
