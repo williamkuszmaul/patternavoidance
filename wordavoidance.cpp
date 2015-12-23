@@ -1,4 +1,5 @@
 // THIS FILE IS IN DEVELOPMENT AND IS NOT GUARANTEED TO DO ANYTHING!
+// I'm using it to run some experiments.
 
 #include <bitset>
 #include <cassert>
@@ -199,16 +200,111 @@ void countavoidersfrompatternlist(string patternlist, int base, int maxwordsize,
   }
 }
 
-int main() {
-  int maxwordsize = 10;
-  int base = 7;
-  string patternlist = "1234 1423 2413 4321";
-  vector < uint64_t > numavoiders; //(11);
-  countavoidersfrompatternlist(patternlist, base, maxwordsize, numavoiders);
-  //wordavoiders_raw_dynamic(patternprintset, 2, 10, numavoiders, 2);
-  for (int i = 1; i <= maxwordsize; i++) {
-    cout<<numavoiders[i]<<" ";
+class Bitmap {
+public:
+  vector <bool> map;
+  int size;
+  Bitmap(int requestedsize) {
+    size = requestedsize;
+    map.resize(size);
   }
-  cout<<endl;
+  void setpos(int pos) {
+    map[pos] = true;
+  }
+  void clearpos(int pos) {
+    map[pos] = false;
+  }
+  bool getpos(int pos) {
+    return map[pos];
+  }
+  void display() {
+    for (int i = 0; i < size; i++) cout<<map[i]<<" ";
+    cout<<endl;
+  }
+  int numonbits(){
+    int answer = 0;
+    for (int i = 0; i < size; i++) answer += (int)map[i];
+    return answer;
+  }
+  void clear() {
+    for (int i = 0; i < size; i++) map[i] = false;
+  }
+};
+
+
+// replaces map with next bitmap lexicographically to have same number of on bits as this one
+// returns false if map is the largest such map
+static bool getnextmap(Bitmap &map) {
+  int i = map.size - 1;
+  int numleadingones = 0;
+  while (i >= 0 && map.getpos(i) == 1) {
+    numleadingones++;
+    map.clearpos(i);
+    i--;
+  }
+  while (i >= 0 && map.getpos(i) == 0) {
+    i--;
+  }
+  if (i < 0) return false; 
+  map.clearpos(i);
+  i++;
+  for (int j = 0; j < numleadingones + 1; j++) {
+    map.setpos(i+j);
+  }
+  return true;
+}
+
+void allsubsetsofsize(string patterns[], int totalsize,  int setsize, int maxwordsize, int base, string outfile) {
+  ofstream outstream;
+  outstream.open(outfile, std::ofstream::trunc);
+  vector < string > patternsets;
+  Bitmap map(totalsize);
+  for (int j = 0; j < setsize; j++) map.setpos(j);
+
+  // First build sets of patterns
+  while (1)  {
+    string patternset = "";
+    for (int i = 0; i < totalsize; i++) {
+      if (map.getpos(i)) patternset = patternset + " " + patterns[i];
+    }
+    patternsets.push_back(patternset);
+    if (!getnextmap(map)) break;
+  }
+
+  // Next compute number of avoiders for each set of patterns
+  vector < vector <uint64_t> > sequences(patternsets.size(), vector <uint64_t> (maxwordsize + 1));
+  //cout<<patternsets.size()<<endl;
+#pragma cilk grainsize = 1
+  cilk_for (int i = 0; i < patternsets.size(); i++) {
+    vector <uint64_t> numavoiders(maxwordsize + 1);
+    //cout<<pattersets[i]<<endl;
+    countavoidersfrompatternlist(patternsets[i], base, maxwordsize, numavoiders);
+    for (int x = 1; x <= maxwordsize; x++) {
+      sequences[i][x] = numavoiders[x];
+    }
+  }
+
+  // Finally, report results
+  for (int i = 0; i < patternsets.size(); i++) {
+    outstream<<patternsets[i]<<endl;
+    for (int x = 1; x <= maxwordsize; x++) {
+      outstream<<sequences[i][x]<<" ";
+    }
+    outstream<<endl;
+  }
+  outstream.close();
+}
+
+
+int main() {
+  string array[] = {"1111","1112","1121","1122","1123","1211","1212","1213","1221","1222","1223","1231","1232","1233","1243","1312","1321","1322","1323","1324","1332","1342","1423","1432","2111","2112","2113","2121","2122","2123","2131","2132","2133","2134","2143","2211","2212","2213","2221","2231","2311","2312","2313","2314","2321","2331","2341","2413","2431","3112","3121","3122","3123","3124","3132","3142","3211","3212","3213","3214","3221","3231","3241","3312","3321","3412","3421","4123","4132","4213","4231","4312","4321"};
+  int base = 7;
+  int maxsize = 6;
+  int maxsetsize = 4;
+  for (int i = 1; i <= maxsetsize; i++) {
+    cout<<"Starting sets of size "<<i<<endl;
+    allsubsetsofsize(array, sizeof(array) / sizeof(char**), i, maxsize, base, "worddata" + to_string(i));
+  }
+  cout<<"Done"<<endl;
   return 0;
 }

@@ -9,6 +9,7 @@
 #include <bitset>
 #include <vector>
 #include <stdint.h>
+#include <fstream>
 // #include <unordered_set>
 #include <queue>
 #include "hashdb.h"
@@ -225,8 +226,11 @@ void writepatternsetstofile(ofstream &file, int setsize, int patternsize, bool v
   Bitmap map(numoptions);
   for (int j = 0; j < setsize; j++) map.setpos(j);
   while (1) {
-    if(!getnextmap(map)) break;
     entermap(map, file, numsetstotal, options, reverseindices, inverseindices, complementindices);
+    if(!getnextmap(map)) break;
+    // remember to increment map AFTER doing entermap
+    // (although for our computations, the trivial wilf equivalences
+    // will make the code still work even if you do it wrong)
   }
   if (verbose) {
     cout<<"Number of sets to be analyzed: "<<numsetstotal<<endl;
