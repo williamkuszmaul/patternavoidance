@@ -110,6 +110,7 @@ void  displaymatches(Oeis &OEIS, unordered_map<int, string> &oeismatchesbynum3, 
        iter != oeismatchesbynum3.end();
        ++iter) {
      int numhits = std::count(iter->second.begin(), iter->second.end(), '\n') + 1;
+     output<<OEIS.oeisnames[0]<<endl;
      output<<OEIS.oeisnames[iter->first]<<endl;
      output<<numhits<<" times"<<endl;
      if (verbose) output<<iter->second<<endl;
@@ -127,7 +128,7 @@ uint64_t factorial(int n) {
 int main() {
   
   bool data_built = false; // To just run OEIS analysis since sequence files prebuilt
-  int minpermsize = 5;
+  int minpermsize = 5; // for analysis, not for data collection
   int patternsize = 4;
   int maxpermsize = 16;
   int comparepermsize = 13;
