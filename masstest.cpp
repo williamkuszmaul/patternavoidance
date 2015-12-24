@@ -131,7 +131,7 @@ int main() {
   int patternsize = 4;
   int maxpermsize = 16;
   int comparepermsize = 13;
-  int minsetsize = 1;
+  int minsetsize = 5;
   string setsfilename = "testallfours-sets";
   string sequencesfilename = "testallfours-sequences";
   string revisedall = "testallfours-matches";
@@ -142,7 +142,7 @@ int main() {
   timestamp_t start_time = get_timestamp();
   if (!data_built) setstosequences(setsfilename, sequencesfilename, maxpermsize);
   timestamp_t end_time = get_timestamp();
-  if (!data_built) cout<<(end_time - start_time) / 1000000.0L<<" seconds for initial computation."<<endl;
+  if (!data_built) cout<<(end_time - start_time) / 1000000.0<<" seconds for initial computation."<<endl;
   cout<<"Building local version of OEIS..."<<endl;
   // ON OTHER COMPUTERS, STRIPPED AND NAMES FILES WILL HAVE TO BE CORRECTLY REFERRED TO
   Oeis OEIS("stripped", "names", maxpermsize - minpermsize + 1, 15); //Note: we allow sequences to start in any of positions 1, 2, ..., 15

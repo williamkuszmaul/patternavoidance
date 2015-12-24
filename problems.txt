@@ -1,2 +1,0 @@
-sets of each size code I think misses very first case!
-I don't think this showed up (due to our choice to use minimum lexicographic set)/

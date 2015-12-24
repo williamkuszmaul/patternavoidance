@@ -21,7 +21,7 @@ paper.pdf: Contains in depth discussion of the algorithms implemented
 here. Also, introduces the notation we use in our comments. When
 discussing permutations, we use the same notation as in the paper,
 indexing both position and value at 1 in the comments; the code,
-however, indexes at zero
+however, indexes at zero.
 
 perm.cpp/.h and utilities.cpp/.h: We represent permutations in
 unsigned integers, a fixed amount of space per letter. For efficiency,
@@ -34,13 +34,9 @@ computing |S_n(Pi)| for each n in [1..N] and some set of patterns
 (which need not be the same size) Pi, the largest being of size
 k. Could easily be modified to build S \cap S_n(Pi) for a down-closed
 set of permutation S. Also implements a brute-force algorithm and an
-algorithm based on PermLab for the same task; if SINGLEPATTERNOPT is
-false, then we require that Pi comprise patterns of only one size.
-
-NOTE: paper.pdf describes an O(|S_{N-1}(Pi)|Nk) algorithm, which is a
-factor of N slower than the one implemented in fastavoidance.cpp As
-soon as I complete a writeup describing the modifications appearing in
-the new algorithm, I will post it here.
+algorithm based on PermLab for the same task; in this case if
+SINGLEPATTERNOPT is false, then we require that Pi comprise patterns
+of only one size.
 
 countpatterns.cpp/.h: Implements an O(n!k) algorithm for counting the
 number of Pi-patterns appearing in each permutation in S_n for n in
@@ -107,7 +103,7 @@ results into tables. To use, put settings of fastavoidance.cpp and
 countpatterns.cpp to the algorithms you want to test, pick which tests
 in table_drawer.cpp you want to run, and compile and run table_drawer.
 
-datafolder.tar.gz: Contains compressed output of masstest.cpp.
+datafolder.tar.gz: Contains compressed output of masstest.cpp (run for sets length-4 patterns of sizes from 5 to 24).
 
 
                                Settings
@@ -122,10 +118,18 @@ Version 1.0: First version of code. All experiments in paper.pdf
 having to do with generate-and-check, as well as PermLab's algorithm
 were conducted using this version.
 
-Version 2.0: Second version of code. All experiments in paper.pdf
-having to do with our dynamic algorithms are conducted using this
-version (in serial using compiler settings -D_Cilk_spawn=
+Version 2.0: Second version of code. At this point all experiments in
+paper.pdf having to do with our dynamic algorithms are conducted using
+this version (in serial using compiler settings -D_Cilk_spawn=
 -D_Cilk_sync=). Introduces memory-efficient implementations of dynamic
 algorithms. Uses Cilk to parallelize algorithms.
 
 Version 2.1: Fixed minor bugs in code and paper.
+
+Version 3.0: Third version of code. Pattern-avoidance algorithms sped
+up by a linear factor. As a result, paper.pdf's experiments for
+pattern-avoidance for dynamic algorithm were rerun (in serial using
+compiler settings -D_Cilk_spawn= -D_Cilk_sync=). Paper.pdf has
+recieved a round of edits and has been updated to discuss the improved
+pattern-avoidance algorithm. Also, fixed a latent bug in
+buildinput.cpp.

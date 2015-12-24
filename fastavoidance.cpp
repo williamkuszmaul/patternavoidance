@@ -537,7 +537,7 @@ double run_interior_experiment(string patternlist, int maxpermsize) {
   else  buildavoiders_dynamic(patternset, maxpatternsize, maxpermsize, avoidervector, numavoiders, true);
   stat3 = numavoiders[maxpermsize];
   timestamp_t end_time = get_timestamp();
-  return (end_time - start_time)/1000000.0L;
+  return (end_time - start_time)/1000000.0;
 }
 
 // Example:

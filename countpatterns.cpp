@@ -169,7 +169,7 @@ void start_brute(int maxpatternsize, int maxpermsize, hashdb &patternset, cilk::
     buildpermutations_brute_usingbothaddfactors(0L, 0L, 1, maxpermsize, maxpatternsize, prefixmap, tally, completelist, 0, temparray, justcount);
   }
   timestamp_t current_time = get_timestamp();
-  if (verbose) cout<< "Time elapsed to build perms of size "<<maxpermsize<<" in seconds: "<<(current_time - start_time)/1000000.0L<<endl;
+  if (verbose) cout<< "Time elapsed to build perms of size "<<maxpermsize<<" in seconds: "<<(current_time - start_time)/1000000.0<<endl;
 }
 
 // We store P_0(perm), ..., P_{maxpatternsize}(perm) in a hash table containing arrays of shorts of size maxpatternsize + 1
@@ -307,7 +307,7 @@ void createPmap(uint64_t finalsize, hashdb &patternset, int maxpatternsize, time
     for (int x = 0; x < finalsize; x++) cachedP1s[x] = 0; // initialize to zero used in first call to buildpermutations when i = 2
     buildpermutations_raw_dynamic(0L, 1, i, maxpatternsize, finalsize, patternset, prefixmap, Phashmap, tally, completelist, cachedP1s, justcount, recordallPvals);
     timestamp_t current_time = get_timestamp();
-    if (verbose) cout<< "Time elapsed to build perms of size "<<i<<" in seconds: "<<(current_time - start_time)/1000000.0L<<endl;
+    if (verbose) cout<< "Time elapsed to build perms of size "<<i<<" in seconds: "<<(current_time - start_time)/1000000.0<<endl;
   }
   return;
 }
@@ -379,7 +379,7 @@ void createtally_dynamic(uint64_t finalsize, hashdb &patternset, int maxpatterns
   //cout<<"Ended initialization"<<endl;
   buildpermutations_dynamic(0L, 1, finalsize, maxpatternsize, finalsize, patternset, prefixmap, Phashmap, tally, completelist, justcount);
   timestamp_t current_time = get_timestamp();
-  if (verbose) cout<< "Time elapsed to build perms of size "<<finalsize<<" in seconds: "<<(current_time - start_time)/1000000.0L<<endl;
+  if (verbose) cout<< "Time elapsed to build perms of size "<<finalsize<<" in seconds: "<<(current_time - start_time)/1000000.0<<endl;
   return;
 }
 
@@ -449,7 +449,7 @@ double run_interior_experiment2(string patternlist, int maxpermsize) {
     delete[] tallytemp[i];
   }
   timestamp_t end_time = get_timestamp();
-  return (end_time - start_time)/1000000.0L;
+  return (end_time - start_time)/1000000.0;
 }
 
 // Requires all patterns size 3 or more
@@ -514,6 +514,6 @@ void countpatterns(string patternlist, int maxpermsize, vector < vector <int> > 
   for(int i = 0; i < maxpermsize + 1; i++) {
     delete[] tallytemp[i];
   }
-  if (verbose) cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
+  if (verbose) cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0<<endl;
   return;
 }

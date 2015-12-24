@@ -36,7 +36,7 @@ void countallfromfiletest(ifstream &infile, int maxpermsize, bool verbose) {
     timestamp_t end_time = get_timestamp();
     cout<<tally[maxpermsize][0]<<" "<<tally[maxpermsize][1]<<endl;
     //cout<<completelist[maxpermsize][0]<<endl;
-    if (verbose) cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0L<<endl;
+    if (verbose) cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0<<endl;
   }
   return;
 }
