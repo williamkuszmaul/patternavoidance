@@ -138,6 +138,6 @@ Version 3.0: Third version of code. Pattern-avoidance algorithms sped
 up by a linear factor. As a result, paper.pdf's experiments for
 pattern-avoidance for dynamic algorithm were rerun (in serial using
 compiler settings -D_Cilk_spawn= -D_Cilk_sync=). Paper.pdf has
-recieved a round of edits and has been updated to discuss the improved
+received a round of edits and has been updated to discuss the improved
 pattern-avoidance algorithm. Also, fixed a latent bug in
 buildinput.cpp.
