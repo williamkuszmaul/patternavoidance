@@ -109,9 +109,9 @@ results into tables. To use, put settings of fastavoidance.cpp and
 countpatterns.cpp to the algorithms you want to test, pick which tests
 in table_drawer.cpp you want to run, and compile and run table_drawer.
 
-datafolder.tar.gz: Contains compressed output file of masstest.cpp (run for sets length-4 patterns of sizes from 5 to 24).
+datafolder.tar.gz: Contains compressed output of masstest.cpp (run for sets length-4 patterns of sizes from 5 to 24).
 
-datafolder2.tar.gz: Contains compressed output file of masstest.cpp (run for sets of length-4 patterns of sizes 1 to 24)
+datafolder2.tar.gz: Contains compressed output of masstest.cpp (run for sets of length-4 patterns of sizes 1 to 24)
 
 
                                Settings

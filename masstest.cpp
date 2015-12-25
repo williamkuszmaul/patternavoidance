@@ -57,9 +57,8 @@ void analyzefirstsequenceset(Oeis &OEIS, string sequencesfilename, int minpermsi
     if (iszeroby(ithderivative(set.sequence, 2), 5)) degree = 1;
     if (iszeroby(ithderivative(set.sequence, 1), 5)) degree = 0;
     numhitswithdeg[degree]++;
-    if (degree < 4) {
-      hitswithdeg[degree].insert(set.oeisnum);
-    } else {
+    hitswithdeg[degree].insert(set.oeisnum);
+    if (degree == 4) {
       if (oeismatchesbynum.find(set.oeisnum) == oeismatchesbynum.end()) {
 	oeismatchesbynum[set.oeisnum] = set.patternset;
       } else {
@@ -78,6 +77,7 @@ void analyzefirstsequenceset(Oeis &OEIS, string sequencesfilename, int minpermsi
   cout<<"Number distinct distinct oeis sequences matching to left-over quadratic sequences: "<<hitswithdeg[2].size()<<endl;
   cout<<"Number distinct distinct oeis sequences matching to left-over cubic sequences: "<<hitswithdeg[3].size()<<endl;
   cout<<"Number distinct oeis sequences for remaining: "<<oeismatchesbynum.size()<<" accounting for "<<numhitswithdeg[4]<<" sequences."<<endl;
+  // Note: oeismatchesbynum.size() = hitswithdeg[4].size()
 }
 
 void  compareoeismatches( unordered_map<int, string> &oeismatchesbynum,  unordered_map<int, string> &oeismatchesbynum2) {
@@ -110,7 +110,7 @@ void  displaymatches(Oeis &OEIS, unordered_map<int, string> &oeismatchesbynum3, 
        iter != oeismatchesbynum3.end();
        ++iter) {
      int numhits = std::count(iter->second.begin(), iter->second.end(), '\n') + 1;
-     output<<OEIS.oeisnames[0]<<endl;
+     //output<<OEIS.oeisnames[0]<<endl;
      output<<OEIS.oeisnames[iter->first]<<endl;
      output<<numhits<<" times"<<endl;
      if (verbose) output<<iter->second<<endl;
@@ -126,13 +126,14 @@ uint64_t factorial(int n) {
 
 
 int main() {
+
   
-  bool data_built = false; // To just run OEIS analysis since sequence files prebuilt
+  bool data_built = true; // To just run OEIS analysis since sequence files prebuilt
   int minpermsize = 5; // for analysis, not for data collection
   int patternsize = 4;
   int maxpermsize = 16;
   int comparepermsize = 13;
-  int minsetsize = 5;
+  int minsetsize = 1;
   string setsfilename = "testallfours-sets";
   string sequencesfilename = "testallfours-sequences";
   string revisedall = "testallfours-matches";

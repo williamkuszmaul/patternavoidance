@@ -134,7 +134,7 @@ Oeis ::  Oeis(string filename, string namefilename, int sequencesize, int maxshi
 Sequence Oeis :: extractusersequence(string line, int inputshift) {
   Sequence testsequence(sequencesize);
   int index = 0;
-  int nextval = 0;
+  long long nextval = 0;
   int sequencepos = 0;
   while (sequencepos < inputshift + sequencesize) {
     assert(index < line.size());
