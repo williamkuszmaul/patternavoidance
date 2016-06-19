@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <string.h>
 //#include <iostream>
-#include <math.h>
+#include <cmath>
 #include <stdio.h>      /* printf, scanf, puts, NULL */
 #include <time.h> 
 #include <stdlib.h>

@@ -12,7 +12,6 @@
 #include <iostream>
 #include <fstream>
 #include <queue>
-#include "math.h"
 #include <sys/time.h>
 #include <vector>
 #include "perm.h"

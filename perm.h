@@ -18,7 +18,7 @@
 #include <fstream>
 #include <queue>
 #include <boost/multiprecision/cpp_int.hpp>
-#include "math.h"
+#include <cmath>
 #include <sys/time.h>
 #include <vector>
 using namespace std;

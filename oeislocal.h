@@ -6,7 +6,7 @@
 #include <string.h>
 #include <iostream>
 #include <fstream>
-#include <math.h>
+#include <cmath>
 #include <stdio.h>      /* printf, scanf, puts, NULL */
 #include <algorithm>
 #include <time.h> 
