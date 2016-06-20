@@ -1,5 +1,5 @@
 # hashtables depends on nothing
-# datacollection depends on hashtables and permutationalgs
+# datacollection and examples depend on hashtables and permutationalgs
 DIRS = hashtables permutationalgs datacollection examples
 all: all-local
 check clean all-local:
