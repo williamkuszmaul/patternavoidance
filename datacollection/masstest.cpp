@@ -13,8 +13,8 @@
 #include <queue>
 #include "hashdb.h"
 #include <sys/time.h>
-#include "fastavoidance.h"
-#include "buildinput.h"
+#include "countavoiders.h"
+#include "buildpatternsets.h"
 #include "perm.h"
 #include "oeislocal.h"
 using namespace std;

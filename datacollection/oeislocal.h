@@ -19,9 +19,9 @@
 #include <unordered_set>
 #include <map>
 #include <queue>
+
 #include "hashdb.h"
-#include <sys/time.h>
-#include "fastavoidance.h"
+#include "countavoiders.h"
 using namespace std;
 
 

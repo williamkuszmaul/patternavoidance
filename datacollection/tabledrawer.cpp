@@ -11,7 +11,7 @@
 #include <unordered_set>
 #include <queue>
 #include "countpatterns.h"
-#include "fastavoidance.h"
+#include "countavoiders.h"
 using namespace std;
 
 // To deal with a bug in icpc compiler (/usr/include/c++/5.1.1/bits/stl_iterator_base_types.h(155): error: name followed by "::" must be a class or namespace name)

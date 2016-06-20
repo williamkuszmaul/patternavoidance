@@ -21,7 +21,6 @@
 #include <queue>
 #include "hashdb.h"
 #include <sys/time.h>
-#include "fastavoidance.h"
 #include "oeislocal.h"
 using namespace std;
 

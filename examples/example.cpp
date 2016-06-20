@@ -17,10 +17,10 @@
 #include <queue>
 #include "hashdb.h"
 #include <sys/time.h>
-#include "fastavoidance.h"
+#include "countavoiders.h"
 #include "countpatterns.h"
 #include "perm.h"
-#include "utilities.h"
+#include "permutilities.h"
 using namespace std;
 
 int main() {

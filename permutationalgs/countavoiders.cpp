@@ -15,11 +15,11 @@
 #include <queue>
 #include <sys/time.h>
 #include <vector>
+#include "countavoiders.h"
 #include "hashdb.h"
 #include "hashmap.h"
-#include "fastavoidance.h"
-#include "utilities.h"
 #include "perm.h"
+#include "permutilities.h"
 using namespace std;
 
 // Conventions for comments: We use all the conventions from our paper in our comments. Thus the comments disagree with the code in that they do not zero-ind ex the values or positions of a permutation

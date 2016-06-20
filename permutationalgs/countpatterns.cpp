@@ -14,7 +14,7 @@
 #include <queue>
 #include <sys/time.h>
 #include <vector>
-#include "utilities.h"
+#include "permutilities.h"
 #include "hashdb.h"
 #include "hashmap.h"
 #include "perm.h"

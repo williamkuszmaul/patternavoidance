@@ -15,9 +15,9 @@
 #include <queue>
 #include "hashdb.h"
 #include <sys/time.h>
-#include "fastavoidance.h"
-#include "utilities.h"
-#include "buildinput.h"
+#include "countavoiders.h"
+#include "permutilities.h"
+#include "buildpatternsets.h"
 #include "oeislocal.h"
 #include "countpatterns.h"
 #include "perm.h"
