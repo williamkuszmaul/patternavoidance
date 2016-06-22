@@ -126,12 +126,10 @@ uint64_t factorial(int n) {
 
 
 int main() {
-
-  
-  bool data_built = true; // To just run OEIS analysis since sequence files prebuilt
+  bool data_built = false; // To just run OEIS analysis since sequence files prebuilt
   int minpermsize = 5; // for analysis, not for data collection
   int patternsize = 4;
-  int maxpermsize = 16;
+  int maxpermsize = 13;
   int comparepermsize = 13;
   int minsetsize = 1;
   string setsfilename = "testallfours-sets";

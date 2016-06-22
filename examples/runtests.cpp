@@ -64,6 +64,8 @@ int main(int argc, char* argv[]) {
     string verbose = argv[4];
     countallfromfiletest(input, permsize, (verbose == "1"));
     cout<<"Complete"<<endl;
+  } else {
+    cout<<"Exiting due to invalid command-line format... \n";
   }
   return 0;
 }
