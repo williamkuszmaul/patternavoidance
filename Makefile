@@ -1,6 +1,6 @@
 # hashtables depends on nothing
 # datacollection and examples depend on hashtables and permutationalgs
-DIRS = hashtables permutationalgs datacollection examples
+DIRS = hashtables permutationalgs datacollection examples codeinprogress
 all: all-local
 check clean all-local:
 	for x in $(DIRS); do $(MAKE) -C $$x $@; done

@@ -27,15 +27,22 @@ using namespace std;
 void countallfromfiletest(ifstream &infile, int maxpermsize, bool verbose) {
   string line;
   while (getline(infile, line)) {
-    if (verbose) cout<<line<<endl;
+    cout<<"----------------"<<endl;
+    cout<<line<<endl;
+    
     vector < uint64_t > numavoiders;
     timestamp_t start_time = get_timestamp();
     vector < vector < int > > tally;
     vector < vector < int > > completelist;
     countpatterns(line, maxpermsize, tally, completelist, verbose, true);
     timestamp_t end_time = get_timestamp();
-    cout<<tally[maxpermsize][0]<<" "<<tally[maxpermsize][1]<<endl;
-    //cout<<completelist[maxpermsize][0]<<endl;
+    for (int i = 1; i <= maxpermsize; i++) {
+      cout<<"Number of permutations in S_"<<i<<" with 0, 1, ... patterns"<<endl;
+      for (int j = 0; j < tally[i].size(); j++) {
+        cout<<tally[i][j]<<" ";
+      }
+      cout<<endl;
+    }
     if (verbose) cout<< "Time elapsed (s): "<<(end_time - start_time)/1000000.0<<endl;
   }
   return;
@@ -48,6 +55,7 @@ void countallfromfiletest(ifstream &infile, int maxpermsize, bool verbose) {
 int main(int argc, char* argv[]) {
   string choice = argv[1];
   if (choice == "av") { // in this case, speed-test countaviodersfromfile
+    assert (argc == 6);
     string infile = argv[2];
     ifstream input(infile);
     string outfile = argv[3];
@@ -58,6 +66,7 @@ int main(int argc, char* argv[]) {
     countavoidersfromfile(input, output, permsize, (verbose == "1"));
     cout<<"Complete"<<endl;
   } else if (choice == "cnt") { // in this case speed test countpatterns
+    assert (argc == 5);
     string infile = argv[2];
     int permsize = stoi(argv[3]);
     ifstream input(infile);

@@ -9,6 +9,7 @@
 #include <bitset>
 #include <vector>
 #include <stdint.h>
+#include <unistd.h>
 // #include <unordered_set>
 #include <queue>
 #include "hashdb.h"
@@ -126,10 +127,16 @@ uint64_t factorial(int n) {
 
 
 int main() {
+  if(access("stripped", F_OK ) == -1 || access("names", F_OK ) == -1) {
+    cout<<"OEIS file stripped and names are not both found... \n";
+    cout<<"Make sure to download the files from http://oeis.org/wiki/Welcome#Compressed_Versions"<<endl;
+    cout<<"Exiting on failure..."<<endl;
+    return 0;
+  }
   bool data_built = false; // To just run OEIS analysis since sequence files prebuilt
   int minpermsize = 5; // for analysis, not for data collection
   int patternsize = 4;
-  int maxpermsize = 13;
+  int maxpermsize = 16;
   int comparepermsize = 13;
   int minsetsize = 1;
   string setsfilename = "testallfours-sets";

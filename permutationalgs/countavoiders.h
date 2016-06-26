@@ -49,9 +49,12 @@ void countavoidersfrompatternlist(string patternlist, int maxpermsize, vector < 
 // 0 2 4 8 16 32 64 128 256 512
 void countavoidersfromfile(ifstream &infile, ofstream &outfile, int maxpermsize, bool verbose);
 
+// This parallelizes the computations in countavoidersfromfile. Note
+// that by default, each individual pattern-avoidance computation is
+// already parallelized.
 void countavoidersfromfile_parallel(ifstream &infile, ofstream &outfile, int maxpermsize, bool verbose);
 
-// used for table building software
+// Used for table building software
 double run_interior_experiment(string patternlist, int maxpermsize);
 
 uint64_t getstat1();

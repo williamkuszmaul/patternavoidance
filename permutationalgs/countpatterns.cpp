@@ -28,7 +28,7 @@ using namespace std;
 #define USEADDFACTOR 1
 #define USESECONDADDFACTOR 1 // forces useaddfactor on
 
-#define USEOLDP0 1 // whether non-brute-force should use cached P_0(w\downarrow_1) // will lead to constant speedup
+#define USEOLDP0 1 // whether non-brute-force should use cached P_0(w\downarrow_1) // will lead to constant speedup (similar to PermLab)
 #define USEOLDP1 1 // whether non-brute-force should use cached P_1(w\downarrow_2) // will lead to constant speedup
 #define USEPREFIXMAP 1 // for non-brute-force version, you get to choose whether to use the prefix hack to speed things up
 #define USEBRUTE 0 // whether to use brute force algorithm

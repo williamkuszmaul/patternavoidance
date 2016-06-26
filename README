@@ -10,50 +10,126 @@ Citation information bibtex entry:
   howpublished = {\url{github.com/williamkuszmaul/patternavoidance}}
 }
 
-                          Core files
 
-LICENSE: Copyright information.
+                                  Summary
+                                 
+This software package provides highly optimized implementations of the
+asymptotically fastest known algorithms for (a) building $S_1(\Pi),
+S_2(\Pi), \ldots, S_n(\Pi)$ where $S_i(\Pi)$ is the number of
+permutations in $S_i$ avoiding the permutation patterns in the set
+$\Pi$; (b) counting $|S_1(\Pi)|, |S_2(\Pi)|, \ldots, |S_n(\Pi)|$; (c)
+counting for each permutation in $S_n$ how many copies of patterns in
+$\Pi$ it contains; (d) counting permutations in $S_n$ according the
+the number of copies of patterns of $\Pi$ they contain. For in-depth
+discussion of the algorithms, see paper.pdf or
+http://arxiv.org/abs/1509.08216.
 
-Makefile: Simple makefile. Note, all of our code uses Cilk for
-parallelism.
+                                  Organization
 
-paper.pdf: Contains in depth discussion of the algorithms implemented
+The project is split in six directories:
+(1) permutationalgs: This contains implementations of the algorithms.
+(2) examples: This contains example files using the
+algorithms. Importantly, this includes a command-line tool for running
+experiments on a file containing a list of sets of patterns.
+(3) datacollection: The main file in this is masstest.cpp, which
+computes $|S_n(\Pi)|$ for all $5 \le n \le 16$ and $\Pi \subseteq S_4$
+(up to trivial Wilf-Equivalence), and then analyzes the resulting
+number sequences to find OEIS matches.
+(4) data: Contains data collected by masstest.cpp in
+datacollection. Due to the size of the data, most of it is compressed.
+(5) hashtables: Contains basic hash table and hash map implementations.
+(6) codeinprogress: Contains code in progress.
+
+Additionally, the main directory contains:
+(1) paper.pdf: Contains in depth discussion of the algorithms implemented
 here. Also, introduces the notation we use in our comments. When
 discussing permutations, we use the same notation as in the paper,
 indexing both position and value at 1 in the comments; the code,
 however, indexes at zero.
 
-perm.cpp/.h and utilities.cpp/.h: We represent permutations in
+                                  How to compile (via a linux terminal)
+
+To compile all the programs, type "make" in the main directory. To
+compile a program in one of the directories, go to the directory and
+type "make <name-of-program-without-added-.h-or-.cpp>".
+
+By default, the code uses the Cilk multithreading libraries in order
+to achieve parallelism. If Cilk is not installed on your machine,
+????????? If, for some reason, you wish to run the code in serial
+rather than in parallel, ?????
+
+                                  Settings
+
+To change maximum-possible-permutation-size settings, see permutationalgs/perm.h.
+To change settings for which pattern-avoidance algorithm to use, see permutationalgs/countavoiders.cpp.
+To change settings for which pattern-counting algorithm to use, see permutationalgs/countpatterns.cpp.
+
+
+                                  Description of Files
+
+----------------------------------- permutationalgs/
+
+perm.cpp/.h and permutilities.cpp/.h: We represent permutations in
 unsigned integers, a fixed amount of space per letter. For efficiency,
 we cap the size of a permutation at 16. However, changing a macro in
 perm.h allows for this cap to be raised to 25 or 31. These files
 contain basic functions for using our permutation-representation.
 
-fastavoidance.cpp/.h: Implements O(|S_{N-1}(Pi)|k) algorithm for
+countavoiders.cpp/.h: Implements O(|S_{N-1}(Pi)|k) algorithm for
 computing |S_n(Pi)| for each n in [1..N] and some set of patterns
-(which need not be the same size) Pi, the largest being of size
-k. Could easily be modified to build S \cap S_n(Pi) for a down-closed
-set of permutation S. Also implements a brute-force algorithm and an
-algorithm based on PermLab for the same task; in this case if
+(which need not be the same size) Pi, the largest being of size k. Can
+also be used to build each S_n(Pi) instead of just counting the
+sizes. Could easily be modified to build S \cap S_n(Pi) for a downset
+of permutations S. Also implements a brute-force algorithm and an
+algorithm based on PermLab for the same task (which can be swapped to
+using macros in countavoiders.cpp); for these cases if
 SINGLEPATTERNOPT is false, then we require that Pi comprise patterns
-of only one size.
+of only one size. Provides functions buildavoidersfrompatternlist,
+countavoidersfrompatternlist, countavoidersfromfile, and
+countavoidersfromfile_parallel which can be used by third-party
+programs.
 
 countpatterns.cpp/.h: Implements an O(n!k) algorithm for counting the
 number of Pi-patterns appearing in each permutation in S_n for n in
 [1..N]. Here, Pi is a set of patterns, the longest being length
-k. Could easily be modified to build S \cap S_n(Pi) for a down-closed
-set of permutations S. Note, cannot handle a permutation having more
+k. Could easily be modified to build S \cap S_n(Pi) for a downset of
+permutations S. Note that it cannot handle a permutation having more
 than 63504 patterns, because we currently store the number of patterns
 in a short. Could easily be changed, at cost of constant-factor of
 space efficiency. However, this is fine at least for n \le 16, because
 there are only 63504 possible subsequences, including the empty
 subsequences and subsequences of size 1. Also implements a brute-force
 algorithm, and a hybrid algorithm, which both require patterns to be
-of uniform size.
+of uniform size; to use these instead of the faster algorithm, change
+the macros in countpatterns.cpp.
 
-buildinput.cpp/.h: Writes to a file either (a) all pattern sets with
-patterns of size k up to trivial wilf-equivalence, or (b) all pattern
-sets of size j with patterns of size k up to trivial wilf-equivalence.
+----------------------------------- examples/
+
+example.cpp: Example use of countavoiders.h and countpatterns.h
+modules. And a bit of use of perm.h module.
+
+runtest.cpp: Command-line driven tool to run computations on a list of
+pattern sets in a file. To count |S_1(Pi)|,...|S_n(Pi)| for each Pi in
+the file input-file, run "./runtests av <input-file-name> <output file
+name> <n> <1 for verbose, 0 for not verbose>". Note that the input
+file must contain on each row a list of space-separated permutations
+(see file runexampletests-in for an example). To count the number of
+permutations of each size up to n containing each number of patterns
+in each pattern set in a file, run "./runtests cnt <input-file-name>
+<n> <1 for verbose, 0 for not verbose>".
+
+------------------------------------ datacollection/
+
+masstest.cpp: For each pattern set S of S_4 satisfying |S| > 4 (up to
+trivial Wilf equivalence), computes number of permutations of each
+size (up to size 16) avoiding the pattern set. Then looks up which of
+the resulting sequences can be found in OEIS. Writes all of this to an
+output file. The Cilk package is used to parallelize the
+pattern-avoidance computations. Has option of doing OEIS analysis on
+pre-built data files, or of building data files from scratch and then
+doing OEIS analysis. By default, data files are built from scratch.
+NOTE: Before running masstest.cpp, make sure to setup the files
+"stripped" and "names".
 
 stripped: NOT INCLUDED. This file needs to be downloaded at
 http://oeis.org/wiki/Welcome#Compressed_Versions, and decompressed to
@@ -65,11 +141,29 @@ http://oeis.org/wiki/Welcome#Compressed_Versions, and decompressed to
 get a list of OEIS sequence names, which are interpreted by
 oeislocal.cpp/.h.
 
+buildpatternsets.cpp/.h: Writes to a file either (a) all pattern sets
+with patterns of size k up to trivial wilf-equivalence, or (b) all
+pattern sets of size j with patterns of size k up to trivial
+wilf-equivalence.
 
 oeislocal.cpp/.h: Implements an OEIS object which on initialization
 builds data structures for doing OEIS look-ups using file
 stripped. Comes with user interface for looking up sequences in OEIS
 (using only local copy of OEIS).
+
+tabledrawer.cpp: A simple program used to generate LaTeX-ed
+performance tables in the paper.
+
+
+------------------------------------ data/
+
+datafolder.tar.gz: Contains compressed output of masstest.cpp (run for sets of length-4 patterns of sizes from 5 to 24).
+
+datafolder2.tar.gz: Contains compressed output of masstest.cpp (run for sets of length-4 patterns of sizes 1 to 24)
+
+sequencesforsetsofsize4: Contains the sequence |S_1(Pi)|,...,|S_{16}(Pi)| for each set of four length-4 patterns Pi.
+
+------------------------------------ hashtables/
 
 hashdb.cpp/.h: A simple linear-probing hash table storing perm_t's
 (defined in perm.h). Runs several times faster than using
@@ -80,45 +174,7 @@ hashmap.cpp/.h: A simple linear-probing hash table for storing
 faster than C++ unordered map. Payload must be fixed size. No special
 destructor is called on payload.
 
-                     Usage Files
 
-example.cpp: Example use of fastavoidance.h and countpatterns.h
-modules. And a bit of use of perm.h module.
-
-speedtest.cpp: Command-line driven program to test speed of
-countpatterns.h and fastavoidance.h on an input file containing a
-pattern set on each line. For testing fastavoidance.h, also inputs an
-output file to which the number of permuations of each size avoiding
-each set of patterns is written.
-
-masstest.cpp: For each pattern set S of S_4 satisfying |S| > 4 up to
-trivial wilf equivalence, computes number of permutations of each size
-(up to size 16) avoiding the pattern set. Then looks up which of the
-resulting sequences can be found in OEIS. Writes all of this to an
-output file. The Cilk package is used to parallelize the
-pattern-avoidance computations. The output is compressed and stored in
-datafolder.tar.gz. Has option of doing OEIS analysis on pre-built
-data files, or of building data files from scratch and then doing OEIS
-analysis.
-
-                     Additional Files
-
-table_drawer.cpp: Uses fastavoidance.cpp and countpatterns.cpp to run
-performance tests, comparing algorithms. Automatically latexs the
-results into tables. To use, put settings of fastavoidance.cpp and
-countpatterns.cpp to the algorithms you want to test, pick which tests
-in table_drawer.cpp you want to run, and compile and run table_drawer.
-
-datafolder.tar.gz: Contains compressed output of masstest.cpp (run for sets length-4 patterns of sizes from 5 to 24).
-
-datafolder2.tar.gz: Contains compressed output of masstest.cpp (run for sets of length-4 patterns of sizes 1 to 24)
-
-
-                               Settings
-
-To change maximum-possible permutation-size settings, see perm.h.
-To change settings for which pattern-avoidance algorithm to use, see fastavoidance.cpp.
-To change settings for which pattern-counting algorithm to use, see countpatterns.cpp.
 
                           Version Descriptions
 

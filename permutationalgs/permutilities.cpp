@@ -17,9 +17,10 @@ using namespace std;
 
 // for patterns in S_{<10} can use like this:
 //  string permlist = "3124 4123 3142 4132";
-//  makepatterns(permlist, patternset);
+//  makepatterns(permlist, patternset, maxpatternsize);
 void makepatterns(string permlist, hashdb &patternset, int &maxpatternsize) {
-  maxpatternsize = 0; // IN COUNT AVOIDERS AM I CORRECTLY INITIALIZING ARRAY THINGS AT ZERO
+  uint64_t lettersused = 0; // Used to detect malformed patterns
+  maxpatternsize = 0; 
   int pos = 0;
   perm_t perm = 0;
   //cout<<"Pattern set: "<<endl;
@@ -27,9 +28,15 @@ void makepatterns(string permlist, hashdb &patternset, int &maxpatternsize) {
     if (permlist[i] == ' ') {
       patternset.add(perm);
       maxpatternsize = max(pos, maxpatternsize);
+      if (lettersused + 1 != ((uint64_t)1 << pos)) {
+        cout<<"Malformed pattern detected in set "<<permlist<<endl;
+        assert (false);
+      }
       pos = 0;
       perm = 0;
+      lettersused = 0;
     } else {
+      lettersused += (1 << (uint64_t)(permlist[i] - '0' - 1));
       perm = setdigit(perm, pos, (int)(permlist[i] - '0' - 1));
       pos++;
     }
@@ -37,6 +44,10 @@ void makepatterns(string permlist, hashdb &patternset, int &maxpatternsize) {
 
   if (permlist[permlist.size() - 1] != ' ') { // if no space at end
     patternset.add(perm);
+    if (lettersused + 1 != ((uint64_t)1 << pos)) {
+      cout<<"Malformed pattern detected in set "<<permlist<<endl;
+      assert (false);
+    }
   }
   maxpatternsize = max(pos, maxpatternsize);
 }
