@@ -28,6 +28,8 @@ void makepatterns(string permlist, hashdb &patternset, int &maxpatternsize) {
     if (permlist[i] == ' ') {
       patternset.add(perm);
       maxpatternsize = max(pos, maxpatternsize);
+      // We use a bit hack to confirm that the inputted permutation
+      // was in fact a valid permutation on the letters 1, ..., pos.
       if (lettersused + 1 != ((uint64_t)1 << pos)) {
         cout<<"Malformed pattern detected in set "<<permlist<<endl;
         assert (false);
@@ -36,7 +38,12 @@ void makepatterns(string permlist, hashdb &patternset, int &maxpatternsize) {
       perm = 0;
       lettersused = 0;
     } else {
-      lettersused += (1 << (uint64_t)(permlist[i] - '0' - 1));
+      uint64_t letter = (uint64_t)(permlist[i] - '0' - 1);
+      if (letter > 9) {
+        cout<<"Malformed pattern detected in set "<<permlist<<endl;
+        assert (false);
+      }
+      lettersused += (1 << letter);
       perm = setdigit(perm, pos, (int)(permlist[i] - '0' - 1));
       pos++;
     }

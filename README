@@ -206,7 +206,7 @@ Version 2.1: Fixed minor bugs in code and paper.
 
 Version 3.0: Third version of code. Pattern-avoidance algorithms sped
 up by a linear factor. As a result, paper.pdf's experiments for
-pattern-avoidance for dynamic algorithm were rerun (in serial using
+shpattern-avoidance for dynamic algorithm were rerun (in serial using
 compiler settings -D_Cilk_spawn= -D_Cilk_sync=). Paper.pdf has
 received a round of edits and has been updated to discuss the improved
 pattern-avoidance algorithm. Also, fixed a latent bug in
@@ -214,5 +214,5 @@ buildinput.cpp.
 
 Version 3.1: The files have been reorganized and renamed to be more
 user friendly. This changes how compilation works (see section on how
-to compile in README). The paper has been updated. And some additional
-error checking has been added.
+to compile in README). The paper has been updated with expository
+edits. And some additional error checking has been added to the code.
