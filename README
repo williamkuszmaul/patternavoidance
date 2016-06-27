@@ -49,8 +49,9 @@ however, indexes at zero.
 
                                   How to compile (via a terminal)
 
-Note: I only use linux, so instructions may differ depending on
-whether you use a different OS.
+Note: These instructions are for Linux users. I have not run the code
+on other OS's. If someone knows how to compile on other systems, I
+would be happy to include that.
 
 To compile all the programs, type "make" in the main directory. To
 compile a program in one of the directories, go to the directory and
@@ -58,10 +59,20 @@ type "make <name-of-program-without-added-.h-or-.cpp>".
 
 By default, the code uses the Cilk multithreading libraries in order
 to achieve parallelism. If Cilk is not installed by default on your
-machine, you may need to install it manually. If, for some reason, you
-wish to run the code in serial rather than in parallel (e.g., for
-benchmarking), you can disable the parallelism by adding "
--D_Cilk_spawn= -D_Cilk_sync=" to the CXXFLAGS in the file
+machine, you may need to install it manually. In general, my
+understanding is that this means you will need GCC version at least
+5.0 and you will need to make sure libcilkrts.so is installed. On
+Fedora 22, which I use, GCC 5.0 is standard and libcilkrts.so can be
+installed using the command "sudo yum install libcilkrts".
+
+Alternatively, you can use the Intel compiler which comes with Cilk by
+default (See make.include for how to compile with icpc). I've only
+used the Intel compiler a little and have not tested this code
+extensively using it.
+
+If, for some reason, you wish to run the code in serial rather than in
+parallel (e.g., for benchmarking), you can disable the parallelism by
+adding " -D_Cilk_spawn= -D_Cilk_sync=" to the CXXFLAGS in the file
 make.include.
 
                                   Settings

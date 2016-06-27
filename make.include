@@ -11,11 +11,16 @@ default: all
 
 CXX = g++
 CXXFLAGS  = -O3 -std=c++11   -march=native -flto -g -fcilkplus
-# also should include -Wall -W -Werror someday...
+# To run in serial, use
+# CXXFLAGS  = -O3 -std=c++11   -march=native -flto -g -fcilkplus -D_Cilk_spawn= -D_Cilk_sync=
 
-# or
-#CXX = icpc
-#CXXFLAGS  = -O3 -std=c++11 -Wall -W -Werror -march=native -ipo -g
+
+# or you can use the Intel compiler which comes with Cilk by default.
+# To do this, uncomment the following two lines, and comment out the
+# corresponding lines above. Note this will only work if you have the
+# Intel compiler installed.
+# CXX = icpc
+# CXXFLAGS  = -O3 -std=c++11 -Wall -W -Werror -march=native -ipo -g
 
 CPPFLAGS = -I../permutationalgs -I../datacollection -I../hashtables
 
