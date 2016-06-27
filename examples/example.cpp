@@ -1,6 +1,3 @@
-// To compile, use: g++ -O3 -std=c++11 -march=native -g -o example fastavoidance.cpp hashdb.cpp example.cpp
-// To run, use: ./example
-
 #include <assert.h>
 #include <string.h>
 #include <iostream>
@@ -26,7 +23,7 @@ using namespace std;
 int main() {
   string patternlist = "123 4231"; // write pattern set as list of strings
 
-  // example building S_n(Pi)
+  // Example building S_n(Pi)
   vector < list < perm_t > > avoiders; // avoiders[i] will store the avoiders appearing in S_i
   buildavoidersfrompatternlist(patternlist, 8, avoiders); 
   for (int i = 1; i <= 8; i++) {
@@ -38,18 +35,21 @@ int main() {
   }
 
   cout<<"-------------------"<<endl;
-  // example counting |S_n(Pi)| (slightly faster than building)
+  // Example counting |S_n(Pi)| (faster and more memory efficient than actually building)
   vector < uint64_t > numavoiders; // numavoiders[i] will store |S_i(Pi)|
   countavoidersfrompatternlist(patternlist, 10, numavoiders); 
   for (int i = 1; i <= 10; i++) {
     cout<<"Number of permutations in S_"<<i<<" avoiding "<<patternlist<<" is "<<numavoiders[i]<<endl; // print number of avoiders in S_n
   }
 
-  // example using countpatterns
+  // Example using countpatterns.h
   cout<<"-------------------"<<endl;
   vector < vector <int> > tally;
   vector < vector <int> > completelist;
   countpatterns(patternlist, 11, tally, completelist, false, false);
+  // Note that changing the last argument to true would result in
+  // completelist not being built, but would also result in a change
+  // in the algorithm giving good memory utilization
   cout<<"Using pattern set "<<patternlist<<endl;
   string permtocheck = "52341";
   cout<<"Number of pattern-occurrances in "<<permtocheck<<" is "<<completelist[permtocheck.size()][permtonum(stringtoperm(permtocheck), permtocheck.size())]<<endl;

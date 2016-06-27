@@ -41,28 +41,41 @@ datacollection. Due to the size of the data, most of it is compressed.
 (6) codeinprogress: Contains code in progress.
 
 Additionally, the main directory contains:
-(1) paper.pdf: Contains in depth discussion of the algorithms implemented
+(1) paper.pdf: Contains in-depth discussion of the algorithms implemented
 here. Also, introduces the notation we use in our comments. When
 discussing permutations, we use the same notation as in the paper,
 indexing both position and value at 1 in the comments; the code,
 however, indexes at zero.
 
-                                  How to compile (via a linux terminal)
+                                  How to compile (via a terminal)
+
+Note: I only use linux, so instructions may differ depending on
+whether you use a different OS.
 
 To compile all the programs, type "make" in the main directory. To
 compile a program in one of the directories, go to the directory and
 type "make <name-of-program-without-added-.h-or-.cpp>".
 
 By default, the code uses the Cilk multithreading libraries in order
-to achieve parallelism. If Cilk is not installed on your machine,
-????????? If, for some reason, you wish to run the code in serial
-rather than in parallel, ?????
+to achieve parallelism. If Cilk is not installed by default on your
+machine, you may need to install it manually. If, for some reason, you
+wish to run the code in serial rather than in parallel (e.g., for
+benchmarking), you can disable the parallelism by adding "
+-D_Cilk_spawn= -D_Cilk_sync=" to the CXXFLAGS in the file
+make.include.
 
                                   Settings
 
-To change maximum-possible-permutation-size settings, see permutationalgs/perm.h.
-To change settings for which pattern-avoidance algorithm to use, see permutationalgs/countavoiders.cpp.
-To change settings for which pattern-counting algorithm to use, see permutationalgs/countpatterns.cpp.
+To change maximum-possible-permutation-size settings, see
+permutationalgs/perm.h. The default is 16.
+
+To change settings for which pattern-avoidance algorithm to use, see
+permutationalgs/countavoiders.cpp. The default is the algorithm
+presented in paper.pdf.
+
+To change settings for which pattern-counting algorithm to use, see
+permutationalgs/countpatterns.cpp. The default is the algorithm
+presented in paper.pdf.
 
 
                                   Description of Files
@@ -70,10 +83,11 @@ To change settings for which pattern-counting algorithm to use, see permutationa
 ----------------------------------- permutationalgs/
 
 perm.cpp/.h and permutilities.cpp/.h: We represent permutations in
-unsigned integers, a fixed amount of space per letter. For efficiency,
-we cap the size of a permutation at 16. However, changing a macro in
-perm.h allows for this cap to be raised to 25 or 31. These files
-contain basic functions for using our permutation-representation.
+unsigned integers, using a fixed amount of space per letter. For
+efficiency, we cap the size of a permutation at 16. However, changing
+a macro in perm.h allows for this cap to be raised to 25 or 31. These
+files contain basic functions for using our permutation
+representation.
 
 countavoiders.cpp/.h: Implements O(|S_{N-1}(Pi)|k) algorithm for
 computing |S_n(Pi)| for each n in [1..N] and some set of patterns
@@ -111,12 +125,12 @@ modules. And a bit of use of perm.h module.
 runtest.cpp: Command-line driven tool to run computations on a list of
 pattern sets in a file. To count |S_1(Pi)|,...|S_n(Pi)| for each Pi in
 the file input-file, run "./runtests av <input-file-name> <output file
-name> <n> <1 for verbose, 0 for not verbose>". Note that the input
+name> <n> <1-for-verbose,-0-for-not-verbose>". Note that the input
 file must contain on each row a list of space-separated permutations
 (see file runexampletests-in for an example). To count the number of
 permutations of each size up to n containing each number of patterns
 in each pattern set in a file, run "./runtests cnt <input-file-name>
-<n> <1 for verbose, 0 for not verbose>".
+<n> <1-for-verbose,-0-for-not-verbose>".
 
 ------------------------------------ datacollection/
 
@@ -142,9 +156,9 @@ get a list of OEIS sequence names, which are interpreted by
 oeislocal.cpp/.h.
 
 buildpatternsets.cpp/.h: Writes to a file either (a) all pattern sets
-with patterns of size k up to trivial wilf-equivalence, or (b) all
+with patterns of size k up to trivial Wilf-equivalence, or (b) all
 pattern sets of size j with patterns of size k up to trivial
-wilf-equivalence.
+Wilf-equivalence.
 
 oeislocal.cpp/.h: Implements an OEIS object which on initialization
 builds data structures for doing OEIS look-ups using file
@@ -161,18 +175,18 @@ datafolder.tar.gz: Contains compressed output of masstest.cpp (run for sets of l
 
 datafolder2.tar.gz: Contains compressed output of masstest.cpp (run for sets of length-4 patterns of sizes 1 to 24)
 
-sequencesforsetsofsize4: Contains the sequence |S_1(Pi)|,...,|S_{16}(Pi)| for each set of four length-4 patterns Pi.
+sequencesforsetsofsize4: Contains the sequence |S_1(Pi)|,...,|S_{16}(Pi)| for each set of four length-4 patterns Pi (up to trivial Wilf-equivalence).
 
 ------------------------------------ hashtables/
 
 hashdb.cpp/.h: A simple linear-probing hash table storing perm_t's
-(defined in perm.h). Runs several times faster than using
-unordered_set.
+(defined in permutationalgs/perm.h). Runs several times faster than
+using unordered_set.
 
 hashmap.cpp/.h: A simple linear-probing hash table for storing
-(perm_t, <payload>) pairs (with perm_t defined in perm.h). Often runs
-faster than C++ unordered map. Payload must be fixed size. No special
-destructor is called on payload.
+(perm_t, <payload>) pairs (with perm_t defined in
+permalgs/perm.h). Often runs faster than C++ unordered map. Payload
+must be fixed size. No special destructor is called on payload.
 
 
 
@@ -197,3 +211,8 @@ compiler settings -D_Cilk_spawn= -D_Cilk_sync=). Paper.pdf has
 received a round of edits and has been updated to discuss the improved
 pattern-avoidance algorithm. Also, fixed a latent bug in
 buildinput.cpp.
+
+Version 3.1: The files have been reorganized and renamed to be more
+user friendly. This changes how compilation works (see section on how
+to compile in README). The paper has been updated. And some additional
+error checking has been added.
