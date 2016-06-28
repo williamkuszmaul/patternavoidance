@@ -23,8 +23,9 @@
 #include <vector>
 using namespace std;
 
-// Choices are 16, 25, or 31. All three choices work for avoidance
-// code.  However, third choice is much slower than the others.
+// Choices are 16, 25, or 31. However, third choice is much slower
+// than the others. In order to use any of the latter two choices, you
+// must have the boost libraries installed. 
 #define MAXPERMSIZE 16
 
 // permutations up to size 16
