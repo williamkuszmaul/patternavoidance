@@ -18,7 +18,6 @@
 #include <iostream>
 #include <fstream>
 #include <queue>
-#include <boost/multiprecision/cpp_int.hpp>
 #include <cmath>
 #include <sys/time.h>
 #include <vector>
@@ -30,12 +29,14 @@ using namespace std;
 
 // permutations up to size 16
 #if (MAXPERMSIZE == 16)
+#include <boost/multiprecision/cpp_int.hpp>
 #define LETTERSIZE 4
 typedef uint64_t perm_t;
 #define numbits 64
 #endif
 // permutations up to size 25
 #if (MAXPERMSIZE == 25)
+#include <boost/multiprecision/cpp_int.hpp>
 #define LETTERSIZE 5
 typedef boost::multiprecision::uint128_t perm_t;
 #define numbits 128
