@@ -10,12 +10,11 @@ default: all
 # Compiler flags
 
 CXX = g++
-#CXXFLAGS  = -O3 -std=c++11   -march=native -flto -g -fcilkplus
-# To run in serial, use
 CXXFLAGS  = -O3 -std=c++11   -march=native -flto -g -D_NO_CILK
+# To run in parallel, comment out the above line and use this instead:
+#CXXFLAGS  = -O3 -std=c++11   -march=native -flto -g -fcilkplus
 
-
-# or you can use the Intel compiler which comes with Cilk by default.
+# Or you can use the Intel compiler which comes with Cilk by default.
 # To do this, uncomment the following two lines, and comment out the
 # corresponding lines above. Note this will only work if you have the
 # Intel compiler installed.

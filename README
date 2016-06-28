@@ -50,30 +50,36 @@ however, indexes at zero.
                                   How to compile (via a terminal)
 
 Note: These instructions are for Linux users. I have not run the code
-on other OS's. If someone knows how to compile on other systems, I
-would be happy to include that.
+on other OS's. I would guess the instructions are similar for Mac. If
+someone knows how to compile on other systems, I would be happy to
+include that.
 
 To compile all the programs, type "make" in the main directory. To
 compile a program in one of the directories, go to the directory and
 type "make <name-of-program-without-added-.h-or-.cpp>".
 
-By default, the code uses the Cilk multithreading libraries in order
-to achieve parallelism. If Cilk is not installed by default on your
-machine, you may need to install it manually. In general, my
+
+                                   How to run in parallel
+
+This software package is implemented using the Cilk multithreading
+libraries in order to achieve parallelism. By default, however,
+multithreading is disabled. This is so that systems without Cilk can
+run the code without any trouble. (To see the hack I'm using to
+disable Cilk, see permutationalgs/permutilities.h.)
+
+To reenable multithreading, go to the file make.include, and follow
+the instructions for replacing the CXXFLAGS. In order to run with
+multithreading, you will need Cilk installed. In general, my
 understanding is that this means you will need GCC version at least
-5.0 and you will need to make sure libcilkrts.so is installed. On
-Fedora 22, which I use, GCC 5.0 is standard and libcilkrts.so can be
-installed using the command "sudo yum install libcilkrts".
+5.0 and you will need to make sure libcilkrts.so is installed (which
+may already be installed by default on some systems). On Fedora 22,
+which I use, GCC 5.0 is standard and libcilkrts.so can be installed
+using the command "sudo yum install libcilkrts".
 
 Alternatively, you can use the Intel compiler which comes with Cilk by
-default (See make.include for how to compile with icpc). I've only
+default. (See make.include for how to compile with icpc.) I've only
 used the Intel compiler a little and have not tested this code
 extensively using it.
-
-If, for some reason, you wish to run the code in serial rather than in
-parallel (e.g., for benchmarking), you can disable the parallelism by
-adding " -D_Cilk_spawn= -D_Cilk_sync=" to the CXXFLAGS in the file
-make.include.
 
                                   Settings
 
@@ -98,7 +104,9 @@ unsigned integers, using a fixed amount of space per letter. For
 efficiency, we cap the size of a permutation at 16. However, changing
 a macro in perm.h allows for this cap to be raised to 25 or 31. These
 files contain basic functions for using our permutation
-representation.
+representation. (Technical note: Additionally, permutilities.h
+contains a hack which allows systems not supporting Cilk to compile
+the code as long as the macro _NO_CILK is defined in make.include.)
 
 countavoiders.cpp/.h: Implements O(|S_{N-1}(Pi)|k) algorithm for
 computing |S_n(Pi)| for each n in [1..N] and some set of patterns
