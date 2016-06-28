@@ -227,6 +227,8 @@ pattern-avoidance algorithm. Also, fixed a latent bug in
 buildinput.cpp.
 
 Version 3.1: The files have been reorganized and renamed to be more
-user friendly. This changes how compilation works (see section on how
-to compile in README). The paper has been updated with expository
-edits. And some additional error checking has been added to the code.
+user friendly. Additionally, the default compilation setting is now in
+serial and should work even on machines which don't have the Cilk or
+Boost libraries installed. (See README for how to enable parallelism.)
+The paper has been updated with expository edits. And some additional
+error checking has been added to the code.
