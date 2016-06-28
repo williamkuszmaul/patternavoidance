@@ -29,7 +29,6 @@ using namespace std;
 
 // permutations up to size 16
 #if (MAXPERMSIZE == 16)
-#include <boost/multiprecision/cpp_int.hpp>
 #define LETTERSIZE 4
 typedef uint64_t perm_t;
 #define numbits 64
