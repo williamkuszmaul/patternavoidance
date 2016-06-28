@@ -25,7 +25,9 @@ using namespace std;
 
 // Choices are 16, 25, or 31. However, third choice is much slower
 // than the others. In order to use any of the latter two choices, you
-// must have the boost libraries installed. 
+// must have the boost libraries installed. Make sure to run "make
+// clean && make" in the main directory every time you change these
+// settings (in order to recompile).
 #define MAXPERMSIZE 16
 
 // permutations up to size 16
@@ -43,6 +45,7 @@ typedef boost::multiprecision::uint128_t perm_t;
 #endif
 // permutations up to size 31
 #if (MAXPERMSIZE == 31) // this is capped at 32 because we are using 31-bit bitmaps to keep track of positions of letters. This could easily be changed to get up to 42, if we used 64-bit bit maps.
+#include <boost/multiprecision/cpp_int.hpp>
 #define LETTERSIZE 6
 typedef boost::multiprecision::uint256_t perm_t;
 #define numbits 256
