@@ -76,11 +76,6 @@ may already be installed by default on some systems). On Fedora 22,
 which I use, GCC 5.0 is standard and libcilkrts.so can be installed
 using the command "sudo yum install libcilkrts".
 
-Alternatively, you can use the Intel compiler which comes with Cilk by
-default. (See make.include for how to compile with icpc.) I've only
-used the Intel compiler a little and have not tested this code
-extensively using it.
-
                                   Settings
 
 To change maximum-possible-permutation-size settings, see
