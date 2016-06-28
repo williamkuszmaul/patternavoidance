@@ -13,7 +13,8 @@
 #include <cstdio>      /* printf, scanf, puts, NULL */
 #include <cstdlib>
 #include <cstring>
-#include <ctime> 
+#include <ctime>
+#include <list>
 #include <iostream>
 #include <fstream>
 #include <queue>
@@ -207,5 +208,50 @@ inline bool not_zero_perm(perm_t key) {
 inline void assert_key_nonzero (perm_t key) {
   assert(not_zero_perm(key));
 }
+
+
+#ifdef _NO_CILK
+
+template<class T> void f(); // #1
+namespace cilk
+{
+  
+  template <class T>
+    class  op_add {
+  public:
+    using val_type = T;
+    T elt = 0;
+    T& get_value () {
+      return elt;
+    }
+  };
+  
+  template <class T>
+    class  op_list_append {
+  public:
+    using val_type = std::list <T>;
+    list <T> elt;
+    list <T>& get_value () {
+      return elt;
+    }
+  };
+
+  template <class  A>
+    class reducer {
+  public:
+    A elt;
+    typename A::val_type get_value () {
+      return elt.get_value ();
+    }
+    typename A::val_type& operator *() {
+      return elt.get_value ();
+    }
+  };
+}
+#define cilk_for for
+#define cilk_spawn
+#define cilk_sync
+#endif
+
 
 #endif 

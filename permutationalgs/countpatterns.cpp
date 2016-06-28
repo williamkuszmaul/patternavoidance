@@ -8,8 +8,11 @@
 #include <ctime>
 #include <iostream>
 #include <fstream>
+
+#ifndef _NO_CILK
 #include <cilk/cilk.h>
 #include <cilk/reducer_opadd.h>
+#endif
 
 #include <queue>
 #include <sys/time.h>

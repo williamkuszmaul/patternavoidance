@@ -29,4 +29,5 @@ void makepatterns(string permlist, hashdb &patternset, int &maxpatternsize);
 // build prefix table containing all complements of normalizations of prefixes of every perm in permset
 void addprefixes(const hashdb &permset, hashdb &table);
 
+
 #endif 

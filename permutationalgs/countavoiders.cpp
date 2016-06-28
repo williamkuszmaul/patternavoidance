@@ -8,9 +8,12 @@
 #include <ctime>
 #include <iostream>
 #include <fstream>
+
+#ifndef _NO_CILK
 #include <cilk/cilk.h>
 #include <cilk/reducer_opadd.h>
 #include <cilk/reducer_list.h>
+#endif
 
 #include <queue>
 #include <sys/time.h>
@@ -424,7 +427,7 @@ void buildavoiders_dynamic_helper(uint64_t candidate_length, const hashdb &patte
 }
 
 
-// Dynamic buildavoiders algorithm, implemented using asymptoticly memory efficient algorithm, and with Cilk for parallelism
+// Dynamic buildavoiders algorithm, implemented using asymptotically memory efficient algorithm, and with Cilk for parallelism
 void buildavoiders_dynamic(const hashdb &patternset, int maxavoidsize, int maxsize,  vector < list < perm_t > > &avoidervector, vector < uint64_t > &numavoiders, bool justcount) {
   if (!justcount) avoidervector.resize(maxsize + 1);
   else numavoiders.resize(maxsize + 1);
@@ -610,7 +613,9 @@ void countavoidersfromfile_parallel(ifstream &infile, ofstream &outfile, int max
   uint64_t vecsize = input.size();
   vector < vector <uint64_t> > output(vecsize, vector <uint64_t> (0));
   vector < long long > tdiffs(vecsize);
+  #ifndef _NO_CILK
   #pragma cilk grainsize = 1
+  #endif
   cilk_for (uint64_t ii = vecsize; ii > 0; ii--) {
     uint64_t i = ii-1;
     //cilk_for (uint64_t i = 0; i < vecsize; i++) {

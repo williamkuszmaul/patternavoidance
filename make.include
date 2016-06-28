@@ -10,9 +10,9 @@ default: all
 # Compiler flags
 
 CXX = g++
-CXXFLAGS  = -O3 -std=c++11   -march=native -flto -g -fcilkplus
+#CXXFLAGS  = -O3 -std=c++11   -march=native -flto -g -fcilkplus
 # To run in serial, use
-# CXXFLAGS  = -O3 -std=c++11   -march=native -flto -g -fcilkplus -D_Cilk_spawn= -D_Cilk_sync=
+CXXFLAGS  = -O3 -std=c++11   -march=native -flto -g -D_NO_CILK
 
 
 # or you can use the Intel compiler which comes with Cilk by default.
