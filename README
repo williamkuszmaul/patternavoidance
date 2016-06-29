@@ -49,10 +49,10 @@ however, indexes at zero.
 
                                   How to compile (via a terminal)
 
-Note: These instructions are for Linux users. I have not run the code
-on other OS's. I would guess the instructions are similar for Mac. If
-someone knows how to compile on other systems, I would be happy to
-include that.
+Note: These instructions are for Linux and Mac users. I have not run
+the code on other OS's. (Moreover, I have only tested the code
+extensively on Fedora 22.) If someone knows how to compile on other
+systems, I would be happy to include that as well.
 
 To compile all the programs, type "make" in the main directory. To
 compile a program in one of the directories, go to the directory and
