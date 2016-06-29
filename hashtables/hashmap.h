@@ -37,12 +37,13 @@
 #ifndef _HASHMAP_H 
 #define _HASHMAP_H // To avoid header being included twice in complilation process.
 
-using namespace std;
+
 #include <stdlib.h>
 #include <iostream>
 #include <string.h>
 #include <cassert>
 #include "perm.h"
+using namespace std;
 
 // NOTE: KEYS ARE ADDED AS 1 + THEMSELVES. SO -1 IS NOT A VALID KEY
 class hashmap{

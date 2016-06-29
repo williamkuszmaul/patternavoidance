@@ -176,7 +176,7 @@ void wordavoiders_raw_dynamic(const hashdb &patternprintset, int maxavoidsize, i
 void countavoidersfrompatternlist(string patternlist, int base, int maxwordsize, vector <uint64_t> &numavoiders) {
   hashdb patternprintset(1);
   numavoiders.resize(maxwordsize + 1);
-  cilk::reducer< cilk::op_add<uint64_t> > numavoiderstemp[maxwordsize + 1];
+  cilk::reducer< cilk::op_add<uint64_t> > *numavoiderstemp = new cilk::reducer< cilk::op_add<uint64_t> >[maxwordsize + 1];
   int maxpatternsize = 0;
   int pos = 0;
   perm_t word = 0;
@@ -201,6 +201,7 @@ void countavoidersfrompatternlist(string patternlist, int base, int maxwordsize,
   for (int i = 0; i < maxwordsize + 1; i++) {
     numavoiders[i] = numavoiderstemp[i].get_value();
   }
+  delete[] numavoiderstemp;
 }
 
 class Bitmap {

@@ -207,12 +207,13 @@ void buildavoiders_brute(const hashdb &patternset, int maxavoidsize, int maxsize
   }
 
   vector < cilk::reducer< cilk::op_list_append<perm_t> > > avoidervectortemp(maxsize + 1);
-  cilk::reducer< cilk::op_add<uint64_t> > numavoiderstemp[maxsize + 1];
+  cilk::reducer< cilk::op_add<uint64_t> > *numavoiderstemp = new cilk::reducer< cilk::op_add<uint64_t> >[maxsize + 1];
   buildavoiders_brute_helper(0L, 0L, 0, 1, prefixmap, prefixes, patternlengths, maxavoidsize, maxsize, avoidervectortemp, numavoiderstemp, justcount);
   for (int i = 0; i < maxsize + 1; i++) {
     if (!justcount) avoidervector[i] = avoidervectortemp[i].get_value();
     numavoiders[i] = numavoiderstemp[i].get_value();
   }
+  delete[] numavoiderstemp;
 }
 
 // Updates inverse to be the inverse of the same permutation, except with length inserted in position pos.
@@ -478,7 +479,7 @@ void buildavoiders_dynamic(const hashdb &patternset, int maxavoidsize, int maxsi
   bitmaps.push_back(7L);
   
   vector < cilk::reducer< cilk::op_list_append<perm_t> > > avoidervectortemp(maxsize + 1);
-  cilk::reducer< cilk::op_add<uint64_t> > numavoiderstemp[maxsize + 1];
+  cilk::reducer< cilk::op_add<uint64_t> > *numavoiderstemp = new cilk::reducer< cilk::op_add<uint64_t> >[maxsize + 1];
   buildavoiders_dynamic_helper(2, patternset, shiftedprefixmap, maxavoidsize, maxsize, avoidervectortemp, numavoiderstemp, justcount, sizetwo, sizetwoinverses, 0, 1, currentavoiders, bitmaps);
   
   for (int i = 3; i < maxsize + 1; i++) {
@@ -489,6 +490,7 @@ void buildavoiders_dynamic(const hashdb &patternset, int maxavoidsize, int maxsi
     // It's not asymptotically bad though.
     else numavoiders[i] = (uint64_t) numavoiderstemp[i].get_value();
   }
+  delete[] numavoiderstemp;
 }
 
 
@@ -600,10 +602,16 @@ void countavoidersfromfile(ifstream &infile, ofstream &outfile, int maxpermsize,
 }
 
 
+
 // Parallel version of countavoidersfromfile. (Both use parallel dynamic alg. This one also parallelizes work for different sets of patterns)
 void countavoidersfromfile_parallel(ifstream &infile, ofstream &outfile, int maxpermsize, bool verbose) {
+  // Note that CLOCK_MONOTONIC isn't defined on Mac OS
+  // In other places in the code, we use a different, portable
+  // timing mechanism. This is just a quick fix for this part.
+  #ifdef CLOCK_MONOTONIC
   struct timespec start_p,end_p;
   clock_gettime(CLOCK_MONOTONIC, &start_p);
+  #endif
 
   string line;
   vector <string> input;
@@ -619,27 +627,33 @@ void countavoidersfromfile_parallel(ifstream &infile, ofstream &outfile, int max
   cilk_for (uint64_t ii = vecsize; ii > 0; ii--) {
     uint64_t i = ii-1;
     //cilk_for (uint64_t i = 0; i < vecsize; i++) {
+      #ifdef CLOCK_MONOTONIC
     struct timespec start,end;
-    clock_gettime(CLOCK_MONOTONIC, &start);
     vector < uint64_t > numavoiders(maxpermsize + 1);
     countavoidersfrompatternlist(input[i], maxpermsize, numavoiders);
     std::swap(output[i], numavoiders);
+    clock_gettime(CLOCK_MONOTONIC, &start);
     clock_gettime(CLOCK_MONOTONIC, &end);
     tdiffs[i] = (end.tv_sec - start.tv_sec)*1000000000 + (end.tv_nsec - start.tv_nsec);
+    #endif
     //printf("Another finished \n");
   }
+  #ifdef CLOCK_MONOTONIC
   long long maxv = 0, sumv = 0;
   for (auto v : tdiffs) {
     maxv = max(maxv, v);
     sumv += v;
   }
+  #endif
   for (uint64_t i = 0; i < vecsize; i++) {
     outfile<<"#"<<input[i]<<endl;
     for (int j = 1; j <= maxpermsize; j++) outfile<<output[i][j]<<" ";
     outfile<<endl;
   }
+  #ifdef CLOCK_MONOTONIC
   clock_gettime(CLOCK_MONOTONIC, &end_p);
   long long total_t = (end_p.tv_sec - start_p.tv_sec)*1000000000 + (end_p.tv_nsec - start_p.tv_nsec);
   if (verbose) printf("For total_t=%.6fs maxv=%.6fs sumv=%.6fs parallelism=%f\n", total_t*1e-9, maxv*1e-9, sumv*1e-9, (double)sumv/(double)maxv);
+  #endif
   return;
 }
