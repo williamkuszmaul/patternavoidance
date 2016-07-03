@@ -226,7 +226,7 @@ received a round of edits and has been updated to discuss the improved
 pattern-avoidance algorithm. Also, fixed a latent bug in
 buildinput.cpp.
 
-Version 3.1: The files have been reorganized and renamed to be more
+Version 4.0: The files have been reorganized and renamed to be more
 user friendly. Additionally, the default compilation setting is now in
 serial and should work even on machines which don't have the Cilk or
 Boost libraries installed. (See README for how to enable parallelism.)
