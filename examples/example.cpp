@@ -58,6 +58,9 @@ int main() {
   for (int i = 1; i <= 11; i++) {
     cout<<"Number of permutations in S_"<<i<<" with no patterns appearing is "<<tally[i][0]<<endl;
     cout<<"Number of permutations in S_"<<i<<" with 1 pattern appearing is "<<tally[i][1]<<endl;
+    cout<<"Number of permutations in S_"<<i<<" with 1 pattern appearing is "<<tally[i][1]<<endl;
+    // This one is a bit more hacky:
+    cout<<"Number of patterns in permutation in S_"<<i<<" with most patterns is "<<tally[i].size() - 1<<endl; // tally[i] is, for space utilization, filled only to have as many entries as needed by the function countpatterns.
   }
   return 0;
 }

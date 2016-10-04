@@ -418,7 +418,6 @@ double run_interior_experiment2(string patternlist, int maxpermsize) {
   for (int i = 1; i <= maxpermsize; i++) {
     fac *= i;
     //completelist[i].resize(fac);
-    tally[i].resize((1L << 10), 0);
   }
   // Note: tally's components are not appropriately sized at this point. This is done during the running of the code
   int maxpatternsize;
@@ -506,7 +505,7 @@ void countpatterns(string patternlist, int maxpermsize, vector < vector <int> > 
   timestamp_t end_time = get_timestamp();
   for (int j = 0; j <= maxpermsize; j++) {
     int largestval = 0;
-    for (int i = 0; i < maxpermsize + 1; i++) {
+    for (int i = 0; i < maxtally + 1; i++) {
       if (tallytemp[j][i].get_value() != 0) largestval = i;
     }
     tally[j].resize(largestval + 1);
