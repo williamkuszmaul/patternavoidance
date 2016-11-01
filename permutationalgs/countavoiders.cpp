@@ -499,6 +499,7 @@ void buildavoiders_dynamic(const hashdb &patternset, int maxavoidsize, int maxsi
 // vector < list < perm_t > > avoidervector;
 // buildavoidersfrompatternlist(patternlist, 10, avoidervector); // now avoidervector contains S_n(patternlist) stored in avoidervector[n] for 0 < n < 11
 void buildavoidersfrompatternlist(string patternlist, int maxpermsize, vector < list < perm_t > > &avoidervector) {
+  assert (maxpermsize <= MAXPERMSIZE);
   int maxpatternsize;
   hashdb patternset = hashdb(1<<3);
   makepatterns(patternlist, patternset, maxpatternsize);
@@ -550,6 +551,7 @@ double run_interior_experiment(string patternlist, int maxpermsize) {
 // vector < uint64_t > numavoiders;
 // buildavoidersfrompatternlist(patternlist, 10, numavoiders); // now avoidervector contains |S_n(patternlist)| stored in numavoiders[n] for 0 < n < 11.
 void countavoidersfrompatternlist(string patternlist, int maxpermsize, vector < uint64_t > &numavoiders) {
+  assert (maxpermsize <= MAXPERMSIZE);
   int maxpatternsize;
   hashdb patternset = hashdb(1<<3);
   makepatterns(patternlist, patternset, maxpatternsize);

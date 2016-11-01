@@ -466,7 +466,7 @@ double run_interior_experiment2(string patternlist, int maxpermsize) {
 // Note: patterns in patternset required to be in S_{>1}
 void countpatterns(string patternlist, int maxpermsize, vector < vector <int> > & tally, vector < vector < int > > &completelist, bool verbose, bool justcount) {
   timestamp_t start_time = get_timestamp();
-  assert(maxpermsize <= 16);
+  assert(maxpermsize <= 16); // Larger sizes not supported for this file.
 
   // Start by resizing vectors appropriately
   tally.resize(maxpermsize + 1);
