@@ -36,7 +36,8 @@ computes $|S_n(\Pi)|$ for all $5 \le n \le 16$ and $\Pi \subseteq S_4$
 (up to trivial Wilf-Equivalence), and then analyzes the resulting
 number sequences to find OEIS matches.
 (4) data: Contains data collected by masstest.cpp in
-datacollection. Due to the size of the data, most of it is compressed.
+datacollection. Due to the size of the data, some of it is compressed.
+Also contains discussion of conjectural OEIS formulas.
 (5) hashtables: Contains basic hash table and hash map implementations.
 (6) codeinprogress: Contains code in progress.
 
@@ -185,11 +186,26 @@ performance tables in the paper.
 
 ------------------------------------ data/
 
-datafolder.tar.gz: Contains compressed output of masstest.cpp (run for sets of length-4 patterns of sizes from 5 to 24).
+testallfours-sequences: Contains S_1(Pi), ..., S_16(Pi) for all Pi
+\subseteq S_4 (up to trivial Wilf-equivalence).
 
-datafolder2.tar.gz: Contains compressed output of masstest.cpp (run for sets of length-4 patterns of sizes 1 to 24)
+masstest_output_for_sets_of_all_sizes: Contains output of masstest.cpp
+(run for sets of length-4 patterns of sizes 5 to 24).
 
-sequencesforsetsofsize4: Contains the sequence |S_1(Pi)|,...,|S_{16}(Pi)| for each set of four length-4 patterns Pi (up to trivial Wilf-equivalence).
+masstest_output_for_sets_of_size_greater_than_4: Contains output of
+masstest.cpp (run for sets of length-4 patterns of all sizes).
+
+all_nonpolynomial_OEIS_matches: Lists OEIS matches for all sets of
+patterns from S_4, except those that are detected to be polynomials of
+degree <= 3.
+
+all_nonpolynomial_OEIS_matches_brief: A summary of all_nonpolynomial_OEIS_matches.
+
+OEIS_conjectural_formulas: The OEIS matches conjectured in the paper
+which (a) cannot be resolved using insertion encodings, and (b) do not
+appear to already be known.
+
+OEIS_conjectural_formulas_brief: A brief version of OEIS_conjectural_formulas.
 
 ------------------------------------ hashtables/
 

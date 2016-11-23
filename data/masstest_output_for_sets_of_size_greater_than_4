@@ -1,0 +1,47 @@
+Building sets up to trivial Wilf-equivalence...
+Building sequences up to 16...
+Building local version of OEIS...
+Continuing analysis...
+Analyzing first batch for n up to 16...
+Total of 1412002 matches out of 2137358 attempts, with what appears to be 64211 total Wilf-classes
+A total of 1386 distinct OEIS sequences appear
+826003 matches constant by first derivative position 5
+391047 of remaining matches linear by second derivative position 5
+147684 of remaining matches quadratic by second derivative position 5
+15249 of remaining matches cubic by second derivative position 5
+Number distinct distinct oeis sequences matching to constant sequences: 290
+Number distinct distinct oeis sequences matching to left-over linear sequences: 291
+Number distinct distinct oeis sequences matching to left-over quadratic sequences: 264
+Number distinct distinct oeis sequences matching to left-over cubic sequences: 95
+Number distinct oeis sequences for remaining: 446 accounting for 32019 sequences.
+Building extended local version of OEIS...
+Continuing analysis...
+Analyzing first batch for n up to 13...
+Total of 1464023 matches out of 2137358 attempts, with what appears to be 64211 total Wilf-classes
+A total of 1616 distinct OEIS sequences appear
+853560 matches constant by first derivative position 5
+414911 of remaining matches linear by second derivative position 5
+148282 of remaining matches quadratic by second derivative position 5
+15249 of remaining matches cubic by second derivative position 5
+Number distinct distinct oeis sequences matching to constant sequences: 323
+Number distinct distinct oeis sequences matching to left-over linear sequences: 469
+Number distinct distinct oeis sequences matching to left-over quadratic sequences: 282
+Number distinct distinct oeis sequences matching to left-over cubic sequences: 95
+Number distinct oeis sequences for remaining: 447 accounting for 32021 sequences.
+Elements appearing only in first analysis of revised data set: 
+A182415
+22
+A099920
+2
+A036563
+3
+Elements appearing only in second analysis of revised data set: 
+A246878
+2
+A128610
+22
+A099428
+2
+A029580
+3
+Writing to output files...
